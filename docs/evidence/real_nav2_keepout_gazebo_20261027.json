@@ -1,0 +1,74 @@
+{
+  "filter_info_server": "nav2_map_server costmap_filter_info_server type=0",
+  "image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "limitations": [
+    "Not a real-hardware safety certification",
+    "One static rectangular zone in test_room, not arbitrary zones, pedestrians, floors or SLAM updates",
+    "A forbidden target can yield a successful truncated Nav2 plan; independent controller admission is mandatory",
+    "No actual KeepoutFilter has been installed into OOMWOO's default robot runtime",
+    "No hard MCU cliff/bumper/overcurrent sensors were tested"
+  ],
+  "mask_server": "nav2_map_server map_server publishing /valdi/keepout_filter_mask",
+  "nav2": "Jazzy nav2_bringup with independently generated lab YAML",
+  "observed_at_utc": "2026-10-27T04:17:05.734053+00:00",
+  "planner": {
+    "around_error": 0,
+    "around_error_msg": "",
+    "conclusion": "Both Nav2 costmaps lethal, around-path avoids mask; app gate rejects inside goal",
+    "global_costs": {
+      "control": 0,
+      "keepout": 100
+    },
+    "goal_inside_end_offset_m": 0.4,
+    "goal_inside_error": 0,
+    "goal_inside_last_pose": [
+      0.45,
+      0
+    ],
+    "goal_inside_path_poses": 17,
+    "independent_controller_admission_to_forbidden_goal": false,
+    "inside_goal_path_mask_hits": 0,
+    "local_costs": {
+      "control": 0,
+      "keepout": 100
+    },
+    "mask_at_keepout": 100,
+    "mask_occupied": 220,
+    "ok": true,
+    "path_keepout_crossings": 0,
+    "path_poses": 108,
+    "planner_server_ready": true,
+    "scope": "isolated ROS2 costmap and planner; no motion",
+    "sources": {
+      "clock": true,
+      "global_grid": true,
+      "info": true,
+      "local_grid": true,
+      "mask": true
+    }
+  },
+  "sim_motion": {
+    "accepted": true,
+    "final_map_pose": [
+      1.728,
+      0.112
+    ],
+    "forbidden_mask_center_entries": 0,
+    "goal_status": 4,
+    "localization": "AMCL initial pose at known simulated spawn; not proof of physical localization",
+    "min_center_to_keepout_boundary_m": 0.2315,
+    "navigation": "actual Nav2 NavigateToPose with both KeepoutFilters",
+    "ok": true,
+    "sampled_pose_count": 226,
+    "start_map_pose": [
+      0,
+      0
+    ],
+    "travel_euclidean_m": 1.731,
+    "world": "actual OOMWOO Gazebo test_room"
+  },
+  "source": "actual KeepoutFilter plugin running in global and local costmaps",
+  "world": "official OOMWOO test_room, 0,0 sim spawn",
+  "localization": "AMCL lifecycle ACTIVE; known 0,0,0 test-room initial pose; no static map->odom publisher in successful run"
+}

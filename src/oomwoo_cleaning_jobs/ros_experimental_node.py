@@ -25,6 +25,7 @@ from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import BatteryState
 from action_msgs.msg import GoalStatusArray, GoalStatus
 from lifecycle_msgs.srv import GetState
+from nav2_msgs.msg import CostmapFilterInfo
 from rosgraph_msgs.msg import Clock
 
 from .engine import CleaningJobs, JobError, Resources
@@ -34,6 +35,7 @@ from .nav_interlock import NavigationInterlock
 from .ros_nav2 import AsyncNav2Transport, pose_for_cell
 from .sim_coverage import SimCoverageBridge, CoverageError
 from .sweep_target import select_sweep_route, NoSafeSweep
+from .nav_keepout_admission import VerifiedGlobalKeepout, KeepoutNotEnforced
 
 
 _ACTIVE = {GoalStatus.STATUS_ACCEPTED, GoalStatus.STATUS_EXECUTING,
@@ -52,6 +54,7 @@ class ExperimentalCleaningNode(Node):
         self.declare_parameter("clearance_cells", 5)
         self.declare_parameter("costmap_max_cost", 25)
         self.declare_parameter("coverage_mode", "disabled")
+        self.declare_parameter("require_keepout_filter", False)
         self.declare_parameter("auto_continue", False)
         self.declare_parameter("max_no_progress_attempts", 4)
         self._sim_lab = self.get_parameter("simulation_lab").value is True
@@ -61,6 +64,7 @@ class ExperimentalCleaningNode(Node):
         self._clearance = int(self.get_parameter("clearance_cells").value)
         self._max_cost = int(self.get_parameter("costmap_max_cost").value)
         self._coverage_mode = str(self.get_parameter("coverage_mode").value)
+        self._require_keepout=(self.get_parameter("require_keepout_filter").value is True)
         if self._coverage_mode not in ("disabled", "sim_ground_truth"):
             raise ValueError("unknown coverage_mode")
         self._auto_continue = self.get_parameter("auto_continue").value is True
@@ -74,6 +78,9 @@ class ExperimentalCleaningNode(Node):
         self._map_hash: str | None = None
         self._costmap: Raster | None = None
         self._costmap_received: float | None = None
+        self._keepout_mask: Raster | None = None
+        self._keepout_info: CostmapFilterInfo | None = None
+        self._last_keepout_error: str | None = None
         self._clock_sec: float | None = None
         self._clock_received: float | None = None
         self._battery: Resources | None = None
@@ -116,6 +123,12 @@ class ExperimentalCleaningNode(Node):
         self.create_subscription(OccupancyGrid, "/map", self._on_map, latched)
         self.create_subscription(OccupancyGrid, "/global_costmap/costmap",
                                  self._on_costmap, QoSProfile(depth=5))
+        if self._require_keepout:
+            self.create_subscription(OccupancyGrid,"/valdi/keepout_filter_mask",
+                                     self._on_keepout_mask,latched)
+            self.create_subscription(CostmapFilterInfo,
+                                     "/valdi/keepout_costmap_filter_info",
+                                     self._on_keepout_info,latched)
         self.create_subscription(Clock, "/clock", self._on_clock, 10)
         self.create_subscription(BatteryState, "/battery_state", self._on_battery, 10)
         self.create_subscription(GoalStatusArray, "/navigate_to_pose/_action/status",
@@ -277,6 +290,39 @@ class ExperimentalCleaningNode(Node):
                 self._freeze("COVERAGE_EVIDENCE_INVALID")
             self.get_logger().warning("coverage meter rejected: "+str(exc))
 
+    def _on_keepout_mask(self, m):
+        try:
+            self._keepout_mask=Raster.from_ros(m)
+            self._last_keepout_error=None
+        except AdmissionError as exc:
+            self._keepout_mask=None
+            self._last_keepout_error=str(exc)
+            self._freeze("KEEPOUT_INVALID_MASK")
+
+    def _on_keepout_info(self,m):
+        self._keepout_info=m
+        if (m.type!=0 or m.filter_mask_topic!="/valdi/keepout_filter_mask"):
+            self._freeze("KEEPOUT_INVALID_INFO")
+
+    def _keepout_gate(self) -> VerifiedGlobalKeepout | None:
+        if not self._require_keepout:
+            return None
+        if (self._keepout_mask is None or self._keepout_info is None
+            or self._keepout_info.type != 0
+            or self._keepout_info.filter_mask_topic!="/valdi/keepout_filter_mask"):
+            raise JobError("keepout mask or type-0 filter_info missing")
+        if (not self.get_publishers_info_by_topic("/valdi/keepout_filter_mask")
+            or not self.get_publishers_info_by_topic("/valdi/keepout_costmap_filter_info")):
+            raise JobError("keepout source publishers absent")
+        if (self._map is None or self._costmap is None
+            or self._costmap_received is None
+            or self._now()-self._costmap_received>6.0):
+            raise JobError("keepout post-filter global costmap not fresh")
+        try:
+            return VerifiedGlobalKeepout(self._map,self._keepout_mask,self._costmap)
+        except KeepoutNotEnforced as exc:
+            raise JobError("global KeepoutFilter is not enforcing all masked cells") from exc
+
     def _on_battery(self, m):
         # Unknown/invalid battery percentage must not authorize motion.
         f = m.percentage
@@ -373,6 +419,7 @@ class ExperimentalCleaningNode(Node):
                 or self._meter_stability_received is None
                 or self._now()-self._meter_stability_received>4.0):
                 raise JobError("ground-truth coverage meter baseline/stability not fresh")
+        self._keepout_gate()  # refuse to arm unless mask is lethal in Nav2
         x,y=self._fresh_pose()
         cell=self._map.cell_at(x,y)
         grid = Grid(self._map.width, self._map.height, self._map.data,
@@ -400,6 +447,10 @@ class ExperimentalCleaningNode(Node):
             or self._now()-self._costmap_received > 6):
             raise JobError("Nav2 costmap no longer fresh")
         checker=CostmapChecker(self._map,self._costmap, max_cost=self._max_cost)
+        keepout=self._keepout_gate()
+        def admit(route):
+            return (checker.route_admitted(route) and
+                    (keepout is None or keepout.accept_route(route)))
         proposed=None
         if thru_sweep and self._coverage_mode=="sim_ground_truth":
             if self._job is None:
@@ -409,13 +460,13 @@ class ExperimentalCleaningNode(Node):
             try:
                 proposed=select_sweep_route(
                     self._job.grid,cell,remaining,
-                    admit=checker.route_admitted,
+                    admit=admit,
                     previously_tried=frozenset(self._sweep_tried))
             except NoSafeSweep as exc:
                 self._freeze("COVERAGE_NO_SAFE_SWEEP")
                 raise JobError("no admissible through-sweep goal") from exc
         goal=self._interlock.dispatch(
-            pose_cell=cell, admit_route=checker.route_admitted,
+            pose_cell=cell, admit_route=admit,
             route_override=proposed)
         if proposed is not None:
             self._sweep_tried.add(proposed[-1])
@@ -462,8 +513,10 @@ class ExperimentalCleaningNode(Node):
             # Verify route before committing the new job checkpoint.
             target_cells=grid.targets(mode="spot",spot=spot,radius_m=radius_m)
             route=grid.path_to_nearest(pose,target_cells)
-            if not checker.route_admitted(route):
-                raise JobError("dynamic footprint/costmap rejected proposed route")
+            keepout=self._keepout_gate()
+            if not checker.route_admitted(route) or (keepout is not None and
+                 not keepout.accept_target(spot)):
+                raise JobError("dynamic costmap/keepout rejected proposed target or route")
             job=CleaningJobs(grid,self._checkpoint)
             job.start(job_id,mode="spot",start_cell=pose,spot=spot,
                       radius_m=radius_m,resources=battery)
@@ -519,6 +572,16 @@ class ExperimentalCleaningNode(Node):
         self._last_command=result
         self._publish()
 
+    def _keepout_currently_verified(self):
+        if not self._require_keepout:
+            return False
+        try:
+            self._keepout_gate()
+            return True
+        except JobError as exc:
+            self._last_keepout_error=str(exc)
+            return False
+
     def _tick(self):
         if self._interlock is not None:
             self._interlock.check_timeout()
@@ -531,6 +594,8 @@ class ExperimentalCleaningNode(Node):
                 self._freeze("COSTMAP_STALE")
             elif self._battery_received is None or self._now()-self._battery_received>15:
                 self._freeze("BATTERY_TELEMETRY_STALE")
+            elif self._require_keepout and not self._keepout_currently_verified():
+                self._freeze("KEEPOUT_FILTER_UNVERIFIED")
             elif (self._coverage_mode=="sim_ground_truth"
                   and (self._meter_received is None
                        or self._now()-self._meter_received>4.0
@@ -574,6 +639,9 @@ class ExperimentalCleaningNode(Node):
               "frozen_reason":self._frozen,
               "nav2_lifecycle_required":self._require_nav2_lifecycle,
               "nav2_active":self._nav2_ready(),
+              "keepout_filter_required":self._require_keepout,
+              "keepout_filter_verified":self._keepout_currently_verified(),
+              "keepout_filter_error":self._last_keepout_error,
               "map_ready":self._map is not None,
               "costmap_fresh":self._costmap_received is not None
                   and self._now()-self._costmap_received<=6,

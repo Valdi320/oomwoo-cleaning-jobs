@@ -1,0 +1,22 @@
+{
+  "hard_safety": "Not a physical emergency-stop or real sensor test.",
+  "result": {
+    "forbidden_goal_never_sent": true,
+    "forbidden_start_response": {
+      "error": "dynamic costmap/keepout rejected proposed target or route",
+      "ok": false,
+      "op": "start",
+      "request_id": "keepout-2"
+    },
+    "goals_dispatched": 1,
+    "mask_and_post_filter_costs_verified": true,
+    "no_fake_cleaning_credit": true,
+    "ok": true,
+    "robot": "official OOMWOO test_room Gazebo",
+    "safe_goal_accepted": true,
+    "source": "live Nav2 global/local KeepoutFilter + private ROS2 cleaning controller",
+    "terminal": "canceled"
+  },
+  "scope": "Actual OOMWOO Gazebo + real Nav2 filters + private test job controller",
+  "synthetic_battery": "The harness published fake BatteryState because test_room has no battery topic."
+}

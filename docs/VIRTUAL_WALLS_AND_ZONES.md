@@ -25,9 +25,12 @@ src/oomwoo_cleaning_jobs/zones.py defines:
   stale output. The room plan built before a zone edit also refuses
   the changed map, requiring room reassessment.
 
-The source produces mask candidates only. Nothing is published
-to Nav2, no-go editing UI has been built, and no actual robot
-is sent through/around these boundaries in this test suite.
+This original pure-Python source only produces mask candidates.
+A separate [REAL_NAV2_KEEPOUT_GAZEBO.md](REAL_NAV2_KEEPOUT_GAZEBO.md)
+now wires one isolated experimental mask to a genuine Nav2 global/local
+KeepoutFilter, including real OOMWOO Gazebo detours and an extra
+fail-closed controller admission gate. The upstream stock runtime
+remains unchanged and has NO automatically enabled filter or zone UI.
 
 ## Real official OOMWOO map check
 
@@ -41,12 +44,17 @@ in the isolated OOMWOO Jazzy/Gazebo test_room. On 2026-10-27:
 - Conservative safe set decreased to 11,761 cells once the
   configured five-cell clearance inflation was applied.
 - JSON save/reload and stale room plan rejection: PASS.
-- Real Nav2 goal/KeepoutFilter enforcement: **NOT TESTED**.
+- In this OFFLINE mask probe alone, real Nav2 KeepoutFilter: **NOT TESTED**.
+  In the **separate filtered Nav2/Gazebo lab**, global/local costs
+  were observed lethal at the forbidden zone, and the robot
+  avoided it during two real simulated movements.
 
 Machine-readable observation:
 [evidence/zone_mask_test_room_20261027.json](evidence/zone_mask_test_room_20261027.json).
 
-The upstream OOMWOO simulation parameter file at
+Note: a separate experimental filtered Nav2 config has passed
+[real Gazebo tests](REAL_NAV2_KEEPOUT_GAZEBO.md). The upstream OOMWOO
+simulation parameter file at
 https://github.com/makerspet/oomwoo-ros2-tools/blob/jazzy/src/oomwoo_sim_support/config/nav2_params.yaml
 lists static/obstacle/voxel/inflation costmap layers but not
 the Nav2 KeepoutFilter mask pipeline. A planning-side mask is NOT

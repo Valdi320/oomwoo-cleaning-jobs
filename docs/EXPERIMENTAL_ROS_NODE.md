@@ -66,6 +66,15 @@ implemented by this node.
   triggers a service pause and cancellation request. In the official OOMWOO
   test_room run there was no working battery publisher; the test harness
   supplied explicitly SYNTHETIC ROS2 battery telemetry and triggered 4%.
+- **Optional live KeepoutFilter gate:** require_keepout_filter:=true
+  requires an active type=0 FilterInfoServer, current mask publishers and
+  a live global post-filter costmap that reports every prohibited mask
+  cell as lethal. The controller refuses forbidden destinations even
+  though Nav2 may return a seemingly successful *truncated* path.
+  If the filter source disappears, new requests remain blocked; this
+  was tested with the real OOMWOO Nav2/Gazebo. This does NOT yet enable
+  the filter in OOMWOO's default config. See
+  [REAL_NAV2_KEEPOUT_GAZEBO.md](REAL_NAV2_KEEPOUT_GAZEBO.md).
 - **Cancellation:** do not send another goal until Nav2 returns a terminal
   action outcome. Uncertain send/cancel states latch a fault; the node
   cannot claim a physical stop merely from a cancel response.

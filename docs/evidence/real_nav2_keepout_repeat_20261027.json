@@ -1,0 +1,100 @@
+{
+  "Nav2_keepout_global_and_local": true,
+  "Nav2_original_runtime_modified": false,
+  "container_image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "date_utc": "2026-10-27T04:29:21.967906+00:00",
+  "map_digest": "29a8c8d57d560e6eb4612beaa4e8eae02e20f7c232400bae81f4e93f3522c789",
+  "mask_cells": 220,
+  "safety_limits": [
+    "Not a real robot, cannot certify MCU safety or physical emergency stop",
+    "One static rectangle in a known simulator; dynamic zones not tested",
+    "ROS2 endpoint lifecycle failures must fail closed",
+    "Nav2 can return a successful truncated path for a forbidden target; explicit goal admission required"
+  ],
+  "test_second_independent_cold_simulator": {
+    "filter_info_loss_fault_injection": {
+      "detected_filter_loss": true,
+      "error": "keepout source publishers absent",
+      "new_nav_goals": 0,
+      "ok": true,
+      "owned_filter_info_pid": 150,
+      "paused_job_preserved": true,
+      "resumption_denied": true,
+      "source": "only owned isolated FilterInfoServer terminated"
+    },
+    "motion": {
+      "accepted": true,
+      "final_map_pose": [
+        1.732,
+        0.116
+      ],
+      "forbidden_mask_center_entries": 0,
+      "goal_status": 4,
+      "localization": "Nav2 AMCL active with known test-room initial pose; not physical-hardware SLAM",
+      "min_center_to_keepout_boundary_m": 0.2636,
+      "navigation": "actual Nav2 NavigateToPose with both KeepoutFilters",
+      "ok": true,
+      "sampled_pose_count": 230,
+      "start_map_pose": [
+        -0.0,
+        -0.0
+      ],
+      "travel_euclidean_m": 1.736,
+      "world": "actual OOMWOO Gazebo test_room"
+    },
+    "planner": {
+      "around_error": 0,
+      "around_error_msg": "",
+      "conclusion": "Both Nav2 costmaps lethal, around-path avoids mask; app gate rejects inside goal",
+      "global_costs": {
+        "control": 0,
+        "keepout": 100
+      },
+      "goal_inside_end_offset_m": 0.4,
+      "goal_inside_error": 0,
+      "goal_inside_last_pose": [
+        0.45,
+        0.0
+      ],
+      "goal_inside_path_poses": 17,
+      "independent_controller_admission_to_forbidden_goal": false,
+      "inside_goal_path_mask_hits": 0,
+      "local_costs": {
+        "control": 0,
+        "keepout": 100
+      },
+      "mask_at_keepout": 100,
+      "mask_occupied": 220,
+      "ok": true,
+      "path_keepout_crossings": 0,
+      "path_poses": 108,
+      "planner_server_ready": true,
+      "scope": "isolated ROS2 costmap and planner; no motion",
+      "sources": {
+        "clock": true,
+        "global_grid": true,
+        "info": true,
+        "local_grid": true,
+        "mask": true
+      }
+    },
+    "private_controller": {
+      "forbidden_goal_never_sent": true,
+      "forbidden_start_response": {
+        "error": "dynamic costmap/keepout rejected proposed target or route",
+        "ok": false,
+        "op": "start",
+        "request_id": "keepout-2"
+      },
+      "goals_dispatched": 1,
+      "mask_and_post_filter_costs_verified": true,
+      "no_fake_cleaning_credit": true,
+      "ok": true,
+      "robot": "official OOMWOO test_room Gazebo",
+      "safe_goal_accepted": true,
+      "source": "live Nav2 global/local KeepoutFilter + private ROS2 cleaning controller",
+      "terminal": "canceled"
+    }
+  },
+  "world": "official OOMWOO test_room Gazebo; AMCL active with known initial spawn"
+}
