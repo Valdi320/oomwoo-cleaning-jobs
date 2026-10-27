@@ -1,0 +1,103 @@
+{
+  "compatibility_at_clearance5_and_max_shift0_24": {
+    "clearance_cells": 5,
+    "first_waypoints": [
+      8691,
+      8697,
+      8705,
+      8713,
+      8721,
+      8729
+    ],
+    "map_digest": "474543b7e2db45427c0a7f80b7b660d6160bd0f5023c9d3d352b1f39b0b01569",
+    "max_adjustment_m": 0.15,
+    "plan_digest": "dd4f10f5c26c35e93bd9882d2007b273cd71d76067132dc230876e23520ee830",
+    "planning_seconds": 0.052,
+    "rejected": 5,
+    "safe_unique_waypoints": 391,
+    "shift_budget_m": 0.24,
+    "shifted": 110,
+    "source_waypoints": 409
+  },
+  "false_completion_claim": false,
+  "image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "observed_at_utc": "2026-10-27T05:33:04.790711+00:00",
+  "real_five_goal_trial": {
+    "already_measured_waypoints_skipped": 0,
+    "candidates_with_safe_routes": 92,
+    "current_job_completed": false,
+    "externally_measured_new_cleaned_cells": 337,
+    "false_coverage_from_nav2_arrival": false,
+    "final_job_state": "paused_user",
+    "goal_results": [
+      {
+        "cell": 8697,
+        "destination": [
+          -0.725,
+          0.075
+        ],
+        "measured_cells_at_goal": 85,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8729,
+        "destination": [
+          0.875,
+          0.075
+        ],
+        "measured_cells_at_goal": 190,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8737,
+        "destination": [
+          1.275,
+          0.075
+        ],
+        "measured_cells_at_goal": 239,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8745,
+        "destination": [
+          1.675,
+          0.075
+        ],
+        "measured_cells_at_goal": 281,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8753,
+        "destination": [
+          2.075,
+          0.075
+        ],
+        "measured_cells_at_goal": 337,
+        "terminal": "succeeded"
+      }
+    ],
+    "meter_frames": 31,
+    "motion_scope": "5 imported waypoints only",
+    "nav_goals_sent": 5,
+    "ok": true,
+    "real_nav2": true,
+    "safely_adapted_waypoints": 391,
+    "unadmitted_original_waypoints": 5,
+    "unexpected_faults": [],
+    "upstream_executor_was_not_spun": true,
+    "upstream_waypoint_count": 409
+  },
+  "source": "Upstream OOMWOO CoveragePlanner._plan_waypoints, invoked WITHOUT executor spin",
+  "test_limitations": [
+    "Partial 5-waypoint sample only; NOT a completed full-room sweep",
+    "Five upstream points were rejected by conservative clearance adaptation",
+    "Simulation pose-based ground-truth swept cells, NOT physical vacuum cleaning",
+    "One isolated robot in test_room; no multi-room/dock/lidar-drop stress test",
+    "No competing upstream action executor was running"
+  ],
+  "upstream_executor_sent_nav2_actions": false,
+  "upstream_original_total_waypoints": 409,
+  "upstream_planning_seconds": 0.016,
+  "world": "official OOMWOO test_room Gazebo, real Nav2 Jazzy and real coverage_meter ground-truth"
+}
