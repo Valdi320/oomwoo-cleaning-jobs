@@ -243,6 +243,22 @@ class CleaningJobs:
                         resume_count=s['resume_count']+1))
         return self.status()
 
+    def suspend_recovery(self, reason: str) -> dict[str, Any]:
+        """Fail-closed navigation/localization pause requiring deliberate resume.
+
+        Hardware safety remains MCU-owned. This only gates future job commands.
+        """
+        if not isinstance(reason, str) or not re.fullmatch(r'[A-Z][A-Z0-9_]{2,63}', reason):
+            raise JobError('reason must be stable machine-readable code')
+        s = self._require()
+        if s['state'] == 'paused_recovery':
+            return self.status()  # Duplicate fault does not overwrite first cause.
+        if s['state'] != 'running':
+            raise JobError('recovery pause only valid for running job')
+        self._save(dict(s, state='paused_recovery', reason=reason,
+                        revision=s['revision'] + 1))
+        return self.status()
+
     def cancel(self) -> dict[str, Any]:
         s=self._require()
         if s['state'] == 'cancelled': return self.status()

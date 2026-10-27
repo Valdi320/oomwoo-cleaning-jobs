@@ -1,8 +1,8 @@
-# OOMWOO cleaning-jobs: Phase-0 headless reference
+# OOMWOO cleaning-jobs: Phase-0 checkpoints + Phase-1 Nav2 interlock
 
 [OOMWOO](https://github.com/makerspet/oomwoo) · [cleaning-jobs RFC](https://github.com/makerspet/oomwoo/tree/main/contributions/cleaning-jobs) · [software interface contract](https://github.com/makerspet/oomwoo/blob/main/docs/SOFTWARE_INTERFACES.md)
 
-A minimal **testable, hardware-independent job-state core**, proposed as one building block for OOMWOO's currently-unimplemented `cleaning-jobs` RFC. This is an *early prototype*, not a finished ROS 2 package and **not an integrated robot controller**.
+A **testable, hardware-independent job-state core and asynchronous Nav2 handoff interlock**, proposed as one building block for OOMWOO's currently-unimplemented `cleaning-jobs` RFC. This is an *early prototype*, not a finished ROS 2 package and **not an integrated robot controller**.
 
 ## What works today
 
@@ -12,10 +12,14 @@ A minimal **testable, hardware-independent job-state core**, proposed as one bui
 - `start`, `waypoint`, `acknowledge_cleaned`, `pause`, `resume`, `cancel`, `observe_resources`, `fail`, `status`; battery/bin/mop service interruptions; priority for low battery; clean resumption without erasing earlier progress.
 - Strict fail-closed conditions for missing/unreachable start pose, keepout violations, stale changed maps, corrupted checkpoints, service still needed, and invalid state transitions.
 - No runtime Python dependencies. Testable without ROS 2 or Gazebo; standard-library unittest + deterministic demonstration.
+- **Phase-1 Nav2-facing interlock:** only one outstanding navigation goal; on pause, recovery or low battery request cancellation and wait for a terminal result before allowing another goal.
+- An uncertain send/cancel or timeout **latches a fault**, requiring external Nav2 idle verification; late results and stale coverage acknowledgements cannot silently rearm the robot.
+- **Manual/externally verified rearm after restart** (goal handles may be lost even while Nav2 continues moving). See [navigation handoff contract](docs/NAVIGATION_HANDOFF.md).
+- **67 headless tests** including 32 fault-injection scenarios; no tested ROS2 ActionClient/Gazebo adapter yet.
 
 ## What it deliberately does **not** do
 
-- **No motors, no hardware safety, no Nav2/Gazebo integration, no ROS2 action/service yet.** Never rely on this proof-of-concept to safely drive hardware. Hard cliff/bumper/wheel-drop/current safety belongs to the STM32 independently.
+- **No motors, no hardware safety, no running Nav2/Gazebo integration, no ROS2 action/service adapter yet.** Never rely on this proof-of-concept to safely drive hardware. Hard cliff/bumper/wheel-drop/current safety belongs to the STM32 independently.
 - The chosen paths represent *grid cell centres* and do not prove a robot with finite footprint, wheel slip, localization noise, dynamic obstacles or a specific nozzle cleaning width can traverse or clean them. Real execution must use Nav2 costmaps with correctly inflated keepout, robust localization, collision checks, recovery and progress feedback.
 - Rooms are **manually labelled**; automatic room segmentation and editing UI are future work. Occupancy `0` is considered traversable; `-1` (unknown) and all other values are blocked intentionally.
 - Coverage is **acknowledged cell-centre progress**, *not* proof that physical floor area or the cleaning swath was cleaned. The integration adapter must transform trusted coverage updates into cell IDs and persist them.
@@ -45,7 +49,7 @@ Both commands run in plain Linux without ROS2, Docker, network access or robot h
 | `resume(pose_cell=..., resources=...)` | Localization + dock-cycle + user control | Require fresh localized pose and resolution of interruptions |
 | `status()` | Final OOMWOO status/action API (not yet specified) | Machine-readable state and reason; no new project-wide ROS2 topic invented |
 
-**Stopping an already active robot trajectory is NOT implemented here.** The ROS2 integration must cancel outstanding Nav2 goals and arbitrate motion with `recovery-safety`; soft e-stop is not a substitute for MCU hardware safety. On low battery this core simply refuses new waypoints. This distinction is intentional to prevent a test harness from being mistaken for a safety system.
+**Stopping an already active robot trajectory is NOT implemented here.** The ROS2 transport must implement the tested cancellation interlock and cancel outstanding Nav2 goals and arbitrate motion with `recovery-safety`; soft e-stop is not a substitute for MCU hardware safety. On low battery this core simply refuses new waypoints. This distinction is intentional to prevent a test harness from being mistaken for a safety system.
 
 ## Phase-0 acceptance checks
 
