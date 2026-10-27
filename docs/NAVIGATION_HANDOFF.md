@@ -94,7 +94,7 @@ resource subscriptions, and is not suitable to drive actual hardware.
 PYTHONPATH=src python -m unittest discover -s tests -q
 ~~~
 
-Test coverage: 35 existing tests and 32 action-handoff fault injection tests,
+Test coverage: 104 pure-Python regression tests, including original job-state and action-handoff fault injection cases,
 including uncertain goal send, lost cancel, cancellation timeout, stale callbacks,
 invalid coverage evidence, late success after pause, restart, independent idle
 confirmation, concurrent write, and no double dispatch.
@@ -102,4 +102,6 @@ confirmation, concurrent write, and no double dispatch.
 Real ROS2 ActionClient integration and headless OOMWOO Nav2/Gazebo cancel
 regressions have now run successfully; see ROS2_GAZEBO_VALIDATION.md.
 Real physical hardware, MCU stop paths, real floor-cleaning evidence, and
-production ROS2 job/action orchestration remain untested.
+production ROS2 public job/action orchestration remains unimplemented. A private
+long-running experimental ROS2 node is now tested against the actual OOMWOO
+Gazebo/Nav2 robot; see EXPERIMENTAL_ROS_NODE.md.
