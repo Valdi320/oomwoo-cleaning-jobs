@@ -348,5 +348,54 @@ class NavInterlockTests(unittest.TestCase):
         self.assertEqual(other.status()['state'],'paused_recovery')
 
 
+    def test_async_transport_fault_latches_and_attempts_cancel(self):
+        goal=self.send()
+        self.assertTrue(self.gate.on_transport_fault(
+            token=goal.token,reason='NAV2_ACCEPTANCE_UNCERTAIN'))
+        self.assertEqual(self.jobs.status()['state'],'paused_recovery')
+        self.assertEqual(self.gate.snapshot()['interlock_fault'],'NAV2_ACCEPTANCE_UNCERTAIN')
+        self.assertEqual(self.port.cancels,[goal.token])
+        self.assertFalse(self.gate.can_dispatch())
+
+    def test_old_async_fault_does_not_interrupt_current_goal(self):
+        first=self.send()
+        self.gate.on_goal_result(token=first.token,outcome='succeeded')
+        second=self.gate.dispatch(pose_cell=0,admit_route=lambda r:True)
+        self.assertFalse(self.gate.on_transport_fault(
+            token=first.token,reason='NAV2_RESULT_UNCERTAIN'))
+        self.assertEqual(self.jobs.status()['state'],'running')
+        self.assertEqual(self.gate.snapshot()['active_goal'],second.token)
+
+    def test_transport_fault_after_user_pause_preserves_user_pause(self):
+        goal=self.send()
+        self.gate.pause()
+        self.assertTrue(self.gate.on_transport_fault(
+            token=goal.token,reason='NAV2_CANCEL_NOT_ACCEPTED'))
+        self.assertEqual(self.jobs.status()['reason_code'],'USER_PAUSE')
+        self.assertEqual(self.gate.snapshot()['interlock_fault'],'NAV2_CANCEL_NOT_ACCEPTED')
+        self.gate.on_goal_result(token=goal.token,outcome='canceled')
+        with self.assertRaises(JobError):
+            self.gate.resume(pose_cell=0,resources=Resources(.8))
+        self.gate.confirm_backend_idle(verified_no_outstanding_goals=True)
+        self.gate.resume(pose_cell=0,resources=Resources(.8))
+
+    def test_invalid_async_fault_reason_rejected(self):
+        goal=self.send()
+        for reason in ('', 'LOCALIZATION_LOST', 'unscoped', None):
+            with self.subTest(reason=reason),self.assertRaises(JobError):
+                self.gate.on_transport_fault(token=goal.token,reason=reason)
+        self.assertEqual(self.jobs.status()['state'],'running')
+        self.assertEqual(self.port.cancels,[])
+
+    def test_timeout_after_async_fault_remains_disarmed(self):
+        goal=self.send()
+        self.gate.on_transport_fault(token=goal.token,reason='NAV2_RESULT_UNCERTAIN')
+        self.now[0]=102.1
+        self.assertTrue(self.gate.check_timeout())
+        self.gate.on_goal_result(token=goal.token,outcome='canceled')
+        self.assertFalse(self.gate.can_dispatch())
+        self.assertEqual(self.jobs.status()['state'],'paused_recovery')
+
+
 if __name__ == '__main__':
     unittest.main()

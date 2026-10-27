@@ -225,6 +225,21 @@ class NavigationInterlock:
             self._hold('NAV2_GOAL_' + outcome.upper())
         return True
 
+    def on_transport_fault(self, *, token: str, reason: str) -> bool:
+        """Latch an asynchronous Nav2/transport error without rearming.
+
+        Returns False for an old token. The ROS2 adapter must independently
+        escalate to the emergency stop path if actual motion is uncertain.
+        """
+        if not isinstance(reason, str) or not reason.startswith('NAV2_'):
+            raise JobError('invalid transport fault')
+        if self._active is None or token != self._active.token:
+            return False
+        self._hold(reason)
+        if not self._cancel_pending:
+            self._request_cancel()
+        return True
+
     def check_timeout(self) -> bool:
         """Latches a fault when a cancellation has no terminal result in time."""
         if not self._cancel_pending or self._cancel_deadline is None:

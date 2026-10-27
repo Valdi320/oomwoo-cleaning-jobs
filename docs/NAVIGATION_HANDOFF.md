@@ -1,7 +1,9 @@
 # Nav2 action handoff interlock (Phase 1, headless)
 
-This is a tested ROS2/Nav2-facing state-machine and protocol contract, NOT
-a ready-to-run ROS2 node and not a safety-rated robot controller.
+This is a tested ROS2/Nav2-facing state-machine and protocol contract. A
+real ActionClient transport is now available in ros_nav2.py and has been
+exercised against real Nav2 in Gazebo. It is NOT a persistent ROS2 cleaning-job
+node and is not a safety-rated robot controller.
 It complements the Phase-0 cleaning-jobs core.
 Source: src/oomwoo_cleaning_jobs/nav_interlock.py.
 Tests: tests/test_nav_interlock.py.
@@ -61,7 +63,7 @@ interlock refuses to arm until backend idle is independently verified.
 If the adapter cannot prove all old goals are terminal, stay disarmed.
 The state machine cannot magically cancel an unknown old goal.
 
-## Typical adapter flow (pseudocode, not executable ROS2 node)
+## Typical adapter flow (pseudocode; standalone ROS2/Gazebo harness in integration/)
 
 ~~~python
 jobs = CleaningJobs(grid, checkpoint)
@@ -97,5 +99,7 @@ including uncertain goal send, lost cancel, cancellation timeout, stale callback
 invalid coverage evidence, late success after pause, restart, independent idle
 confirmation, concurrent write, and no double dispatch.
 
-No Nav2, ROS2, Gazebo or hardware was operated. Real integration tests remain
-mandatory before connecting the robot's motor or navigation commands.
+Real ROS2 ActionClient integration and headless OOMWOO Nav2/Gazebo cancel
+regressions have now run successfully; see ROS2_GAZEBO_VALIDATION.md.
+Real physical hardware, MCU stop paths, real floor-cleaning evidence, and
+production ROS2 job/action orchestration remain untested.
