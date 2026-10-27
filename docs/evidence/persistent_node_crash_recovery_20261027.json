@@ -1,0 +1,35 @@
+{
+  "date_utc": "2026-10-27T05:08:10.535749+00:00",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "isolation": "network=none, ROS_DOMAIN_ID 184; synthetic BatteryState only",
+  "limitations": [
+    "not a physical-robot safe stop or MCU watchdog",
+    "one known active Nav2 goal in exclusive simulator, no competing action clients",
+    "no real dirty-floor or swath validation in this crash case",
+    "cannot recover unknown or never-dispatched UUID without a separately verified backend idle contract"
+  ],
+  "source": "official OOMWOO Jazzy/Nav2 Gazebo test_room",
+  "test": "two real persistent ROS2 cleaning node processes, one abruptly killed",
+  "verified_steps": {
+    "battery_input": "SYNTHETIC",
+    "checkpoint_restored_paused": true,
+    "crashed_child_only": true,
+    "early_resume_rejected": true,
+    "final_terminal": "canceled",
+    "first_process_pid": 394,
+    "fresh_goal_count": 1,
+    "journal_state_before_crash": "accepted",
+    "motion_before_crash_m": 0.0635,
+    "new_uuid": "6e7be346447f436a9db0882b08d0b645",
+    "no_false_cleaning_credit": true,
+    "normal_resume_from_checkpoint": true,
+    "ok": true,
+    "old_uuid": "6803e8780b2c4bfdb175faee2045c428",
+    "old_uuid_durable_terminal": true,
+    "old_uuid_not_reused": true,
+    "orphan_cancel_and_quiet_verified": true,
+    "replacement_pid": 412,
+    "resume_count": 1,
+    "scope": "actual OOMWOO Gazebo + real Nav2 + two separate ROS2 job node processes"
+  }
+}

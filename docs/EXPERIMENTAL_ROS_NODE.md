@@ -34,6 +34,7 @@ Example commands (JSON strings are passed in the std_msgs String data field):
 {"op":"resume","request_id":"d"}
 {"op":"cancel","request_id":"e"}
 {"op":"status","request_id":"f"}
+{"op":"reconcile_orphan","isolated_disposable_sim":true,"request_id":"g"}
 ~~~
 
 The status message contains last_command including request_id, job state,
@@ -78,9 +79,18 @@ implemented by this node.
 - **Cancellation:** do not send another goal until Nav2 returns a terminal
   action outcome. Uncertain send/cancel states latch a fault; the node
   cannot claim a physical stop merely from a cancel response.
-- **Durability:** checkpoint writes are atomic; no second job can reuse the
-  same checkpoint. After an interrupted process, automatic rearming is
-  forbidden until an independent old-goal reconciliation exists.
+- **Durable Nav2 UUID recovery:** the experimental node now writes
+  a preallocated ROS2 goal UUID atomically **before** send_goal_async.
+  A restarted node attaches the checkpoint DISARMED. The private
+  reconcile_orphan command is permitted only in simulation_lab and
+  requires active-old-UUID status, exact UUID ROS2 CancelGoal response,
+  terminal CANCELED, at least 1.2 simulated seconds of quiet fresh
+  odometry and no other active goals. Only after those checks, fresh
+  map/TF/Nav2 lifecycle and healthy resources does explicit resume work.
+  See [DURABLE_NAV2_CRASH_RECOVERY.md](DURABLE_NAV2_CRASH_RECOVERY.md).
+- **Durability:** checkpoint and goal journal writes are atomic; no
+  second job can reuse a live checkpoint or an unresolved UUID.
+  The node NEVER automatically resumes after process restart.
 - **Cleaning:** NO cells are credited for Nav2 arrival. A real trusted
   clean-and-map coverage producer is not integrated yet.
 
@@ -141,6 +151,24 @@ It contains the exact image digest, 3 real Nav2 accepted actions, manual pause,
 automatic synthetic low-battery pause and final cancel. All returned terminal
 canceled and no unverified floor was counted.
 
+## Actual two-node crash-recovery validation
+
+[evidence/persistent_node_crash_recovery_20261027.json](evidence/persistent_node_crash_recovery_20261027.json)
+records a cold Gazebo/Nav2 test in which one real long-running
+controller was killed after a journaled NavigateToPose goal was accepted
+and the OOMWOO virtual robot had started moving.
+
+A NEW real ROS2 node loaded the same checkpoint as paused_recovery,
+denied premature resume, reconciled the exact old goal over ROS2,
+observed stationary simulated odometry and then permitted a deliberate
+resume and a second real Nav2 action. It again received terminal
+CANCELED and preserved the job checkpoint. Battery data were synthetic.
+
+The initial setup and two-process UUID test are explained in
+[DURABLE_NAV2_CRASH_RECOVERY.md](DURABLE_NAV2_CRASH_RECOVERY.md).
+This is not a physical robot safety certificate and does not address
+other autonomous clients sharing Nav2.
+
 ## Still needed to complete the OOMWOO cleaning-jobs RFC
 
 - Maintainer-approved **public ROS2 job action/service** and persistent
@@ -150,8 +178,10 @@ canceled and no unverified floor was counted.
 - Persisted automatic room segmentation and actual Nav2 KeepoutFilter masks.
 - Dock-cycle recharge/mop/bin service orchestration and multi-room regressions
   that prove end-to-end resumed coverage without prohibited-area entry.
-- After a controller crash, robust Nav2 active-goal reconciliation before
-  rearming, then full MCU/physical robot validation.
+- Extend the tested exact-UUID recovery to unknown/never-accepted
+  action cases and multi-client robot arbitration; such cases currently
+  remain fail-closed, requiring a separately proven backend idle state.
+  Full MCU/physical robot validation still outstanding.
 
 The new node is a substantial integration milestone, not a claim that
 the module or robot is completed.

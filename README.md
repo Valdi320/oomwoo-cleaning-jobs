@@ -17,8 +17,8 @@ An experimental ROS2 cleaning-job core with durable checkpoints, real Nav2 actio
 - **Prohibited zones now tested with REAL Nav2:** saved-map polygons and walls produce a 0/100 mask. An isolated Nav2 Jazzy variant activates KeepoutFilter in **both global and local costmaps**, computes a detour, and steers OOMWOO around a forbidden rectangle in Gazebo. The private cleaning-jobs node optionally requires verified live filters before accepting a goal. [Measurements and exact reproduction](docs/REAL_NAV2_KEEPOUT_GAZEBO.md). This has **not** been merged into OOMWOO's default navigation launch.
 - **Phase-1 Nav2-facing interlock:** only one outstanding navigation goal; on pause, recovery or low battery request cancellation and wait for a terminal result before allowing another goal.
 - An uncertain send/cancel or timeout **latches a fault**, requiring external Nav2 idle verification; late results and stale coverage acknowledgements cannot silently rearm the robot.
-- **Manual/externally verified rearm after restart** (goal handles may be lost even while Nav2 continues moving). See [navigation handoff contract](docs/NAVIGATION_HANDOFF.md).
-- **198 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
+- **Real process-crash recovery now tested in Gazebo:** a durable Nav2 goal-UUID journal survives the loss of a controller. A new long-running ROS2 controller remains DISARMED, performs UUID-specific cancellation, requires the terminal canceled status and advancing quiet simulator odometry, restores the checkpoint and allows an **explicit** restart. [Full two-process trial and failure limits](docs/DURABLE_NAV2_CRASH_RECOVERY.md). This does NOT certify real hardware or cover unknown UUIDs.
+- **233 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
 
 ### Repeatable measured spot completion
 
@@ -37,7 +37,7 @@ establish multi-room or whole-floor performance.
 - Room partitioning now proposes deterministic areas from saved maps and persists human labels, but **does not guarantee semantic room recognition** or provide an editing UI. The ROS2 controller still runs small spot jobs only. Occupancy `0` is safe in this conservative model; other and unknown values are blocked.
 - Coverage can be acknowledged from OOMWOO's external ground-truth simulated cleaning-disk meter, but this is **not physical dirt removal**. Hardware requires a separately validated estimator and actuator-state gating.
 - The experimental ROS2 node subscribes to real /battery_state and fresh TF in its private test. The official Gazebo test-room has no functional battery publisher, so the harness explicitly injects **synthetic BatteryState telemetry** to test a battery-low pause/recharge. Actual dock services remain unimplemented.
-- One job/checkpoint and one writer per instance; new job needs a fresh checkpoint. Cross-process coordination should happen at the ROS adapter layer.
+- One job/checkpoint and one writer per instance; new job needs a fresh checkpoint. A UUID journal persists the last Nav2 action before sending it. If the controller dies, no new goal can be sent until that UUID is reconciled. A multi-client robot still needs independent Nav2 action arbitration.
 
 ## Run, verify
 

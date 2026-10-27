@@ -36,6 +36,8 @@ from .ros_nav2 import AsyncNav2Transport, pose_for_cell
 from .sim_coverage import SimCoverageBridge, CoverageError
 from .sweep_target import select_sweep_route, NoSafeSweep
 from .nav_keepout_admission import VerifiedGlobalKeepout, KeepoutNotEnforced
+from .goal_journal import GoalJournal
+from .ros_restart import AsyncOrphanRecovery
 
 
 _ACTIVE = {GoalStatus.STATUS_ACCEPTED, GoalStatus.STATUS_EXECUTING,
@@ -61,6 +63,10 @@ class ExperimentalCleaningNode(Node):
         self._require_nav2_lifecycle = (
             self.get_parameter("require_nav2_lifecycle").value is True)
         self._checkpoint = Path(self.get_parameter("checkpoint_path").value)
+        # A crash must not lose the exact ROS2 goal UUID. Each new action is
+        # journaled before send_goal_async so old goals can be reconciled.
+        self._nav2_goal_journal=GoalJournal(
+            Path(str(self._checkpoint)+".nav2-goal.json"))
         self._clearance = int(self.get_parameter("clearance_cells").value)
         self._max_cost = int(self.get_parameter("costmap_max_cost").value)
         self._coverage_mode = str(self.get_parameter("coverage_mode").value)
@@ -100,6 +106,8 @@ class ExperimentalCleaningNode(Node):
         self._nav_query_started = None
         self._last_command = {"op": "startup", "ok": True}
         self._last_terminal: str | None = None
+        self._recovery: AsyncOrphanRecovery | None = None
+        self._recovered_orphan_proof = None
         self._sent_count = 0
         self._accepted_count = 0
         self._meter: SimCoverageBridge | None = None
@@ -213,6 +221,18 @@ class ExperimentalCleaningNode(Node):
                 baseline_grid = Grid(raster.width, raster.height, raster.data,
                      resolution_m=raster.resolution,clearance_cells=self._clearance)
                 self._meter = SimCoverageBridge(raster, baseline_grid)
+            if self._checkpoint.exists() and self._job is None:
+                # Reopening a persistent job NEVER rearms Nav2 automatically.
+                # An orphaned UUID must pass actual asynchronous ROS2
+                # CancelGoal + server-status + odometry reconciliation first.
+                try:
+                    recovery_grid=Grid(raster.width,raster.height,raster.data,
+                          resolution_m=raster.resolution,clearance_cells=self._clearance)
+                    restored=CleaningJobs(recovery_grid,self._checkpoint)
+                    self._attach_job(restored)
+                except Exception as exc:
+                    self._freeze("CHECKPOINT_RELOAD_REJECTED")
+                    self.get_logger().error("failed to restore persisted job: "+str(exc))
         except (AdmissionError, ValueError) as exc:
             self._freeze("MAP_INVALID")
             self.get_logger().error(str(exc))
@@ -474,10 +494,26 @@ class ExperimentalCleaningNode(Node):
         self._cleaned_at_dispatch=self._job.status()["cleaned_cells"]
         return goal.token
 
+    def _attach_job(self, job: CleaningJobs):
+        """Attach a job and journaled real Nav2 ActionClient, DISARMED."""
+        if self._job is not None or self._port is not None or self._interlock is not None:
+            raise JobError("job already attached")
+        port=AsyncNav2Transport.from_ros2(self,self._build_nav_goal,
+             on_terminal=self._on_terminal,on_fault=self._on_fault,
+             on_accepted=self._on_accepted,journal=self._nav2_goal_journal)
+        self._job=job
+        self._port=port
+        self._interlock=NavigationInterlock(job,port,
+             coverage_source=("oomwoo_sim_ground_truth_meter"
+                              if self._coverage_mode=="sim_ground_truth"
+                              else "unconfigured_no_credit"),
+             cancel_timeout_s=12)
+
     def _handle(self, request: dict) -> dict:
         op=request.get("op")
         if not isinstance(op,str) or op not in (
-            "arm_fresh_sim", "start", "pause", "resume", "cancel", "status"):
+            "arm_fresh_sim", "start", "pause", "resume", "cancel", "status",
+            "reconcile_orphan"):
             raise JobError("unknown command")
         if op=="status":
             return {"ok":True, "op":op}
@@ -491,6 +527,23 @@ class ExperimentalCleaningNode(Node):
                 raise JobError("Nav2 already executing another goal")
             self._fresh_sim_explicitly_armed=True
             return {"ok":True, "op":op, "lab_only":True}
+        if op=="reconcile_orphan":
+            if not self._sim_lab or request.get("isolated_disposable_sim") is not True:
+                raise JobError("reconcile permitted only in exclusive disposable sim")
+            if (self._job is None or self._interlock is None
+                or self._job.status()["state"]!="paused_recovery"):
+                raise JobError("no persisted paused-recovery job")
+            if self._recovery is not None:
+                raise JobError("recovery already started")
+            uuid=self._nav2_goal_journal.orphaned_uuid()
+            if uuid is None:
+                raise JobError("no unresolved durable Nav2 UUID")
+            if self._frozen is not None:
+                raise JobError("controller frozen; no recovery")
+            if not self._nav2_ready():
+                raise JobError("Nav2 lifecycle not active")
+            self._recovery=AsyncOrphanRecovery(self,uuid,max_wall_s=30.)
+            return {"ok":True,"op":op,"phase":"observing_old_uuid"}
         if op=="start":
             if self._job is not None or self._checkpoint.exists():
                 raise JobError("one job per checkpoint: restart requires separate reconciliation")
@@ -520,16 +573,8 @@ class ExperimentalCleaningNode(Node):
             job=CleaningJobs(grid,self._checkpoint)
             job.start(job_id,mode="spot",start_cell=pose,spot=spot,
                       radius_m=radius_m,resources=battery)
-            self._job=job
-            port=AsyncNav2Transport.from_ros2(self, self._build_nav_goal,
-                 on_terminal=self._on_terminal, on_fault=self._on_fault,
-                 on_accepted=self._on_accepted)
-            self._port=port
-            self._interlock=NavigationInterlock(job,port,
-                coverage_source=("oomwoo_sim_ground_truth_meter"
-                                 if self._coverage_mode=="sim_ground_truth"
-                                 else "unconfigured_no_credit"),
-                cancel_timeout_s=12)
+            self._attach_job(job)
+            port=self._port
             if not port.client.server_is_ready():
                 job.suspend_recovery("NAV2_SERVER_UNAVAILABLE")
                 raise JobError("Nav2 not ready; checkpoint left safely paused")
@@ -585,6 +630,39 @@ class ExperimentalCleaningNode(Node):
     def _tick(self):
         if self._interlock is not None:
             self._interlock.check_timeout()
+        if self._recovery is not None and self._recovery.phase not in ("verified","failed"):
+            try:
+                if self._recovery.step():
+                    if (not self._nav2_ready() or
+                        self._map is None or self._costmap is None or
+                        self._costmap_received is None or
+                        self._now()-self._costmap_received>6 or
+                        self._battery is None or self._battery_received is None or
+                        self._now()-self._battery_received>15 or
+                        self._battery.needed() is not None):
+                        raise JobError("recovery confirmed but resources/Nav2 stale")
+                    if self._require_keepout:
+                        self._keepout_gate()
+                    if self._coverage_mode=="sim_ground_truth":
+                        if self._meter is None or not self._meter.ready:
+                            raise JobError("meter not ready after restart")
+                    self._fresh_pose()  # Must also be fresh AFTER quiet proof.
+                    if self._job is None or self._interlock is None:
+                        raise JobError("job missing in recovery")
+                    if self._job.grid.fingerprint()!=self._nav2_goal_journal.read()["map_digest"]:
+                        raise JobError("journal map does not match restored checkpoint")
+                    self._nav2_goal_journal.mark_reconciled_canceled(
+                        self._recovery.witness)
+                    self._interlock.confirm_backend_idle(
+                        verified_no_outstanding_goals=True)
+                    self._fresh_sim_explicitly_armed=True
+                    self._recovered_orphan_proof=self._recovery.result()
+                    self.get_logger().info("known orphan canceled and stationary; manual resume now allowed")
+            except Exception as exc:
+                self._frozen="NAV2_ORPHAN_RECONCILE_FAILED"
+                self.get_logger().error("recovery refused: "+str(exc))
+        if self._recovery is not None and self._recovery.phase=="failed":
+            self._frozen="NAV2_ORPHAN_RECONCILE_FAILED"
         if self._job is not None and self._job.status()["state"]=="running":
             if not self._nav2_ready():
                 self._freeze("NAV2_LIFECYCLE_NOT_ACTIVE")
@@ -650,6 +728,10 @@ class ExperimentalCleaningNode(Node):
               "battery_fresh":self._battery_received is not None
                   and self._now()-self._battery_received<=15,
               "sent_goals":self._sent_count,"accepted_goals":self._accepted_count,
+              "unresolved_nav2_uuid":self._nav2_goal_journal.orphaned_uuid(),
+              "recovery_phase":self._recovery.phase if self._recovery is not None else None,
+              "recovery_error":self._recovery.error if self._recovery is not None else None,
+              "recovered_orphan_verified":self._recovered_orphan_proof is not None,
               "last_terminal":self._last_terminal,
               "coverage_mode":self._coverage_mode,
               "coverage_ready":self._meter is not None and self._meter.ready
@@ -710,6 +792,8 @@ def main():
                 node.get_logger().error("shutdown with unconfirmed Nav2 cancel: STOP NOT VERIFIED")
         finally:
             executor.shutdown()
+            if node._recovery is not None:
+                node._recovery.destroy()
             node.destroy_node()
             rclpy.shutdown()
 

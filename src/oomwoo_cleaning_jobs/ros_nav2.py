@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable
+from uuid import uuid4
+
+from .goal_journal import GoalJournal,GoalJournalError
 
 from .nav_interlock import Goal
 
@@ -42,6 +45,7 @@ class AsyncNav2Transport:
         on_terminal: Callable[[str, str], None],
         on_fault: Callable[[str, str], None],
         on_accepted: Callable[[str], None] | None = None,
+        journal: GoalJournal | None = None,
     ):
         if not callable(goal_builder) or not callable(on_terminal) or not callable(on_fault):
             raise ValueError("goal_builder, on_terminal and on_fault required")
@@ -50,6 +54,8 @@ class AsyncNav2Transport:
         self.on_terminal = on_terminal
         self.on_fault = on_fault
         self.on_accepted = on_accepted
+        self.journal = journal
+        self._journal_uuids: dict[str,str] = {}
         self._pending: dict[str, _Pending] = {}
 
     @classmethod
@@ -58,6 +64,7 @@ class AsyncNav2Transport:
         on_terminal: Callable[[str, str], None],
         on_fault: Callable[[str, str], None],
         on_accepted: Callable[[str], None] | None = None,
+        journal: GoalJournal | None = None,
         action_name: str = "/navigate_to_pose",
     ) -> "AsyncNav2Transport":
         """Construct actual ROS2 Jazzy NavigateToPose ActionClient."""
@@ -67,6 +74,7 @@ class AsyncNav2Transport:
             ActionClient(node, NavigateToPose, action_name),
             goal_builder, on_terminal=on_terminal, on_fault=on_fault,
             on_accepted=on_accepted,
+            journal=journal,
         )
 
     def wait_for_server(self, timeout_sec: float = 10.0) -> bool:
@@ -76,10 +84,26 @@ class AsyncNav2Transport:
         if goal.token in self._pending:
             raise ValueError("duplicate goal token")
         request = self.goal_builder(goal)
+        # Pre-allocate the ROS2 UUID. Journal MUST be fsynced *before*
+        # send_goal_async: the process can crash after writing on the socket
+        # but before any action acceptance callback.
+        uuid_msg = None
+        if self.journal is not None:
+            from unique_identifier_msgs.msg import UUID
+            ident=uuid4().bytes.hex()
+            self.journal.begin(
+                uuid_hex=ident,token=goal.token,
+                job_id=goal.job_id,map_digest=goal.map_digest,
+                target_cell=goal.target_cell)
+            uuid_msg=UUID(uuid=list(bytes.fromhex(ident)))
+            self._journal_uuids[goal.token]=ident
         pending = _Pending(goal.token, None)
         self._pending[goal.token] = pending
         try:
-            future = self.client.send_goal_async(request)
+            if uuid_msg is None:
+                future = self.client.send_goal_async(request)
+            else:
+                future = self.client.send_goal_async(request,goal_uuid=uuid_msg)
             pending.send_future = future
             future.add_done_callback(lambda done: self._accepted(goal.token, done))
         except Exception:
@@ -111,6 +135,17 @@ class AsyncNav2Transport:
             self._terminal(token, "rejected")
             return
         p.handle = handle
+        if self.journal is not None:
+            try:
+                given=bytes(handle.goal_id.uuid).hex()
+                expected=self._journal_uuids.get(token)
+                if given != expected:
+                    self.on_fault(token,"NAV2_UUID_MISMATCH")
+                    return
+                self.journal.accepted(token=token,uuid_hex=given)
+            except Exception:
+                self.on_fault(token,"NAV2_JOURNAL_ACCEPT_UNCERTAIN")
+                return
         if self.on_accepted is not None:
             self.on_accepted(token)
         try:
@@ -164,8 +199,18 @@ class AsyncNav2Transport:
         p = self._pending.get(token)
         if p is None or p.terminal:
             return
+        if self.journal is not None:
+            try:
+                self.journal.terminal(token=token,uuid_hex=self._journal_uuids[token],
+                                      outcome=outcome)
+            except (GoalJournalError,KeyError,OSError):
+                # A terminal ROS2 callback without durable storage cannot
+                # safely release the old UUID or permit future navigation.
+                self.on_fault(token,"NAV2_JOURNAL_TERMINAL_UNCERTAIN")
+                return
         p.terminal = True
         del self._pending[token]
+        self._journal_uuids.pop(token,None)
         self.on_terminal(token, outcome)
 
     def outstanding_tokens(self) -> tuple[str, ...]:
