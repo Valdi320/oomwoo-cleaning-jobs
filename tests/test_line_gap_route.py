@@ -26,6 +26,26 @@ class LineThroughTests(unittest.TestCase):
              admit=lambda path:True,previously_tried=frozenset((route[-1],)))
         self.assertNotEqual(alternative[-1],route[-1])
 
+    def test_admitted_route_itself_reaches_missing_neighborhood(self):
+        path=select_line_through_route(self.grid,self.pose,self.missing,
+                                      admit=lambda candidate:True)
+        w=self.grid.width
+        best=min(abs(i%w-j%w)+abs(i//w-j//w)
+                 for i in path for j in self.missing)
+        self.assertLessEqual(best,3)
+
+    def test_admission_rejects_every_route_far_from_missing(self):
+        # A synthetic costmap may admit only routes whose actual
+        # path stays far from the dirty patch, even if their straight
+        # geometric approach would cross it. Never send those goals.
+        width=self.grid.width
+        def far_only(route):
+            return all(abs(i%width-j%width)+abs(i//width-j//width)>3
+                       for i in route for j in self.missing)
+        with self.assertRaises(NoSafeSweep):
+            select_line_through_route(self.grid,self.pose,self.missing,
+                                      admit=far_only)
+
     def test_blocked_costmap_never_forces_a_waypoint(self):
         with self.assertRaises(NoSafeSweep):
             select_line_through_route(self.grid,self.pose,self.missing,

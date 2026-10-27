@@ -2,7 +2,7 @@
 
 [OOMWOO](https://github.com/makerspet/oomwoo) · [cleaning-jobs RFC](https://github.com/makerspet/oomwoo/tree/main/contributions/cleaning-jobs) · [software interface contract](https://github.com/makerspet/oomwoo/blob/main/docs/SOFTWARE_INTERFACES.md)
 
-An experimental ROS2 cleaning-job core with durable checkpoints, real Nav2 actions, simulator-measured floor coverage and bounded automatic follow-up goals. Start, pause, resume and low-battery recovery have been tested with OOMWOO in Gazebo. This is **not a public canonical API, complete multi-room cleaner or physical safety controller**.
+An experimental ROS2 cleaning-job core with durable checkpoints, real Nav2 actions, simulator-measured floor coverage and bounded automatic follow-up goals. Start, pause, resume and low-battery recovery have been tested with OOMWOO in Gazebo. This is **not yet the canonical OOMWOO API, a field-ready apartment cleaner or a physical safety controller**.
 
 ## What works today
 
@@ -19,7 +19,7 @@ An experimental ROS2 cleaning-job core with durable checkpoints, real Nav2 actio
 - **Phase-1 Nav2-facing interlock:** only one outstanding navigation goal; on pause, recovery or low battery request cancellation and wait for a terminal result before allowing another goal.
 - An uncertain send/cancel or timeout **latches a fault**, requiring external Nav2 idle verification; late results and stale coverage acknowledgements cannot silently rearm the robot.
 - **Real process-crash recovery now tested in Gazebo:** a durable Nav2 goal-UUID journal survives the loss of a controller. A new long-running ROS2 controller remains DISARMED, performs UUID-specific cancellation, requires the terminal canceled status and advancing quiet simulator odometry, restores the checkpoint and allows an **explicit** restart. [Full two-process trial and failure limits](docs/DURABLE_NAV2_CRASH_RECOVERY.md). This does NOT certify real hardware or cover unknown UUIDs.
-- **383 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
+- **437 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
 
 ### Repeatable measured spot completion
 
@@ -30,6 +30,37 @@ Nav2 goals and a confirmed terminal cancellation in every run.
 and [root-cause analysis](docs/SMALL_SPOT_MEASURED_COMPLETION.md)
 document the route overshoot and delayed-meter fix. This does **not**
 establish multi-room or whole-floor performance.
+
+### Newly completed TWO-ZONE real Gazebo validation
+
+A single long-running private ROS2 cleaning controller completed TWO
+separately labelled virtual scopes in the real OOMWOO Gazebo test_room:
+**80/80 + 40/40 = 120/120 externally measured cells**. It accepted 18
+real Nav2 action goals, proposed 12 bounded repair routes, and ended
+both durable CleaningJobs and SweepCampaign ledgers COMPLETED with zero
+pending write-ahead events and zero active Nav2 goals. The upstream
+OOMWOO coverage planner was imported for geometry only, without
+running its competing motion executor.
+
+These were **two virtual zones on ONE OPEN floor**, not physically
+partitioned rooms with doors; simulator ground truth is not
+physical dirt-removal proof. [Full cross-checked machine evidence and
+reproducibility](docs/REAL_TWO_ZONES_AND_DOCK_RELAY_20261027.md).
+
+### Exact Nav2 UUID-bound docking handoff (private lab)
+
+The new lab-only ROS2 velocity relay has one output and two named
+Nav2/dock-drive input channels. It defaults to STOP. An exact persisted
+Nav2 goal UUID must be observed ACTIVE during the CURRENT command lease
+and then terminal before dock handoff; old latched terminal statuses
+cannot authorize a new run. Battery faults, unknown active Nav2 goals
+and stale owner commands revoke movement.
+
+The ROS2 middleware test passed with synthetic action/odometry/battery
+messages; the output is intentionally NOT connected to robot motors.
+The unmodified upstream OOMWOO 2D docking harness separately passed
+7/7 kinematic scenarios; this is NOT physical charging or docking
+verification. See [separated evidence](docs/evidence/ros2_exact_uuid_dock_relay_20261027.json).
 
 ### Ten integrated engineering increments (new)
 
@@ -81,8 +112,8 @@ The stock OOMWOO navigation launch remains unchanged.
 
 - **No physical motor or MCU safety validation; no finalized public ROS2 job action/service API yet.** The long-running controller uses private simulation-only JSON topics, not official OOMWOO interfaces. The tested Gazebo cancel cannot certify stopping on a physical robot. Cliff/bumper/wheel-drop/current safety must remain independently STM32-owned.
 - The chosen paths represent *grid cell centres* and do not prove a robot with finite footprint, wheel slip, localization noise, dynamic obstacles or a specific nozzle cleaning width can traverse or clean them. Real execution must use Nav2 costmaps with correctly inflated keepout, robust localization, collision checks, recovery and progress feedback.
-- Room partitioning now proposes deterministic areas from saved maps and persists human labels, but **does not guarantee semantic room recognition** or provide an editing UI. The ROS2 controller still runs small spot jobs only. Occupancy `0` is safe in this conservative model; other and unknown values are blocked.
-- The existing upstream full-room plan has been validated only through a **bounded standalone action/coverage trial**. Its full 409-waypoint room executor is NOT integrated into the long-running ROS2 job node, and several upstream waypoints fail our strict clearance policy.
+- Room partitioning now proposes deterministic areas from saved maps and persists human labels, but **does not guarantee semantic room recognition** or provide an editing UI. The private experimental ROS2 controller now handles selected rooms in opted-in simulation, but the stock OOMWOO runtime does not yet run this integration. Occupancy `0` is safe in this conservative model; other and unknown values are blocked.
+- The existing upstream full-room plan has been validated only through a **bounded standalone action/coverage trial**. Selected virtual-room scopes now reuse the original waypoint geometry inside our long-running experimental ROS2 controller; the stock OOMWOO executor remains unchanged and some upstream waypoints still fail our strict clearance policy.
 - Coverage can be acknowledged from OOMWOO's external ground-truth simulated cleaning-disk meter, but this is **not physical dirt removal**. Hardware requires a separately validated estimator and actuator-state gating.
 - OOMWOO's official Gazebo test-room lacks a working battery or station service publisher; typed/private ROS2 tests inject **synthetic BatteryState**. Recharge, bin-empty and mop-wash contracts are tested headlessly and in a real Nav2-run pause but DO NOT operate dock hardware.
 - One job/checkpoint and one writer per instance; new job needs a fresh checkpoint. A UUID journal persists the last Nav2 action before sending it. If the controller dies, no new goal can be sent until that UUID is reconciled. A multi-client robot still needs independent Nav2 action arbitration.

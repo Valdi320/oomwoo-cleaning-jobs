@@ -13,6 +13,22 @@ Actual post-run inspection in the isolated official OOMWOO test_room:
 
 Machine-readable checkpoint snapshot: docs/evidence/real_room_partial_20261027.json (historical filename; content states completed). No real vacuum/dirt removal or MCU safety was tested.
 
+## Later: one persistent two-zone REAL Gazebo completion
+
+After this initial single-zone 171/171 test, the same persistent
+controller completed TWO separately labelled operator-defined
+virtual areas in one job: **80/80 + 40/40 = 120/120** cells from the
+original OOMWOO external simulated ground-truth meter. There were
+18 accepted real Nav2 goals, 12 recorded gap repairs and both
+CleaningJobs/SweepCampaign durable ledgers reached completed with
+zero pending WAL events. The last Nav2 goal ended terminal canceled
+after the externally measured scope completed.
+
+Evidence: [two-zone report](REAL_TWO_ZONES_AND_DOCK_RELAY_20261027.md).
+
+These remain two digital regions on an open simulated floor, NOT
+physically separated real rooms or proof of real dirt removal.
+
 ## Real existing docking software and limitations
 
 The upstream oomwoo_dock package contains a dock detector estimating dock mouth geometry and a dock-drive node that controls cmd_vel and publishes a latched docked Bool. We have tested conservative geometry and exclusive cmd_vel source-handoff state machines in pure Python.

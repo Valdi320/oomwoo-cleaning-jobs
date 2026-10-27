@@ -20,10 +20,11 @@ from rclpy.executors import SingleThreadedExecutor
 from gazebo_measured_coverage_probe import MeasuredOperator
 
 
-ROOM_PATH="/tmp/oomwoo_room_lab_20261027.json"
+ROOM_PATH=os.environ.get("OOMWOO_ROOM_PLAN","/tmp/oomwoo_room_lab_20261027.json")
 PLAN_PATH="/workspace/valdi-cleaning-jobs/.local-sim/oomwoo_upstream_waypoints.json"
-CHECKPOINT="/tmp/valdi_room_autorun_20261027.json"
-LOG=Path("/tmp/valdi_room_autorun_node.log")
+CHECKPOINT=os.environ.get("OOMWOO_ROOM_CHECKPOINT","/tmp/valdi_room_autorun_20261027.json")
+ROOM_NAMES=tuple(os.environ.get("OOMWOO_ROOM_NAMES","Zona_simulada_A").split(","))
+LOG=Path(CHECKPOINT+".node.log")
 
 
 def run():
@@ -52,7 +53,7 @@ def run():
     rid=0
     started=False
     result={"ok":False,
-        "target":"Zona_simulada_A",
+        "target":list(ROOM_NAMES),
         "scope":"OPERATOR-DEFINED DIGITAL ROOM, physically OPEN test_room",
         "source":"real official OOMWOO Gazebo+Nav2+ground-truth meter",
         "battery":"synthetic isolated test"}
@@ -87,16 +88,29 @@ def run():
         assert result["initial_credited"]==0
         arm=cmd("arm_fresh_sim",isolated_disposable_sim=True)
         if not arm["ok"]:raise RuntimeError("fresh simulator refused arm: "+str(arm))
-        start=cmd("start",mode="rooms",rooms=["Zona_simulada_A"],
-                  job_id="room_real_one")
+        start=None
+        # TF2 may briefly report an AMCL/odom extrapolation during startup.
+        # Retry ONLY before a job exists, with a NEW request ID, and NEVER
+        # waive the controller's actual fresh-pose safety requirement.
+        for attempt in range(8):
+            start=cmd("start",mode="rooms",rooms=list(ROOM_NAMES),
+                      job_id="room_real_"+str(len(ROOM_NAMES)))
+            if start["ok"]:break
+            error=str(start.get("error",""))
+            if ("ExtrapolationException" not in error
+                or Path(CHECKPOINT).exists()
+                or Path(CHECKPOINT+".nav2-goal.json").exists()):
+                break
+            until(lambda:False,.55)
         if not start["ok"]:raise RuntimeError("room start failed: "+str(start))
         started=True
         result["requested_cells"]=start["room_scope_cells"]
         trace=[]
         last_cells=-1
         max_seconds=float(os.environ.get("OOMWOO_ROOM_BENCH_MAX_SECONDS","202"))
-        if not 60<=max_seconds<=240:raise RuntimeError("unbounded room test duration")
+        if not 60<=max_seconds<=480:raise RuntimeError("unbounded room test duration")
         end=time.monotonic()+max_seconds
+        stop_reason="wall_time_limit"
         while time.monotonic()<end:
             ex.spin_once(timeout_sec=.05)
             status=state()
@@ -107,12 +121,16 @@ def run():
                               "job_state":job.get("state"),"room_program":status.get("room_program",{}).get("state")})
                 last_cells=cells
             if status.get("frozen_reason") is not None:
+                stop_reason="controller_frozen"
                 break
             if (job.get("state")=="completed"
                 and status.get("interlock",{}).get("active_goal") is None
                 and status.get("room_program",{}).get("state")=="completed"):
+                stop_reason="all_selected_rooms_externally_verified"
                 break
-            if status.get("sent_goals",0)>60:break
+            if status.get("sent_goals",0)>60:
+                stop_reason="bounded_nav2_goals_exceeded"
+                break
         s=state()
         job=s.get("interlock",{}).get("job",{})
         room=s.get("room_program",{})
@@ -125,6 +143,8 @@ def run():
             "nav2_accepted":s.get("accepted_goals"),
             "nav2_active_after":s.get("interlock",{}).get("active_goal"),
             "room_coverage":room.get("coverage_fraction"),
+            "room_progress":room.get("room_progress"),
+            "requested_room_names":list(ROOM_NAMES),
             "pending_wal_events":room.get("pending_coverage_events"),
             "frozen_reason":s.get("frozen_reason"),
             "meter_frames":len(op.measurements),
@@ -132,7 +152,7 @@ def run():
             "nav_lifecycle_positive_age_s":s.get("nav2_lifecycle_last_positive_age_s"),
             "repair_routes_issued":room.get("repair_routes_issued"),
             "no_progress_successes":s.get("no_progress_successes"),
-            "stop_condition":"completed or bounded time/goals/fault",
+            "stop_condition":stop_reason,
             "progress_trace":trace,
             "final_command":s.get("last_command")
         })

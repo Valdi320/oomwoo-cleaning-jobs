@@ -1,0 +1,214 @@
+{
+  "durable_reconciliation": {
+    "campaign_revisions": 35,
+    "campaign_state": "completed",
+    "campaign_sweep_attempts": 3,
+    "cleaned_cells": 120,
+    "coverage_wal_pending_events": 0,
+    "coverage_wal_total_events": 20,
+    "job_state": "completed",
+    "nav2_last_uuid": "b2f1bddd48c142ccb81570eb4127e12e",
+    "nav2_last_uuid_outcome": "canceled",
+    "nav2_last_uuid_state": "terminal",
+    "same_exact_cleaned_cell_ids": true,
+    "target_cells": 120
+  },
+  "hardware_motors_or_actuators_verified": false,
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "limits": [
+    "Two operator-defined areas on the SAME open test_room map, not a multi-room building",
+    "No actual charging, dustbin emptying or mop wash was exercised in this run",
+    "No physical dirt removal or separate MCU cliff/bumper/watchdog safety was tested",
+    "A single successful benchmark is not statistical robot reliability or endurance certification",
+    "An independent producer must authenticate future physical sweep measurements"
+  ],
+  "physical_walls_between_zones": false,
+  "reality": "REAL ROS2/Nav2 + REAL OOMWOO Gazebo test_room and UNMODIFIED simulator ground-truth coverage meter",
+  "result": {
+    "battery": "synthetic isolated test",
+    "final_command": {
+      "goal_token": "2ad9002f987a4b7badd434da43d8eeb0-1",
+      "ok": true,
+      "op": "start",
+      "request_id": "room-real-2",
+      "room_scope_cells": 120
+    },
+    "frozen_reason": null,
+    "initial_credited": 0,
+    "job_credited_cells": 120,
+    "job_state": "completed",
+    "last_pose_error": null,
+    "meter_frames": 200,
+    "nav2_accepted": 18,
+    "nav2_active_after": null,
+    "nav2_goals": 18,
+    "nav_lifecycle_positive_age_s": 0.02,
+    "no_progress_successes": 0,
+    "ok": true,
+    "pending_wal_events": 0,
+    "progress_trace": [
+      {
+        "covered": 0,
+        "goals": 1,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 1,
+        "goals": 1,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 19,
+        "goals": 1,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 42,
+        "goals": 3,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 49,
+        "goals": 3,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 50,
+        "goals": 4,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 55,
+        "goals": 4,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 59,
+        "goals": 4,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 61,
+        "goals": 6,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 68,
+        "goals": 6,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 70,
+        "goals": 6,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 73,
+        "goals": 7,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 78,
+        "goals": 7,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 79,
+        "goals": 9,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 80,
+        "goals": 14,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 81,
+        "goals": 15,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 91,
+        "goals": 15,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 95,
+        "goals": 15,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 110,
+        "goals": 17,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 118,
+        "goals": 17,
+        "job_state": "running",
+        "room_program": "running"
+      },
+      {
+        "covered": 120,
+        "goals": 18,
+        "job_state": "completed",
+        "room_program": "running"
+      }
+    ],
+    "repair_routes_issued": 12,
+    "requested_cells": 120,
+    "requested_room_names": [
+      "Zona_simulada_A",
+      "Zona_simulada_B"
+    ],
+    "room_coverage": 1.0,
+    "room_eligible_cells": 120,
+    "room_progress": [
+      {
+        "credited": 80,
+        "name": "Zona_simulada_A",
+        "remaining": 0,
+        "total": 80,
+        "verified_complete": true
+      },
+      {
+        "credited": 40,
+        "name": "Zona_simulada_B",
+        "remaining": 0,
+        "total": 40,
+        "verified_complete": true
+      }
+    ],
+    "room_state": "completed",
+    "room_verified_cells": 120,
+    "scope": "OPERATOR-DEFINED DIGITAL ROOM, physically OPEN test_room",
+    "source": "real official OOMWOO Gazebo+Nav2+ground-truth meter",
+    "stop_condition": "all_selected_rooms_externally_verified",
+    "target": [
+      "Zona_simulada_A",
+      "Zona_simulada_B"
+    ]
+  },
+  "source": "one long-running ExperimentalCleaningNode owning all NavigateToPose actions",
+  "station_services_performed": false,
+  "verified_utc": "2026-10-27T16:07:55.122748+00:00"
+}

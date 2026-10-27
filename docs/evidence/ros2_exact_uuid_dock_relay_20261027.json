@@ -1,0 +1,113 @@
+{
+  "date_utc": "2026-10-27T16:17:20.340882+00:00",
+  "exact_nav2_uuid_provenance": "GoalJournal fsync + ACTIVE observed during current lease + matching terminal before docking handoff",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "limitations": [
+    "No actual Gazebo motor mux driven through the robot command topic",
+    "ROS2 topics are not authenticated; single trusted action owner is required for hardware",
+    "No real dock contact, charging current, auto empty or mop wash completion",
+    "An independent MCU safety watchdog and physical fault tests are mandatory"
+  ],
+  "oomwoo_upstream_dock_harness_note": "Independent unmodified 2D kinematic test; not part of our relay, not physical proof",
+  "original_upstream_2d_dock_harness": {
+    "bay_lateral_margin_mm": 25.5,
+    "cases": 7,
+    "reality": "UNMODIFIED OOMWOO 2D KINEMATIC ONLY",
+    "success": 7
+  },
+  "reality": "REAL ROS2 middleware, simulated Nav2 GoalStatus and dock signals, NO motor actuation",
+  "result": {
+    "charging_bin_mop_verified": false,
+    "competing_nav2_revokes_dock_lease": true,
+    "docking_mechanically_confirmed": false,
+    "empty_status_revokes_nonzero_output": true,
+    "final_owner": "stopped",
+    "low_battery_revokes_lease": true,
+    "mode": "actual ROS2 middleware, SYNTHETIC Nav2/dock/odom and no physical motors",
+    "motor_hardware_connected": false,
+    "ok": true,
+    "old_terminal_uuid_cannot_release_current_lease": true,
+    "output_messages": 168,
+    "phases": [
+      {
+        "error": "isolated disposable simulator must be explicitly selected",
+        "ok": false,
+        "op": "claim_nav",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_nav",
+        "state": "navigation"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "release_for_dock",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_dock",
+        "state": "dock_drive"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "finish_dock",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_nav",
+        "state": "navigation"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_nav",
+        "state": "navigation"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_nav",
+        "state": "navigation"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "release_for_dock",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_dock",
+        "state": "dock_drive"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "stop",
+        "state": "stopped"
+      },
+      {
+        "error": "request ID replayed with different command",
+        "ok": false,
+        "op": "claim_nav",
+        "state": "stopped"
+      }
+    ],
+    "ros2_typed_service": true,
+    "test_output_negative_dock": -0.08,
+    "test_output_positive_nav2": 0.23,
+    "unknown_nav2_active_uuid_revokes_lease": true,
+    "zero_on_each_stale_owner": true
+  },
+  "robot_actual_cmd_vel_connected": false,
+  "single_command_relay_output": "/valdi/lab_safe_cmd_vel_output"
+}

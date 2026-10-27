@@ -72,3 +72,25 @@ Hardware/MCU cliff, bumper, wheel-drop, motor safety, suction
 actuation, actual charging and real physical dirt cleaning are NOT
 tested. The 12 synthetic homes and six real Nav2 simulation goals
 are distinct tests and do not prove 100% of the real robot.
+
+
+## Subsequent REAL ROS2/Gazebo work after this ten-milestone snapshot
+
+The opt-in persistent ROS2 node now completes **TWO selected digital
+regions within one long-running job** using original OOMWOO
+CoveragePlanner geometry, actual Nav2 NavigateToPose and independently
+measured ground-truth coverage. Result: 80/80 + 40/40 verified cells,
+18 accepted Nav2 goals, matching completed durable checkpoints and
+zero pending WAL events. Earlier 117/120 and timeout runs remain
+separate historical failures. These are open-floor virtual zones,
+not walled apartment rooms or physical dust collection.
+
+The new experimental command-source relay also passed actual ROS2
+middleware tests with SYNTHETIC Nav2/dock status, odometry and battery:
+one output, exact journaled Nav2 UUID lease, terminal-bound handoff,
+unknown-goal/low-resource revocation and zero output for stale/empty
+status. Its output remains unconnected to robot motors. The unmodified
+upstream OOMWOO dock 2D harness separately passed 7/7 simulated
+geometric approaches. No electrical charging/bin/mop hardware proof.
+
+[Complete two-zone and dock-relay report](REAL_TWO_ZONES_AND_DOCK_RELAY_20261027.md).

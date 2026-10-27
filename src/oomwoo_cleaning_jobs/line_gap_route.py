@@ -85,6 +85,13 @@ def select_line_through_route(
             try:
                 route=grid.path_to_nearest(pose_cell,frozenset((candidate,)))
                 if admit(route) is not True:continue
+                # Nav2's interlock independently requires the ACTUAL
+                # admitted corridor to pass within three 4-neighbour
+                # cells of a missing target. A visually ideal straight
+                # segment is not enough: obstacle routing may detour.
+                if not any(abs(i%width-j%width)+abs(i//width-j//width)<=3
+                           for i in route for j in missing):
+                    continue
             except Exception:continue
             score=(-count,len(route),round(abs(over-overshoot_m),4),candidate)
             if bestscore is None or score<bestscore:
