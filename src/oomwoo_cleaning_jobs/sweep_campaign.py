@@ -280,7 +280,15 @@ class SweepCampaign:
         if (self._state["active_token"]!=token or
             outcome not in ("succeeded","canceled","aborted","rejected")):
             raise SweepStateError("unknown/stale/Nav2 nonterminal result")
-        if outcome!="succeeded" and self._state["state"]=="running":
+        # When an EXTERNAL coverage meter has ALREADY proved every
+        # required cell, NavigationInterlock intentionally cancels the
+        # still-moving Nav2 goal. A terminal CANCELED in that precise case
+        # means safe completion, not an interrupted unfinished room.
+        if (self._state["state"]=="running"
+            and len(self._state["covered"])==len(self.scope)):
+            self._transition(state="completed",reason=None,
+                             active_index=None,active_token=None)
+        elif outcome!="succeeded" and self._state["state"]=="running":
             self._transition(state="paused_recovery",reason="NAV2_"+outcome.upper(),
                              active_index=None,active_token=None)
         else:

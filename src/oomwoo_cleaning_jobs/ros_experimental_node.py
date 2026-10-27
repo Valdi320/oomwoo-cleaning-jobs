@@ -39,6 +39,9 @@ from .nav_keepout_admission import VerifiedGlobalKeepout, KeepoutNotEnforced
 from .goal_journal import GoalJournal
 from .ros_restart import AsyncOrphanRecovery
 from .request_dedupe import RequestDedupe,CommandReplayError
+from .rooms import RoomPlan
+from .room_bridge import PersistentRoomBridge, imported_offline_plan,RoomBridgeError
+from .pose_time import require_fresh_amcl_pose,PoseTimeError
 
 
 _ACTIVE = {GoalStatus.STATUS_ACCEPTED, GoalStatus.STATUS_EXECUTING,
@@ -61,11 +64,22 @@ class ExperimentalCleaningNode(Node):
         self.declare_parameter("require_keepout_filter", False)
         self.declare_parameter("auto_continue", False)
         self.declare_parameter("max_no_progress_attempts", 4)
+        self.declare_parameter("room_plan_path", "")
+        self.declare_parameter("upstream_sweep_path", "")
+        self.declare_parameter("room_autorun", False)
         self._sim_lab = self.get_parameter("simulation_lab").value is True
         self._typed_api_enabled=(self.get_parameter("enable_typed_lab_api").value is True)
         if self._typed_api_enabled and not self._sim_lab:
             raise ValueError("typed lab API restricted to simulation_lab")
         self._requests=RequestDedupe(128)
+        room_text=str(self.get_parameter("room_plan_path").value)
+        source_text=str(self.get_parameter("upstream_sweep_path").value)
+        self._room_plan_path=Path(room_text) if room_text else None
+        self._source_sweep_path=Path(source_text) if source_text else None
+        self._room_autorun=(self.get_parameter("room_autorun").value is True)
+        if self._room_autorun and (not self._sim_lab or
+            self._room_plan_path is None or self._source_sweep_path is None):
+            raise ValueError("room_auto requires private simulator and two source plans")
         self._require_nav2_lifecycle = (
             self.get_parameter("require_nav2_lifecycle").value is True)
         self._checkpoint = Path(self.get_parameter("checkpoint_path").value)
@@ -86,6 +100,9 @@ class ExperimentalCleaningNode(Node):
         if self._auto_continue and self._coverage_mode != "sim_ground_truth":
             raise ValueError("auto_continue requires sim_ground_truth coverage evidence")
 
+        self._room_grid: Grid | None = None
+        self._room_bridge: PersistentRoomBridge | None = None
+        self._last_verified_meter_grid: Raster | None = None
         self._map: Raster | None = None
         self._map_hash: str | None = None
         self._costmap: Raster | None = None
@@ -93,11 +110,15 @@ class ExperimentalCleaningNode(Node):
         self._keepout_mask: Raster | None = None
         self._keepout_info: CostmapFilterInfo | None = None
         self._last_keepout_error: str | None = None
+        self._last_pose_error: str | None = None
+        self._pose_unhealthy_since: float | None = None
         self._clock_sec: float | None = None
         self._clock_received: float | None = None
         self._battery: Resources | None = None
         self._battery_received: float | None = None
         self._active_status: tuple[int, ...] | None = None
+        self._active_goal_statuses: tuple[tuple[str,int], ...] = ()
+        self._nav_action_status_received: float | None = None
         self._frozen: str | None = None
         self._fresh_sim_explicitly_armed = False
         self._ever_sent_goal = False
@@ -108,6 +129,8 @@ class ExperimentalCleaningNode(Node):
                             if self._require_nav2_lifecycle else None)
         self._nav_active = False
         self._nav_last_checked: float | None = None
+        self._nav_last_positive: float | None = None
+        self._nav_explicit_inactive = False
         self._nav_query = None
         self._nav_query_started = None
         self._last_command = {"op": "startup", "ok": True}
@@ -174,12 +197,43 @@ class ExperimentalCleaningNode(Node):
 
     def _on_status(self, m):
         self._active_status = tuple(s.status for s in m.status_list)
+        self._active_goal_statuses=tuple(
+            (bytes(s.goal_info.goal_id.uuid).hex(),int(s.status))
+            for s in m.status_list)
+        self._nav_action_status_received=self._now()
 
     def _nav2_ready(self) -> bool:
         if not self._require_nav2_lifecycle:
             return True  # Only for a test ActionServer, not genuine Nav2.
         return bool(self._nav_active and self._nav_last_checked is not None
-                    and self._now()-self._nav_last_checked < 2.5)
+                    and self._now()-self._nav_last_checked < 4.0)
+
+    def _nav2_execution_healthy(self) -> bool:
+        """In-flight Nav2 may experience bounded lifecycle service jitter.
+
+        Never dispatch a NEW goal without strict fresh _nav2_ready().
+        A genuine explicit inactive lifecycle result freezes immediately.
+        Only an unanswered/lost query gets a bounded 7s grace while an
+        ALREADY ACCEPTED goal is executing.
+        """
+        if not self._require_nav2_lifecycle:
+            return True
+        if self._nav_explicit_inactive:
+            return False
+        if (self._nav_last_positive is not None
+            and self._now()-self._nav_last_positive<7.0):
+            return True
+        # A fresh ROS2 ActionServer status for the EXACT UUID that this
+        # controller fsynced proves Nav2 still owns/executes the goal
+        # even when the separate lifecycle GetState service jitters.
+        # Never accept a status from an unrelated action client.
+        if (self._nav_action_status_received is not None
+            and self._now()-self._nav_action_status_received<2.5
+            and self._nav2_goal_journal.orphaned_uuid() is not None):
+            known=self._nav2_goal_journal.orphaned_uuid()
+            return any(uuid==known and status in _ACTIVE
+                       for uuid,status in self._active_goal_statuses)
+        return False
 
     def _poll_nav2_lifecycle(self):
         if not self._require_nav2_lifecycle:
@@ -209,6 +263,9 @@ class ExperimentalCleaningNode(Node):
             result=future.result()
             self._nav_active=(result.current_state.label == "active"
                               and result.current_state.id == 3)
+            self._nav_explicit_inactive=not self._nav_active
+            if self._nav_active:
+                self._nav_last_positive=self._now()
         except Exception:
             self._nav_active=False
         self._nav_last_checked=self._now()
@@ -229,6 +286,12 @@ class ExperimentalCleaningNode(Node):
                 return
             self._map = raster
             self._map_hash = digest
+            if self._room_plan_path is not None and self._room_grid is None:
+                raw_grid=Grid(raster.width,raster.height,raster.data,
+                         resolution_m=raster.resolution,
+                         clearance_cells=self._clearance)
+                plan=RoomPlan.load(self._room_plan_path,raw_grid)
+                self._room_grid=plan.grid_with_rooms(raw_grid)
             if self._meter is None and self._coverage_mode == "sim_ground_truth":
                 baseline_grid = Grid(raster.width, raster.height, raster.data,
                      resolution_m=raster.resolution,clearance_cells=self._clearance)
@@ -240,8 +303,22 @@ class ExperimentalCleaningNode(Node):
                 try:
                     recovery_grid=Grid(raster.width,raster.height,raster.data,
                           resolution_m=raster.resolution,clearance_cells=self._clearance)
+                    from .engine import Checkpoint
+                    saved=Checkpoint(self._checkpoint).read()
+                    if saved.get("mode")=="rooms":
+                        if self._room_grid is None or self._source_sweep_path is None:
+                            raise JobError("cannot restore rooms without matching labels/plan")
+                        recovery_grid=self._room_grid
                     restored=CleaningJobs(recovery_grid,self._checkpoint)
                     self._attach_job(restored)
+                    if restored.state["mode"]=="rooms":
+                        original=imported_offline_plan(
+                            recovery_grid,raster,self._source_sweep_path)
+                        self._room_bridge=PersistentRoomBridge(
+                            recovery_grid,raster,original,
+                            self._checkpoint.parent/(self._checkpoint.stem+"_campaign"),
+                            job_id=restored.state["job_id"],
+                            rooms=tuple(restored.state["rooms"]))
                 except Exception as exc:
                     self._freeze("CHECKPOINT_RELOAD_REJECTED")
                     self.get_logger().error("failed to restore persisted job: "+str(exc))
@@ -293,12 +370,22 @@ class ExperimentalCleaningNode(Node):
                 active=active,nav_goal_accepted=active,
                 allowed_targets=scope)
             self._meter_last_state=result.state
+            self._last_verified_meter_grid=observed
             self._meter_received=self._now()
             if result.new_cells:
                 if self._interlock is None or not (live or tail_token):
                     raise CoverageError("no accepted active/recent-success goal token")
                 producer="oomwoo_sim_ground_truth_meter"
                 digest=self._job.grid.fingerprint()
+                wal_event=None
+                if self._room_bridge is not None:
+                    # Journal validated external evidence BEFORE the
+                    # interlock/job and room-campaign checkpoint writes.
+                    wal_event=("meter_"+str(m.header.stamp.sec)+"_"+
+                               str(m.header.stamp.nanosec))
+                    self._room_bridge.accept_meter_delta(
+                       frame_id=wal_event,cells=result.new_cells,
+                       job=self._job,verified_active_goal=bool(live or tail_token))
                 # Only EXTERNAL measured floor, never Nav2 success, updates
                 # durable coverage. A bounded late meter sample can complete
                 # an already terminal Nav2 goal without fake retry navigation.
@@ -311,12 +398,14 @@ class ExperimentalCleaningNode(Node):
                         token=tail_token,cells=result.new_cells,
                         producer=producer,map_digest=digest)
                     self._post_goal_measured+=len(result.new_cells)
+                if wal_event is not None:
+                    self._room_bridge.finish_meter_projection(wal_event,self._job)
                 self._acknowledged_measured_cells+=len(result.new_cells)
                 self._sweep_tried.clear()
                 if status["state"]=="completed":
                     self._next_after_succeeded=None
             self._publish()
-        except (CoverageError,AdmissionError,JobError) as exc:
+        except (CoverageError,AdmissionError,JobError,RoomBridgeError,RuntimeError) as exc:
             self._meter_last_state="invalid: "+str(exc)
             if self._job is not None and self._job.status()["state"]=="running":
                 self._freeze("COVERAGE_EVIDENCE_INVALID")
@@ -384,7 +473,13 @@ class ExperimentalCleaningNode(Node):
         if (accepted and self._job is not None
             and self._job.status()["cleaned_cells"] > self._cleaned_at_dispatch):
             self._sweep_tried.clear()
-        if (accepted and outcome=="succeeded" and self._auto_continue
+        if accepted and self._room_bridge is not None:
+            try:self._room_bridge.after_terminal(token,outcome)
+            except Exception as exc:
+                self._freeze("ROOM_CAMPAIGN_TERMINAL_UNCERTAIN")
+                self.get_logger().error("room campaign terminal: "+str(exc))
+        if (accepted and outcome=="succeeded" and (self._auto_continue or
+             (self._room_bridge is not None and self._room_autorun))
             and self._job is not None and self._job.status()["state"]=="running"):
             # Let the 1 Hz external coverage meter publish one final sample.
             self._next_after_succeeded=self._now()+1.2
@@ -408,6 +503,11 @@ class ExperimentalCleaningNode(Node):
 
     def _freeze(self, reason: str):
         self._frozen = reason
+        if (self._room_bridge is not None and
+            self._room_bridge.program.campaign.summary().state=="running"):
+            try:self._room_bridge.program.campaign.pause(reason)
+            except Exception as exc:
+                self.get_logger().error("room campaign pause: "+str(exc))
         if self._interlock is not None and self._job.status()["state"] == "running":
             try:
                 self._interlock.pause_for_recovery(reason)
@@ -415,14 +515,19 @@ class ExperimentalCleaningNode(Node):
                 self.get_logger().error("freeze: " + str(exc))
 
     def _fresh_pose(self) -> tuple[float, float]:
-        if (self._clock_sec is None or self._clock_received is None
-            or self._now()-self._clock_received > 3.0):
-            raise JobError("stale or missing simulator clock")
-        t = self.tf_buffer.lookup_transform("map", "base_link", Time())
-        stamp = t.header.stamp.sec + t.header.stamp.nanosec * 1e-9
-        if abs(self._clock_sec-stamp) > 2.5:
-            raise JobError("stale map-to-robot transform")
-        return (t.transform.translation.x, t.transform.translation.y)
+        try:
+            if (self._clock_sec is None or self._clock_received is None
+                or self._now()-self._clock_received > 3.0):
+                raise JobError("stale or missing simulator clock")
+            t = self.tf_buffer.lookup_transform("map", "base_link", Time())
+            stamp = t.header.stamp.sec + t.header.stamp.nanosec * 1e-9
+            require_fresh_amcl_pose(self._clock_sec,stamp)
+            self._last_pose_error=None
+            return (t.transform.translation.x, t.transform.translation.y)
+        except Exception as exc:
+            self._last_pose_error=(type(exc).__name__+": "+str(exc))[:250]
+            raise JobError("missing/inconsistent map-to-robot transform: "+
+                           self._last_pose_error) from exc
 
     def _ready(self) -> tuple[Raster, Grid, int, Resources]:
         if not self._sim_lab:
@@ -506,6 +611,32 @@ class ExperimentalCleaningNode(Node):
         self._cleaned_at_dispatch=self._job.status()["cleaned_cells"]
         return goal.token
 
+    def _dispatch_room(self, cell: int):
+        if (self._room_bridge is None or self._interlock is None
+            or self._map is None or self._last_verified_meter_grid is None):
+            raise JobError("no eligible room campaign or measured meter")
+        if not self._nav2_ready() or not self._port.client.server_is_ready():
+            raise JobError("Nav2 not available for next room goal")
+        if (self._costmap is None or self._costmap_received is None
+            or self._now()-self._costmap_received>6):
+            raise JobError("room dispatch requires fresh real global costmap")
+        checker=CostmapChecker(self._map,self._costmap,max_cost=self._max_cost)
+        keepout=self._keepout_gate()
+        def admit(route):
+            return (checker.route_admitted(route) and
+                    (keepout is None or keepout.accept_route(route)))
+        candidate=self._room_bridge.choose(self._last_verified_meter_grid,
+                                           cell,admit)
+        goal=self._interlock.dispatch(pose_cell=cell,
+                  admit_route=admit,route_override=candidate.cells)
+        # Nav2 UUID is fsynced before send; mirror the same token in the
+        # durable room campaign. Crash between these two writes remains
+        # fail-closed because the Nav2 UUID journal is unresolved.
+        self._room_bridge.after_dispatch(candidate,goal.token)
+        self._sent_count+=1
+        self._cleaned_at_dispatch=self._job.status()["cleaned_cells"]
+        return goal.token
+
     def _attach_job(self, job: CleaningJobs):
         """Attach a job and journaled real Nav2 ActionClient, DISARMED."""
         if self._job is not None or self._port is not None or self._interlock is not None:
@@ -559,8 +690,41 @@ class ExperimentalCleaningNode(Node):
         if op=="start":
             if self._job is not None or self._checkpoint.exists():
                 raise JobError("one job per checkpoint: restart requires separate reconciliation")
+            if request.get("mode")=="rooms":
+                if (not self._room_autorun or
+                    self._coverage_mode!="sim_ground_truth" or
+                    self._room_grid is None or self._source_sweep_path is None):
+                    raise JobError("room mode requires opted-in simulator, room plan and original meter")
+                selected=request.get("rooms")
+                if (type(selected) is not list or not selected or
+                    any(not isinstance(x,str) for x in selected)):
+                    raise JobError("room mode requires nonempty room names")
+                selected=tuple(selected)
+                m,_,pose,battery=self._ready()
+                grid=self._room_grid
+                targets=grid.targets(mode="rooms",rooms=selected)
+                if not targets<=grid.reachable(pose):
+                    raise JobError("room contains unreachable cells, no job started")
+                source=imported_offline_plan(grid,m,self._source_sweep_path)
+                job_id=request.get("job_id")
+                program=PersistentRoomBridge(
+                     grid,m,source,
+                     self._checkpoint.parent/(self._checkpoint.stem+"_campaign"),
+                     job_id=job_id,rooms=selected)
+                job=CleaningJobs(grid,self._checkpoint)
+                job.start(job_id,mode="rooms",rooms=selected,
+                          start_cell=pose,resources=battery)
+                program.start()
+                self._attach_job(job)
+                self._room_bridge=program
+                self._interlock.confirm_backend_idle(
+                     verified_no_outstanding_goals=True)
+                self._ever_sent_goal=True
+                token=self._dispatch_room(pose)
+                return {"ok":True,"op":op,"goal_token":token,
+                        "room_scope_cells":len(targets)}
             if request.get("mode")!="spot":
-                raise JobError("prototype supports spot target only, not full cleaning")
+                raise JobError("prototype supports rooms (opt-in) or spot")
             job_id=request.get("job_id")
             x=request.get("x"); y=request.get("y")
             if type(x) not in (float,int) or type(y) not in (float,int):
@@ -597,19 +761,27 @@ class ExperimentalCleaningNode(Node):
         if self._interlock is None or self._job is None:
             raise JobError("no active cleaning job")
         if op=="pause":
+            if self._room_bridge is not None and self._room_bridge.program.campaign.summary().state=="running":
+                self._room_bridge.program.campaign.pause("USER_PAUSE")
             self._next_after_succeeded=None
             self._interlock.pause()
             return {"ok":True,"op":op}
         if op=="cancel":
+            if self._room_bridge is not None and self._room_bridge.program.campaign.summary().state not in ("cancelled","completed"):
+                self._room_bridge.program.campaign.cancel()
             self._next_after_succeeded=None
             self._interlock.cancel_job()
             return {"ok":True,"op":op}
         if op=="resume":
             _,_,pose,battery=self._ready()
             self._interlock.resume(pose_cell=pose,resources=battery)
+            if self._room_bridge is not None:
+                self._room_bridge.program.campaign.resumed_after_verified_idle(
+                    idle_verified=self._interlock.snapshot()["idle_reconciled"])
             self._next_after_succeeded=None
             self._no_progress_successes=0
-            token=self._dispatch(pose, thru_sweep=self._auto_continue)
+            token=(self._dispatch_room(pose) if self._room_bridge is not None
+                   else self._dispatch(pose, thru_sweep=self._auto_continue))
             return {"ok":True,"op":op,"goal_token":token}
         raise JobError("invalid command")
 
@@ -649,10 +821,12 @@ class ExperimentalCleaningNode(Node):
                 "job_id":request.job_id,"mode":request.mode,
                 "x":float(request.x),"y":float(request.y),
                 "radius_m":float(request.radius_m)}
-        if request.room_names:
-            result={"ok":False,"error":"room_names not yet supported by private ROS node"}
-        else:
-            result=self._execute_command(params)
+        if request.mode=="rooms":
+            params["rooms"]=list(request.room_names)
+            params.pop("radius_m",None)
+            params.pop("x",None)
+            params.pop("y",None)
+        result=self._execute_command(params)
         response.ok=bool(result.get("ok"))
         response.error=str(result.get("error",""))
         response.state=self._job.status()["state"] if self._job else "idle"
@@ -710,6 +884,11 @@ class ExperimentalCleaningNode(Node):
                         raise JobError("journal map does not match restored checkpoint")
                     self._nav2_goal_journal.mark_reconciled_canceled(
                         self._recovery.witness)
+                    if self._room_bridge is not None:
+                        campaign=self._room_bridge.program.campaign
+                        if campaign.summary().state=="paused_recovery" and campaign.state["active_token"]:
+                            campaign.reconcile_old_goal(
+                                token=campaign.state["active_token"],terminal_confirmed=True)
                     self._interlock.confirm_backend_idle(
                         verified_no_outstanding_goals=True)
                     self._fresh_sim_explicitly_armed=True
@@ -721,7 +900,7 @@ class ExperimentalCleaningNode(Node):
         if self._recovery is not None and self._recovery.phase=="failed":
             self._frozen="NAV2_ORPHAN_RECONCILE_FAILED"
         if self._job is not None and self._job.status()["state"]=="running":
-            if not self._nav2_ready():
+            if not self._nav2_execution_healthy():
                 self._freeze("NAV2_LIFECYCLE_NOT_ACTIVE")
             elif self._clock_received is None or self._now()-self._clock_received>3:
                 self._freeze("SIM_CLOCK_LOST")
@@ -741,9 +920,18 @@ class ExperimentalCleaningNode(Node):
             else:
                 try:
                     self._fresh_pose()
+                    self._pose_unhealthy_since=None
                 except Exception:
-                    self._freeze("LOCALIZATION_STALE")
-        if (self._auto_continue and self._next_after_succeeded is not None
+                    if self._pose_unhealthy_since is None:
+                        self._pose_unhealthy_since=self._now()
+                    # Only in isolated simulation, tolerate a short burst
+                    # of AMCL TF transport jitter DURING an existing action.
+                    # Every NEW dispatch still requires a fresh pose.
+                    if self._now()-self._pose_unhealthy_since>3.5:
+                        self._freeze("LOCALIZATION_STALE")
+        if ((self._auto_continue or
+             (self._room_bridge is not None and self._room_autorun))
+            and self._next_after_succeeded is not None
             and self._now()>=self._next_after_succeeded
             # Wait until at least ONE post-terminal external meter sample.
             # Do not discard a late 1Hz frame just to issue another goal.
@@ -762,7 +950,10 @@ class ExperimentalCleaningNode(Node):
                 else:
                     try:
                         _,_,pose,_=self._ready()
-                        self._dispatch(pose, thru_sweep=True)
+                        if self._room_bridge is not None:
+                            self._dispatch_room(pose)
+                        else:
+                            self._dispatch(pose, thru_sweep=True)
                     except Exception as exc:
                         self._freeze("AUTONOMOUS_NEXT_GOAL_FAILED")
                         self.get_logger().warning("next verified goal unavailable: "+str(exc))
@@ -774,12 +965,27 @@ class ExperimentalCleaningNode(Node):
               "frozen_reason":self._frozen,
               "nav2_lifecycle_required":self._require_nav2_lifecycle,
               "nav2_active":self._nav2_ready(),
+              "nav2_execution_healthy":self._nav2_execution_healthy(),
+              "nav2_lifecycle_last_positive_age_s":(
+                  round(self._now()-self._nav_last_positive,2)
+                  if self._nav_last_positive is not None else None),
+              "nav2_explicit_inactive":self._nav_explicit_inactive,
+              "nav2_matched_action_status_fresh":(
+                 self._nav_action_status_received is not None
+                 and self._now()-self._nav_action_status_received<2.5
+                 and any(uuid==self._nav2_goal_journal.orphaned_uuid()
+                         and status in _ACTIVE
+                         for uuid,status in self._active_goal_statuses)),
               "keepout_filter_required":self._require_keepout,
               "keepout_filter_verified":self._keepout_currently_verified(),
               "keepout_filter_error":self._last_keepout_error,
               "map_ready":self._map is not None,
               "costmap_fresh":self._costmap_received is not None
                   and self._now()-self._costmap_received<=6,
+              "last_pose_error":self._last_pose_error,
+              "pose_unhealthy_for_s":(
+                  round(self._now()-self._pose_unhealthy_since,2)
+                  if self._pose_unhealthy_since is not None else None),
               "clock_fresh":self._clock_received is not None
                   and self._now()-self._clock_received<=3,
               "battery_fresh":self._battery_received is not None
@@ -798,6 +1004,8 @@ class ExperimentalCleaningNode(Node):
               "coverage_credited_cells":self._acknowledged_measured_cells,
               "post_success_measured_cells":self._post_goal_measured,
               "auto_continue":self._auto_continue,
+              "room_autorun":self._room_autorun,
+              "room_program":self._room_bridge.status() if self._room_bridge else None,
               "no_progress_successes":self._no_progress_successes,
               "max_no_progress_attempts":self._max_no_progress,
               "sweep_endpoints_tried":len(self._sweep_tried),

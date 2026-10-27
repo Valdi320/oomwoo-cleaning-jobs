@@ -1,0 +1,27 @@
+{
+  "campaign_attempts": {
+    "5": 2,
+    "6": 2,
+    "7": 2
+  },
+  "campaign_state": "completed",
+  "confirmed_nav2_terminal": "canceled after externally measured completion",
+  "coverage_and_campaign_checkpoints_agree": true,
+  "independently_measured_durably_credited_cells": 171,
+  "job_state": "completed",
+  "limitations": [
+    "Virtual region within open test_room; not physical walled room",
+    "Completed OPERATOR-DEFINED digital region, not architectural room",
+    "Ground-truth meter is simulation source, not physical actuator confirmation",
+    "A later duplicate trial was rejected because the completed checkpoint already existed",
+    "Real dock charging, dust-empty and mop washing are absent"
+  ],
+  "nav2_actions_logged": 11,
+  "note": "Final goal cancellation is consistent with room already measured complete",
+  "ok": true,
+  "result": "COMPLETED verified digital room in Gazebo",
+  "room_scope_eligible_cells": 171,
+  "scope": "real OOMWOO test_room, OPERATOR-DEFINED virtual room on open floor",
+  "unverified_remaining_cells": 0,
+  "verified_fraction": 1.0
+}

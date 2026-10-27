@@ -171,6 +171,16 @@ class DurableSweepCampaignTests(unittest.TestCase):
         self.assertEqual(status.measured_fraction,0.)
         self.assertGreater(status.remaining_cells,0)
 
+    def test_fully_meter_confirmed_room_completes_after_terminal_cancel(self):
+        self.campaign.start()
+        choice=self.campaign.next_candidate(self.clean)
+        self.campaign.reserve_goal(choice,"nav-terminal-1")
+        # A real external meter finished the scope before Nav2 canceled.
+        self.campaign.apply_external_coverage(tuple(sorted(self.room)))
+        self.campaign.on_terminal("nav-terminal-1","canceled")
+        self.assertEqual(self.campaign.summary().state,"completed")
+        self.assertEqual(self.campaign.summary().remaining_cells,0)
+
     def test_cancel_is_durable_and_irreversible(self):
         self.campaign.start()
         self.campaign.cancel()
