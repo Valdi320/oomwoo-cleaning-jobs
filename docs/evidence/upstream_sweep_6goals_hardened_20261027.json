@@ -1,0 +1,97 @@
+{
+  "actual_nav2_action_server": true,
+  "comparison_note": "Prior distinct run preserved separately in upstream_sweep_6goals_station_20261027.json (344 new cells, 242 at service).",
+  "dock_charging_empty_and_mop": "synthetic state machine only; no physical station or dock navigation",
+  "full_room_coverage": false,
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "official_OOMWOO_robot_simulator": true,
+  "official_ground_truth_coverage_meter": true,
+  "recorded_utc": "2026-10-27T13:00:15.748227+00:00",
+  "result": {
+    "already_measured_waypoints_skipped": 0,
+    "candidates_with_safe_routes": 93,
+    "current_job_completed": false,
+    "externally_measured_new_cleaned_cells": 348,
+    "false_coverage_from_nav2_arrival": false,
+    "final_job_state": "paused_user",
+    "goal_results": [
+      {
+        "cell": 8697,
+        "destination": [
+          -0.725,
+          0.075
+        ],
+        "measured_cells_at_goal": 85,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8729,
+        "destination": [
+          0.875,
+          0.075
+        ],
+        "measured_cells_at_goal": 197,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8737,
+        "destination": [
+          1.275,
+          0.075
+        ],
+        "measured_cells_at_goal": 246,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8745,
+        "destination": [
+          1.675,
+          0.075
+        ],
+        "measured_cells_at_goal": 295,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8753,
+        "destination": [
+          2.075,
+          0.075
+        ],
+        "measured_cells_at_goal": 337,
+        "terminal": "succeeded"
+      },
+      {
+        "cell": 8465,
+        "destination": [
+          1.675,
+          -0.025
+        ],
+        "measured_cells_at_goal": 348,
+        "terminal": "succeeded"
+      }
+    ],
+    "meter_frames": 44,
+    "motion_scope": "6 imported waypoints only",
+    "nav_goals_sent": 6,
+    "ok": true,
+    "real_nav2": true,
+    "safely_adapted_waypoints": 391,
+    "station_service_test": {
+      "durable_station_cycles": 1,
+      "external_meter_cells_after": 246,
+      "external_meter_cells_before": 246,
+      "ok": true,
+      "real_nav2_goals_before": 3,
+      "services": [
+        "recharge",
+        "empty_bin",
+        "wash_mop"
+      ],
+      "synthetic_station": true
+    },
+    "unadmitted_original_waypoints": 5,
+    "unexpected_faults": [],
+    "upstream_executor_was_not_spun": true,
+    "upstream_waypoint_count": 409
+  }
+}

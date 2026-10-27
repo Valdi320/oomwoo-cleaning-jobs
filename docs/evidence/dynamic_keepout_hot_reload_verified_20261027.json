@@ -1,0 +1,45 @@
+{
+  "coordinate_handling": "global map frame; local odom frame mapped through fresh TF map<-odom; AMCL future lead bounded to 6s",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "limitations": [
+    "No robot in motion during mask edit",
+    "Not deployed in OOMWOO stock navigation launch",
+    "One original rectangle and one alternate rectangle only",
+    "No physical MCU/motor/bumper/cliff/SLAM stress or real floor cleaning verified"
+  ],
+  "observed_at_utc": "2026-10-27T12:51:40.697157+00:00",
+  "older_failed_trials_preserved": "dynamic_keepout_hot_reload_blocked_20261027.json",
+  "result": {
+    "committed_revision": 5,
+    "initial_observation": {
+      "new_mask_cells": 198,
+      "old_mask_cells": 220
+    },
+    "map_load_return_code": 0,
+    "motor_commands": 0,
+    "nav2_filter_confirmed_global": true,
+    "nav2_filter_confirmed_local": true,
+    "new_mask_cells": 198,
+    "no_goal_during_edit": true,
+    "ok": true,
+    "old_mask_cells": 220,
+    "post_filter_confirmations": [
+      {
+        "global_updates": 1,
+        "local_updates": 2,
+        "revision": 3,
+        "state": "waiting_filter"
+      },
+      {
+        "global_updates": 2,
+        "local_updates": 3,
+        "revision": 4,
+        "state": "verified"
+      }
+    ],
+    "scope": "real ROS2 Nav2 KeepoutFilter hot edit in private offline OOMWOO test_room",
+    "valid_post_filter_samples": 2
+  },
+  "scope": "static obstacle mask changed while robot idle and no Nav2 goal sent",
+  "simulator": "Official OOMWOO Jazzy/Gazebo test_room, real Nav2 global/local KeepoutFilter"
+}

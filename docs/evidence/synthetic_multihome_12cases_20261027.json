@@ -1,0 +1,311 @@
+{
+  "aggregate": {
+    "cases": 12,
+    "keepout_entries": 0,
+    "passed": 12,
+    "total_credited_cells_across_cases": 5819,
+    "total_eligible_cells_across_cases": 5819,
+    "total_synthetic_crash_restarts": 11,
+    "total_synthetic_dock_cycles": 33,
+    "total_synthetic_goals": 1393
+  },
+  "goal_counts": "synthetic 4-connected route legs, NOT Nav2 action goals",
+  "observed_utc": "2026-10-27T11:59:03.000924+00:00",
+  "results": [
+    {
+      "elapsed_s": 6.63,
+      "ok": true,
+      "params": {
+        "seed": 0
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.37,
+      "ok": true,
+      "params": {
+        "seed": 1
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 835,
+        "covered": 529,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 529,
+        "goals": 123,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.43,
+      "ok": true,
+      "params": {
+        "seed": 2
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 850,
+        "covered": 528,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 528,
+        "goals": 124,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.56,
+      "ok": true,
+      "params": {
+        "seed": 3
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 849,
+        "covered": 528,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 528,
+        "goals": 129,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.75,
+      "ok": true,
+      "params": {
+        "seed": 4
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 849,
+        "covered": 528,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 528,
+        "goals": 129,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.89,
+      "ok": true,
+      "params": {
+        "seed": 5
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 849,
+        "covered": 528,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 528,
+        "goals": 129,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.7,
+      "ok": true,
+      "params": {
+        "seed": 6
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.81,
+      "ok": true,
+      "params": {
+        "seed": 7
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.64,
+      "ok": true,
+      "params": {
+        "seed": 8
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 6.54,
+      "ok": true,
+      "params": {
+        "seed": 9
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 4.6,
+      "ok": true,
+      "params": {
+        "seed": 11,
+        "selected_rooms": [
+          "Salón",
+          "Dormitorio"
+        ]
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 586,
+        "covered": 356,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 356,
+        "goals": 84,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Dormitorio"
+        ]
+      }
+    },
+    {
+      "elapsed_s": 2.37,
+      "ok": true,
+      "params": {
+        "crash_once": false,
+        "seed": 13,
+        "selected_rooms": [
+          "Cocina"
+        ],
+        "service_interruptions": false
+      },
+      "result": {
+        "completed": true,
+        "coverage_frames": 372,
+        "covered": 172,
+        "crash_restarts": 0,
+        "dock_cycles": 0,
+        "eligible": 172,
+        "goals": 50,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Cocina"
+        ]
+      }
+    }
+  ],
+  "type": "SYNTHETIC discrete-grid robot path + disk meter; NOT ROS2 Nav2/Gazebo"
+}

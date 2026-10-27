@@ -31,6 +31,7 @@ from oomwoo_cleaning_jobs.upstream_sweep_adapter import adapt_upstream_plan
 from oomwoo_cleaning_jobs.nav_interlock import NavigationInterlock
 from oomwoo_cleaning_jobs.ros_nav2 import AsyncNav2Transport,pose_for_cell
 from oomwoo_cleaning_jobs.goal_journal import GoalJournal
+from oomwoo_cleaning_jobs.dock_cycle import DockCycle
 from oomwoo_cleaning_jobs.sim_coverage import SimCoverageBridge,CoverageError
 from oomwoo_cleaning_jobs.measured_sweep_selector import MeasuredSweepSelector
 
@@ -128,7 +129,10 @@ def main():
             if check():return True
         return False
     limit=int(os.environ.get("OOMWOO_TEST_WAYPOINT_LIMIT","2"))
-    if not 1<=limit<=6:
+    station_test=os.environ.get("OOMWOO_TEST_STATION_SERVICE","0")=="1"
+    if station_test and limit<4:
+        raise RuntimeError("station-service test requires at least four Nav2 goals")
+    if not 1<=limit<=8:
         raise RuntimeError("unbounded or invalid waypoint run limit")
     trials=[]
     r={"ok":False,"upstream_waypoint_count":len(poses),
@@ -182,6 +186,9 @@ def main():
             job.start("upstream_waypoint_trial",mode="whole",start_cell=start,
                       resources=Resources(.9))
             journal=GoalJournal(Path(d)/"uuid.json")
+            dock=DockCycle(Path(d)/"sim_dock_transaction.json",
+                           job_id="upstream_waypoint_trial",map_digest=grid.fingerprint())
+            service_proof=None
             yaw=raster.yaw
             port=AsyncNav2Transport.from_ros2(node,
                  lambda goal:pose_for_cell(goal,width=raster.width,height=raster.height,
@@ -232,6 +239,44 @@ def main():
                                "terminal":terminal,
                                "measured_cells_at_goal":node.saved})
                 previous=(tx,ty)
+                if station_test and len(trials)==3:
+                    # Real OOMWOO Nav2 goal is now terminal SUCCESS and the
+                    # external swept-grid already persisted. The following
+                    # station service is intentionally SYNTHETIC: this
+                    # Gazebo world has no charging/auto-empty/mop hardware.
+                    before=job.status()["cleaned_cells"]
+                    assert journal.read()["state"]=="terminal"
+                    assert len(port.outstanding_tokens())==0
+                    service_hold=gate.observe_resources(Resources(.04))
+                    if service_hold["state"]!="paused_service":
+                        raise RuntimeError("low battery did not suspend live Nav2 job")
+                    dock.request(battery_low=True,bin_full=True,mop_dirty=True,
+                        job_paused=True,goal_terminal=True)
+                    nonce=dock.state["nonce"]
+                    dock.confirm_dock_arrival(docked=True,nav2_terminal=True,
+                        station_connected=True)  # simulated dock sensor
+                    dock.start_service(station_ack_nonce=nonce,station_ready=True)
+                    for observation in range(1,3):
+                        dock.observe(battery_fraction=.96,bin_full=False,mop_dirty=False,
+                            station_completed=tuple(dock.state["needed"]),
+                            station_ack_nonce=nonce,docked=True,
+                            observation_seq=observation)
+                    dock.release(nav2_idle_verified=True,fresh_pose=True,
+                        resources_healthy=True)
+                    resume_xy=node.pose_xy()
+                    if resume_xy is None:
+                        raise RuntimeError("real Nav2 pose lost after synthetic station service")
+                    fresh_cell=raster.cell_at(*resume_xy)
+                    restored=gate.resume(pose_cell=fresh_cell,resources=Resources(.96))
+                    if restored["state"]!="running" or restored["cleaned_cells"]<before:
+                        raise RuntimeError("resume erased externally measured coverage")
+                    service_proof={
+                       "ok":True,"synthetic_station":True,
+                       "services":["recharge","empty_bin","wash_mop"],
+                       "external_meter_cells_before":before,
+                       "external_meter_cells_after":restored["cleaned_cells"],
+                       "durable_station_cycles":dock.state["cycles"],
+                       "real_nav2_goals_before":len(trials)}
                 if len(trials)>=limit:break
             if len(trials)!=limit:
                 raise RuntimeError("fewer than requested safe upstream waypoints could be executed")
@@ -251,6 +296,7 @@ def main():
                 "unexpected_faults":node.errors,
                 "meter_frames":node.meter_samples,
                 "already_measured_waypoints_skipped":skipped_measured,
+                "station_service_test":service_proof,
                 "final_job_state":job.status()["state"]})
             print("REAL_UPSTREAM_SWEEP "+json.dumps(r,sort_keys=True),flush=True)
     except Exception as e:

@@ -1,0 +1,7 @@
+string request_id
+string operation
+bool isolated_disposable_sim
+---
+bool ok
+string error
+string state

@@ -189,3 +189,15 @@ action/service contract, dock-cycle integration and hardware-level
 MCU safety remain outstanding. The robot's real localization noise,
 cliff/drop sensors, wheel slip and physical collision safety have
 not been validated.
+
+
+## Later dynamic mask replacement (same OOMWOO robot simulator)
+
+The original STATIC KeepoutFilter trial above is supplemented by
+[REAL_NAV2_DYNAMIC_KEEPOUT_20261027.md](REAL_NAV2_DYNAMIC_KEEPOUT_20261027.md).
+A later cold-start trial successfully replaced a 220-cell no-go area
+with a different 198-cell area using the genuine ROS2 LoadMap service,
+two distinct global/local post-filter updates, fresh map<-odom TF2,
+and a real ComputePathToPose result reflecting the new exclusion.
+No robot motor/navigation command was issued during this edit.
+This has NOT been deployed in the default OOMWOO launch.

@@ -1,0 +1,38 @@
+{
+  "observed_utc": "2026-10-27T12:56:26.632421+00:00",
+  "result": {
+    "actual_nav2_planner": true,
+    "formerly_blocked_now_accessible": true,
+    "mode": "ComputePathToPose only",
+    "motion_commands_sent": 0,
+    "new_mask_cells": 198,
+    "new_mask_globally_lethal": true,
+    "newly_forbidden_goal_not_reached": true,
+    "ok": true,
+    "old_area_now_permitted": true,
+    "outcomes": [
+      {
+        "endpoint_error_m": 0.0,
+        "error_code": 0,
+        "goal": [
+          0.85,
+          0.0
+        ],
+        "new_mask_intersections": 0,
+        "path_poses": 32
+      },
+      {
+        "endpoint_error_m": 0.4,
+        "error_code": 0,
+        "goal": [
+          -0.8,
+          0.0
+        ],
+        "new_mask_intersections": 0,
+        "path_poses": 15
+      }
+    ]
+  },
+  "scope": "Real OOMWOO/Nav2 Jazzy ComputePathToPose after dynamic KeepoutFilter replacement; zero motor commands",
+  "warning": "Forbidden destination may report Nav2 success on a TRUNCATED path; application must reject it before navigation"
+}

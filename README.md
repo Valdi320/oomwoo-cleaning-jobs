@@ -1,4 +1,4 @@
-# OOMWOO cleaning-jobs: measured coverage and bounded Nav2 orchestration
+# OOMWOO cleaning-jobs: durable multi-room jobs, measured coverage, real Nav2 test suite
 
 [OOMWOO](https://github.com/makerspet/oomwoo) · [cleaning-jobs RFC](https://github.com/makerspet/oomwoo/tree/main/contributions/cleaning-jobs) · [software interface contract](https://github.com/makerspet/oomwoo/blob/main/docs/SOFTWARE_INTERFACES.md)
 
@@ -19,7 +19,7 @@ An experimental ROS2 cleaning-job core with durable checkpoints, real Nav2 actio
 - **Phase-1 Nav2-facing interlock:** only one outstanding navigation goal; on pause, recovery or low battery request cancellation and wait for a terminal result before allowing another goal.
 - An uncertain send/cancel or timeout **latches a fault**, requiring external Nav2 idle verification; late results and stale coverage acknowledgements cannot silently rearm the robot.
 - **Real process-crash recovery now tested in Gazebo:** a durable Nav2 goal-UUID journal survives the loss of a controller. A new long-running ROS2 controller remains DISARMED, performs UUID-specific cancellation, requires the terminal canceled status and advancing quiet simulator odometry, restores the checkpoint and allows an **explicit** restart. [Full two-process trial and failure limits](docs/DURABLE_NAV2_CRASH_RECOVERY.md). This does NOT certify real hardware or cover unknown UUIDs.
-- **255 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
+- **383 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
 
 ### Repeatable measured spot completion
 
@@ -31,6 +31,52 @@ and [root-cause analysis](docs/SMALL_SPOT_MEASURED_COMPLETION.md)
 document the route overshoot and delayed-meter fix. This does **not**
 establish multi-room or whole-floor performance.
 
+### Ten integrated engineering increments (new)
+
+The [ten-milestone engineering report](docs/TEN_SUBSTANTIAL_MILESTONES_20261027.md)
+distinguishes HEADLESS-only, real ROS2 middleware, REAL OOMWOO Nav2/Gazebo
+and the now-verified isolated Nav2 dynamic KeepoutFilter test.
+
+- Durable multi-step campaign and externally measured coverage-gap audit,
+  including reachable/unreachable missed regions and explicit manual review.
+- Durable station-service transaction and ordered selected-room/full-home
+  coordinator (service acknowledgements SIMULATED, no real dock hardware).
+- **12/12** deterministic synthetic multi-room home scenarios completed all
+  eligible simulated coverage cells, including no-go zones and interruptions.
+  These are NOT Gazebo, Nav2 or actual dirt-removal runs.
+- Optional experimental typed ROS2 control services compiled and tested with
+  actual ROS2 middleware and a harmless fake Nav2 action server.
+  Retries with the same request ID never duplicate the action.
+- REAL OOMWOO Nav2/Gazebo six-upstream-waypoint test, **6/6 goals succeeded,
+  344 NEW simulated-ground-truth covered cells**, including a SIMULATED
+  battery/bin/mop service pause at waypoint 3 with **242 cells preserved**.
+  Full-room coverage was NOT established.
+- **Live no-go edits tested with REAL Nav2:** an isolated KeepoutFilter
+  replacement switched 220 forbidden cells to a different 198-cell region.
+  LoadMap succeeded, and two separately received GLOBAL and LOCAL
+  post-filter costmap updates verified the new region. Local odom
+  coordinates are converted to map via time-fenced TF2. A real Nav2
+  planner subsequently reached an old prohibited target and stopped
+  short of the new one. No motors moved during the hot edit.
+  [Reproduction and evidence](docs/REAL_NAV2_DYNAMIC_KEEPOUT_20261027.md).
+- Coverage write-ahead journal persists independently validated cell
+  events before both job and campaign checkpoints, then safely reconciles
+  crashes between writes with no double credit.
+
+### Strengthened station and live-mask safety (post-milestone audit)
+
+The simulated dock service now requires fresh, monotonically numbered
+telemetry and TWO successive current-healthy reports for EACH required
+recharge, bin-empty or mop-wash operation. Stale values, resource
+regression, a boot after service-ready, and stale station nonces can
+no longer release navigation. This is not verification of a physical dock.
+
+The live zone mask update now requires independent monotonically
+increasing global+local Nav2 costmap frames, not two readings of one
+latched message. Real OOMWOO local costmap uses odom; the map<-odom
+TF2 conversion is checked before any local keepout proof is counted.
+The stock OOMWOO navigation launch remains unchanged.
+
 ## What it deliberately does **not** do
 
 - **No physical motor or MCU safety validation; no finalized public ROS2 job action/service API yet.** The long-running controller uses private simulation-only JSON topics, not official OOMWOO interfaces. The tested Gazebo cancel cannot certify stopping on a physical robot. Cliff/bumper/wheel-drop/current safety must remain independently STM32-owned.
@@ -38,7 +84,7 @@ establish multi-room or whole-floor performance.
 - Room partitioning now proposes deterministic areas from saved maps and persists human labels, but **does not guarantee semantic room recognition** or provide an editing UI. The ROS2 controller still runs small spot jobs only. Occupancy `0` is safe in this conservative model; other and unknown values are blocked.
 - The existing upstream full-room plan has been validated only through a **bounded standalone action/coverage trial**. Its full 409-waypoint room executor is NOT integrated into the long-running ROS2 job node, and several upstream waypoints fail our strict clearance policy.
 - Coverage can be acknowledged from OOMWOO's external ground-truth simulated cleaning-disk meter, but this is **not physical dirt removal**. Hardware requires a separately validated estimator and actuator-state gating.
-- The experimental ROS2 node subscribes to real /battery_state and fresh TF in its private test. The official Gazebo test-room has no functional battery publisher, so the harness explicitly injects **synthetic BatteryState telemetry** to test a battery-low pause/recharge. Actual dock services remain unimplemented.
+- OOMWOO's official Gazebo test-room lacks a working battery or station service publisher; typed/private ROS2 tests inject **synthetic BatteryState**. Recharge, bin-empty and mop-wash contracts are tested headlessly and in a real Nav2-run pause but DO NOT operate dock hardware.
 - One job/checkpoint and one writer per instance; new job needs a fresh checkpoint. A UUID journal persists the last Nav2 action before sending it. If the controller dies, no new goal can be sent until that UUID is reconciled. A multi-client robot still needs independent Nav2 action arbitration.
 
 ## Run, verify
@@ -75,9 +121,9 @@ Both commands run in plain Linux without ROS2, Docker, network access or hardwar
 
 ## Next PRs needed to meet the entire RFC
 
-1. Promote the private experimental controller to a maintainer-approved job API; replace simulator ground truth with hardware-validated coverage estimation and actuator-state gating.
+1. Promote the tested private ROS2 topic and typed-service prototypes into a maintainer-approved public cleaning-job API, and connect full-room and selected-room campaign queues with an exclusive Nav2 goal owner.
 2. Adopt the **tested private KeepoutFilter config** in maintainer-approved OOMWOO bringup, with mask edits and hot-replanning tests; integrate upstream `oomwoo_coverage` full-room sweep with a single Nav2 action owner.
-3. Validate room proposals on furnished multi-room maps, add a zone/room editing UI and make the private ROS2 controller schedule complete selected rooms; integrate dock-cycle recharge/bin/mop interruptions and test actual swept-area completeness.
+3. Validate full-room navigation and measured gap closure on furnished multi-room Gazebo worlds, add live dock-cycle provider and test repeated long interruptions; typed interfaces remain private and stations remain synthetic.
 4. Evaluate algorithmic efficiency against upstream's coverage planner; nearest-cell routing here optimizes correctness of a small reference, **not** cleaning time or energy.
 
 ## Contribution and AI disclosure

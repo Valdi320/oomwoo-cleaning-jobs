@@ -38,6 +38,7 @@ from .sweep_target import select_sweep_route, NoSafeSweep
 from .nav_keepout_admission import VerifiedGlobalKeepout, KeepoutNotEnforced
 from .goal_journal import GoalJournal
 from .ros_restart import AsyncOrphanRecovery
+from .request_dedupe import RequestDedupe,CommandReplayError
 
 
 _ACTIVE = {GoalStatus.STATUS_ACCEPTED, GoalStatus.STATUS_EXECUTING,
@@ -51,6 +52,7 @@ class ExperimentalCleaningNode(Node):
         super().__init__("controller", namespace="/valdi/cleaning_jobs",
                          parameter_overrides=parameter_overrides)
         self.declare_parameter("simulation_lab", False)
+        self.declare_parameter("enable_typed_lab_api", False)
         self.declare_parameter("require_nav2_lifecycle", True)
         self.declare_parameter("checkpoint_path", "/tmp/valdi_cleaning_job.json")
         self.declare_parameter("clearance_cells", 5)
@@ -60,6 +62,10 @@ class ExperimentalCleaningNode(Node):
         self.declare_parameter("auto_continue", False)
         self.declare_parameter("max_no_progress_attempts", 4)
         self._sim_lab = self.get_parameter("simulation_lab").value is True
+        self._typed_api_enabled=(self.get_parameter("enable_typed_lab_api").value is True)
+        if self._typed_api_enabled and not self._sim_lab:
+            raise ValueError("typed lab API restricted to simulation_lab")
+        self._requests=RequestDedupe(128)
         self._require_nav2_lifecycle = (
             self.get_parameter("require_nav2_lifecycle").value is True)
         self._checkpoint = Path(self.get_parameter("checkpoint_path").value)
@@ -149,6 +155,12 @@ class ExperimentalCleaningNode(Node):
                                      self._on_meter_unstable, latched)
         self.create_subscription(String, "command", self._on_command, 10)
         self._status_pub = self.create_publisher(String, "status", latched)
+        if self._typed_api_enabled:
+            from oomwoo_cleaning_jobs_lab_interfaces.srv import (
+                StartCleaning,ControlCleaning,GetCleaningStatus)
+            self.create_service(StartCleaning,"typed/start",self._typed_start)
+            self.create_service(ControlCleaning,"typed/control",self._typed_control)
+            self.create_service(GetCleaningStatus,"typed/status",self._typed_status)
         self.create_timer(.6, self._poll_nav2_lifecycle)
         self.create_timer(0.35, self._tick)
         self._publish()
@@ -601,21 +613,66 @@ class ExperimentalCleaningNode(Node):
             return {"ok":True,"op":op,"goal_token":token}
         raise JobError("invalid command")
 
-    def _on_command(self, m):
+    def _execute_command(self,request:dict)->dict:
+        rid=request.get("request_id")
+        payload={k:v for k,v in request.items() if k!="request_id"}
+        try:
+            if rid is None:
+                data=self._handle(payload)
+            else:
+                data=self._requests.handle(rid,payload,self._handle)
+            result={**data,"request_id":rid}
+        except Exception as exc:
+            result={"ok":False,"error":str(exc),
+                    "op":payload.get("op"),"request_id":rid}
+        self._last_command=result
+        self._publish()
+        return result
+
+    def _on_command(self,m):
         try:
             if len(m.data)>2048:
                 raise JobError("oversized command")
             request=json.loads(m.data)
             if not isinstance(request,dict):
                 raise JobError("command must be JSON object")
-            result=self._handle(request)
-            result["request_id"]=request.get("request_id")
         except Exception as exc:
-            result={"ok":False, "error":str(exc),
-                    "op":request.get("op") if isinstance(locals().get("request"),dict) else None,
-                    "request_id":request.get("request_id") if isinstance(locals().get("request"),dict) else None}
-        self._last_command=result
-        self._publish()
+            self._last_command={"ok":False,"error":str(exc)}
+            self._publish()
+            return
+        self._execute_command(request)
+
+    def _typed_start(self,request,response):
+        # This private v1 typed contract only supports the existing
+        # tested spot mode. Room/whole modes remain separate planned work.
+        params={"op":"start","request_id":request.request_id,
+                "job_id":request.job_id,"mode":request.mode,
+                "x":float(request.x),"y":float(request.y),
+                "radius_m":float(request.radius_m)}
+        if request.room_names:
+            result={"ok":False,"error":"room_names not yet supported by private ROS node"}
+        else:
+            result=self._execute_command(params)
+        response.ok=bool(result.get("ok"))
+        response.error=str(result.get("error",""))
+        response.state=self._job.status()["state"] if self._job else "idle"
+        response.goal_token=str(result.get("goal_token",""))
+        return response
+
+    def _typed_control(self,request,response):
+        params={"op":request.operation,
+                "request_id":request.request_id,
+                "isolated_disposable_sim":bool(request.isolated_disposable_sim)}
+        result=self._execute_command(params)
+        response.ok=bool(result.get("ok"))
+        response.error=str(result.get("error",""))
+        response.state=self._job.status()["state"] if self._job else "idle"
+        return response
+
+    def _typed_status(self,request,response):
+        response.ok=True
+        response.status_json=json.dumps(self.snapshot(),sort_keys=True)
+        return response
 
     def _keepout_currently_verified(self):
         if not self._require_keepout:
@@ -744,6 +801,8 @@ class ExperimentalCleaningNode(Node):
               "no_progress_successes":self._no_progress_successes,
               "max_no_progress_attempts":self._max_no_progress,
               "sweep_endpoints_tried":len(self._sweep_tried),
+              "typed_api_enabled":self._typed_api_enabled,
+              "cached_request_ids":self._requests.size(),
               "last_command":self._last_command}
         if self._interlock is not None:
             snap["interlock"]=self._interlock.snapshot()

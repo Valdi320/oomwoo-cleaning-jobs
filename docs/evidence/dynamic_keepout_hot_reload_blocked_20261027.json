@@ -1,0 +1,15 @@
+{
+  "actual_nav2_lifecycle": "planner_server inactive at test time",
+  "failure": {
+    "error": "missing live ROS2 prerequisites: {'got': ['info', 'map', 'mask'], 'loader_service_ready': True, 'load_map_services': [('/map_server/load_map', ['nav2_msgs/srv/LoadMap']), ('/valdi_keepout_mask_server/load_map', ['nav2_msgs/srv/LoadMap'])], 'mask_nodes': ['valdi_keepout_dynamic_reload_probe', 'ros_gz_bridge', 'robot_state_publisher', '_ros2cli_daemon_196_cfddd91221d341a3bf1a8e0f30fe9df4', 'valdi_keepout_mask_server', 'valdi_keepout_info_server', 'valdi_keepout_lifecycle_manager', 'map_server', 'amcl', 'lifecycle_manager_localization', 'controller_server', 'local_costmap', 'transform_listener_impl_563743ec2030', 'smoother_server', 'planner_server', 'global_costmap', 'transform_listener_impl_564203103350', 'route_server', 'behavior_server', 'bt_navigator', 'waypoint_follower', 'velocity_smoother', 'collision_monitor', 'docking_server', 'lifecycle_manager_navigation']}",
+    "motor_commands": 0,
+    "ok": false,
+    "scope": "real ROS2 Nav2 KeepoutFilter hot edit in private offline OOMWOO test_room"
+  },
+  "global_and_local_post_filter_costmaps_received": false,
+  "mask_info_published": true,
+  "observed_utc": "2026-10-27T11:59:03.000924+00:00",
+  "safety_behavior": "no robot motion; transaction stayed uncommitted",
+  "status": "BLOCKED",
+  "type": "FAILED real Nav2 integration attempt, NOT a passing KeepoutFilter hot-edit test"
+}

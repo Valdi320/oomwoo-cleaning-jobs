@@ -1,0 +1,27 @@
+{
+  "compiled_offline_rosidl": true,
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "motor_simulated": false,
+  "observed_utc": "2026-10-27T11:59:03.000924+00:00",
+  "result": {
+    "accepted_nav_goals": 2,
+    "action_server": "test double, no robot motion",
+    "confirmed_terminal_cancels": 2,
+    "conflicting_id_rejected": true,
+    "control_steps": [
+      "arm",
+      "start",
+      "pause",
+      "resume",
+      "cancel",
+      "status"
+    ],
+    "false_floor_credit": 0,
+    "final_state": "cancelled",
+    "ok": true,
+    "retry_deduplicated": true,
+    "transport": "real ROS2 srv with rosidl-generated messages"
+  },
+  "source_api": "PRIVATE experimental, spot-only; not OOMWOO official API",
+  "type": "REAL ROS2 srv middleware + custom ROSIDL package; harmless FAKE Nav2 ActionServer"
+}

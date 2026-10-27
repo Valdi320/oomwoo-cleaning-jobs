@@ -1,0 +1,12 @@
+string request_id
+string job_id
+string mode
+string[] room_names
+float64 x
+float64 y
+float64 radius_m
+---
+bool ok
+string error
+string state
+string goal_token
