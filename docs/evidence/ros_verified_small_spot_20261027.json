@@ -1,0 +1,49 @@
+{
+  "battery": "Synthetic ROS2 BatteryState in test harness; NOT robot battery data",
+  "control": "persistent experimental ROS2 cleaning-jobs node with asynchronous Nav2",
+  "coverage": "Original unmodified upstream oomwoo_sim_support/coverage_meter_node, simulator ground truth",
+  "image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "observed_utc": "2026-10-27T03:23:41.501282+00:00",
+  "real_gazebo": true,
+  "real_nav2": true,
+  "result": {
+    "battery": "synthetic test feed",
+    "cleaned_cells": 9,
+    "external_meter_credited": 9,
+    "frozen": null,
+    "goal_count": 2,
+    "initial_credited": 0,
+    "job_state": "completed",
+    "last_terminal": "canceled",
+    "ok": true,
+    "post_job_active_goal": null,
+    "progress": [
+      {
+        "cleaned_cells": 0,
+        "nav_goals": 1,
+        "state": "running"
+      },
+      {
+        "cleaned_cells": 4,
+        "nav_goals": 1,
+        "state": "running"
+      },
+      {
+        "cleaned_cells": 9,
+        "nav_goals": 2,
+        "state": "completed"
+      }
+    ],
+    "reason": null,
+    "source": "unmodified OOMWOO ground-truth meter",
+    "target_cells": 9,
+    "target_pose": [
+      1.2750000428408383,
+      0.02500004582107085
+    ],
+    "test": "small_spot_completion"
+  },
+  "safety_boundary": "Not a real-robot emergency-stop/MCU test; measured simulator coverage does not prove physical vacuuming",
+  "scope": "one small nine-centre-cell spot, not complete full-floor/room"
+}

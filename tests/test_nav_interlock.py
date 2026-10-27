@@ -397,5 +397,132 @@ class NavInterlockTests(unittest.TestCase):
         self.assertEqual(self.jobs.status()['state'],'paused_recovery')
 
 
+    def test_safe_sweep_route_override_admitted(self):
+        self.arm()
+        goal=self.gate.dispatch(pose_cell=0, route_override=(0,1,2),
+                                admit_route=lambda r:r==(0,1,2))
+        self.assertEqual(goal.target_cell,2)
+        self.assertEqual(goal.candidate_cells,(0,1,2))
+        self.assertEqual(len(self.port.sent),1)
+
+    def test_invalid_override_cannot_dispatch(self):
+        self.arm()
+        for route in ((0,2),(1,2),(0,200),(0,0),(),[0,1]):
+            with self.subTest(route=route),self.assertRaises(JobError):
+                self.gate.dispatch(pose_cell=0,route_override=route,
+                                   admit_route=lambda r:True)
+        self.assertEqual(len(self.port.sent),0)
+
+    def test_overridden_route_still_respects_dynamic_costmap(self):
+        self.arm()
+        with self.assertRaises(JobError):
+            self.gate.dispatch(pose_cell=0,route_override=(0,1,2),
+                               admit_route=lambda r:False)
+        self.assertEqual(self.jobs.status()['state'],'paused_recovery')
+        self.assertEqual(len(self.port.sent),0)
+
+
+
+    def test_measured_coverage_can_arrive_after_nav2_success(self):
+        goal=self.send()
+        self.assertTrue(self.gate.on_goal_result(token=goal.token,outcome='succeeded'))
+        self.assertEqual(self.jobs.status()['cleaned_cells'],0)
+        self.assertEqual(self.gate.eligible_coverage_tail_token(),goal.token)
+        out=self.gate.acknowledge_post_goal_coverage(
+            token=goal.token,cells=(0,),producer='verified_sweep',
+            map_digest=self.grid.fingerprint())
+        self.assertEqual(out['cleaned_cells'],1)
+
+    def test_nav2_success_never_auto_credits_coverage(self):
+        goal=self.send()
+        self.gate.on_goal_result(token=goal.token,outcome='succeeded')
+        self.assertEqual(self.jobs.status()['cleaned_cells'],0)
+        self.assertEqual(self.checkpoint.exists(),True)
+        self.assertEqual(self.gate.eligible_coverage_tail_token(),goal.token)
+
+    def test_late_meter_sample_beyond_bounded_window_is_refused(self):
+        goal=self.send()
+        self.gate.on_goal_result(token=goal.token,outcome='succeeded')
+        self.now[0]+=3.1
+        with self.assertRaises(JobError):
+            self.gate.acknowledge_post_goal_coverage(
+                token=goal.token,cells=(0,),producer='verified_sweep',
+                map_digest=self.grid.fingerprint())
+        self.assertEqual(self.jobs.status()['cleaned_cells'],0)
+
+    def test_pausing_clears_recent_success_coverage_window(self):
+        goal=self.send()
+        self.gate.on_goal_result(token=goal.token,outcome='succeeded')
+        self.gate.pause()
+        self.assertIsNone(self.gate.eligible_coverage_tail_token())
+        with self.assertRaises(JobError):
+            self.gate.acknowledge_post_goal_coverage(
+                token=goal.token,cells=(0,),producer='verified_sweep',
+                map_digest=self.grid.fingerprint())
+
+    def test_canceling_clears_recent_success_coverage_window(self):
+        goal=self.send()
+        self.gate.on_goal_result(token=goal.token,outcome='succeeded')
+        self.gate.cancel_job()
+        self.assertIsNone(self.gate.eligible_coverage_tail_token())
+
+    def test_next_dispatch_invalidates_previous_tail_token(self):
+        first=self.send()
+        self.gate.on_goal_result(token=first.token,outcome='succeeded')
+        second=self.gate.dispatch(pose_cell=0,admit_route=lambda route:True)
+        self.assertNotEqual(first.token,second.token)
+        with self.assertRaises(JobError):
+            self.gate.acknowledge_post_goal_coverage(
+                token=first.token,cells=(0,),producer='verified_sweep',
+                map_digest=self.grid.fingerprint())
+
+    def test_wrong_source_or_bad_map_rejected_on_post_success(self):
+        goal=self.send()
+        self.gate.on_goal_result(token=goal.token,outcome='succeeded')
+        for source, digest in (('spoof',self.grid.fingerprint()),('verified_sweep','bad')):
+            with self.subTest(source=source,digest=digest),self.assertRaises(JobError):
+                self.gate.acknowledge_post_goal_coverage(
+                    token=goal.token,cells=(0,),producer=source,map_digest=digest)
+        self.assertEqual(self.jobs.status()['cleaned_cells'],0)
+
+    def test_canceled_or_aborted_goal_has_no_meter_tail(self):
+        for result in ('canceled','aborted'):
+            with self.subTest(result=result):
+                from pathlib import Path
+                import tempfile
+                from oomwoo_cleaning_jobs.nav_interlock import NavigationInterlock
+                with tempfile.TemporaryDirectory() as tmp:
+                    jb=CleaningJobs(self.grid,Path(tmp)/'p.json')
+                    jb.start('subtest',mode='whole',start_cell=0)
+                    po=MockActionPort()
+                    gate=NavigationInterlock(jb,po,coverage_source='verified_sweep',
+                                             clock=lambda:self.now[0])
+                    gate.confirm_backend_idle(verified_no_outstanding_goals=True)
+                    goal=gate.dispatch(pose_cell=0,admit_route=lambda route:True)
+                    gate.on_goal_result(token=goal.token,outcome=result)
+                    self.assertIsNone(gate.eligible_coverage_tail_token())
+
+    def test_last_tail_sample_completes_job_without_new_navigation(self):
+        from pathlib import Path
+        import tempfile
+        from oomwoo_cleaning_jobs.nav_interlock import NavigationInterlock
+        with tempfile.TemporaryDirectory() as tmp:
+            jb=CleaningJobs(Grid(1,1,(0,)),Path(tmp)/'tail.json')
+            jb.start('small',mode='whole',start_cell=0)
+            po=MockActionPort()
+            gate=NavigationInterlock(jb,po,coverage_source='verified_sweep',
+                                     clock=lambda:self.now[0])
+            gate.confirm_backend_idle(verified_no_outstanding_goals=True)
+            goal=gate.dispatch(pose_cell=0,admit_route=lambda route:True)
+            gate.on_goal_result(token=goal.token,outcome='succeeded')
+            st=gate.acknowledge_post_goal_coverage(token=goal.token,cells=(0,),
+                  producer='verified_sweep',map_digest=jb.grid.fingerprint())
+            self.assertEqual(st['state'],'completed')
+            self.assertIsNone(gate.eligible_coverage_tail_token())
+            self.assertEqual(len(po.sent),1)
+            self.assertEqual(po.cancels,[])
+
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -20,7 +20,7 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
 from rclpy.time import Time
 from tf2_ros import Buffer, TransformListener
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import BatteryState
 from action_msgs.msg import GoalStatusArray, GoalStatus
@@ -32,6 +32,8 @@ from .grid import Grid, MapError
 from .map_admission import Raster, CostmapChecker, AdmissionError
 from .nav_interlock import NavigationInterlock
 from .ros_nav2 import AsyncNav2Transport, pose_for_cell
+from .sim_coverage import SimCoverageBridge, CoverageError
+from .sweep_target import select_sweep_route, NoSafeSweep
 
 
 _ACTIVE = {GoalStatus.STATUS_ACCEPTED, GoalStatus.STATUS_EXECUTING,
@@ -49,12 +51,24 @@ class ExperimentalCleaningNode(Node):
         self.declare_parameter("checkpoint_path", "/tmp/valdi_cleaning_job.json")
         self.declare_parameter("clearance_cells", 5)
         self.declare_parameter("costmap_max_cost", 25)
+        self.declare_parameter("coverage_mode", "disabled")
+        self.declare_parameter("auto_continue", False)
+        self.declare_parameter("max_no_progress_attempts", 4)
         self._sim_lab = self.get_parameter("simulation_lab").value is True
         self._require_nav2_lifecycle = (
             self.get_parameter("require_nav2_lifecycle").value is True)
         self._checkpoint = Path(self.get_parameter("checkpoint_path").value)
         self._clearance = int(self.get_parameter("clearance_cells").value)
         self._max_cost = int(self.get_parameter("costmap_max_cost").value)
+        self._coverage_mode = str(self.get_parameter("coverage_mode").value)
+        if self._coverage_mode not in ("disabled", "sim_ground_truth"):
+            raise ValueError("unknown coverage_mode")
+        self._auto_continue = self.get_parameter("auto_continue").value is True
+        self._max_no_progress=int(self.get_parameter("max_no_progress_attempts").value)
+        if not 1<=self._max_no_progress<=8:
+            raise ValueError("max_no_progress_attempts must be within 1..8")
+        if self._auto_continue and self._coverage_mode != "sim_ground_truth":
+            raise ValueError("auto_continue requires sim_ground_truth coverage evidence")
 
         self._map: Raster | None = None
         self._map_hash: str | None = None
@@ -81,6 +95,19 @@ class ExperimentalCleaningNode(Node):
         self._last_terminal: str | None = None
         self._sent_count = 0
         self._accepted_count = 0
+        self._meter: SimCoverageBridge | None = None
+        self._meter_unstable: bool | None = None
+        self._meter_stability_received: float | None = None
+        self._meter_received: float | None = None
+        self._meter_last_state: str | None = None
+        self._meter_accepted_token: str | None = None
+        self._next_after_succeeded: float | None = None
+        self._no_progress_successes = 0
+        self._sweep_tried: set[int] = set()
+        self._cleaned_at_dispatch = 0
+        self._acknowledged_measured_cells = 0
+        self._post_goal_measured = 0
+        self._meter_received_at_success: int | None = None
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=False)
@@ -93,6 +120,12 @@ class ExperimentalCleaningNode(Node):
         self.create_subscription(BatteryState, "/battery_state", self._on_battery, 10)
         self.create_subscription(GoalStatusArray, "/navigate_to_pose/_action/status",
                                  self._on_status, latched)
+        if self._coverage_mode == "sim_ground_truth":
+            self.create_subscription(OccupancyGrid,
+                                     "/coverage_meter/covered_grid",
+                                     self._on_covered_grid, latched)
+            self.create_subscription(Bool, "/coverage_meter/sim_unstable",
+                                     self._on_meter_unstable, latched)
         self.create_subscription(String, "command", self._on_command, 10)
         self._status_pub = self.create_publisher(String, "status", latched)
         self.create_timer(.6, self._poll_nav2_lifecycle)
@@ -163,6 +196,10 @@ class ExperimentalCleaningNode(Node):
                 return
             self._map = raster
             self._map_hash = digest
+            if self._meter is None and self._coverage_mode == "sim_ground_truth":
+                baseline_grid = Grid(raster.width, raster.height, raster.data,
+                     resolution_m=raster.resolution,clearance_cells=self._clearance)
+                self._meter = SimCoverageBridge(raster, baseline_grid)
         except (AdmissionError, ValueError) as exc:
             self._freeze("MAP_INVALID")
             self.get_logger().error(str(exc))
@@ -174,6 +211,71 @@ class ExperimentalCleaningNode(Node):
         except AdmissionError:
             self._costmap = None
             self._costmap_received = None
+
+    def _on_meter_unstable(self, m):
+        self._meter_unstable = bool(m.data)
+        self._meter_stability_received = self._now()
+        if self._meter_unstable and self._job is not None:
+            self._freeze("COVERAGE_SIM_UNSTABLE")
+
+    def _on_covered_grid(self, m):
+        if self._meter is None or self._clock_sec is None:
+            return
+        if self._meter_unstable is None or self._meter_stability_received is None:
+            return  # Never treat missing meter stability as "stable".
+        try:
+            observed=Raster.from_ros(m)
+            stamp=m.header.stamp.sec + m.header.stamp.nanosec*1e-9
+            job_state=self._job.status()["state"] if self._job else None
+            active_token=(self._interlock.snapshot()["active_goal"]
+                          if self._interlock is not None else None)
+            live=bool(job_state=="running" and active_token
+                      and active_token==self._meter_accepted_token
+                      and self._frozen is None)
+            tail_token=(self._interlock.eligible_coverage_tail_token()
+                        if self._interlock is not None and not live
+                        else None)
+            # The official 1Hz meter can deliver its final swept sample
+            # AFTER Nav2's terminal success. The interlock allows only a
+            # time-limited, non-paused completed-success token as evidence.
+            active=bool(job_state=="running" and self._frozen is None
+                        and (live or tail_token))
+            scope=(frozenset(self._job.state["targets"]) if self._job
+                   else self._meter.grid.traversable)
+            result=self._meter.consume(observed,stamp_s=stamp,
+                current_sim_s=self._clock_sec,
+                simulation_unstable=self._meter_unstable,
+                active=active,nav_goal_accepted=active,
+                allowed_targets=scope)
+            self._meter_last_state=result.state
+            self._meter_received=self._now()
+            if result.new_cells:
+                if self._interlock is None or not (live or tail_token):
+                    raise CoverageError("no accepted active/recent-success goal token")
+                producer="oomwoo_sim_ground_truth_meter"
+                digest=self._job.grid.fingerprint()
+                # Only EXTERNAL measured floor, never Nav2 success, updates
+                # durable coverage. A bounded late meter sample can complete
+                # an already terminal Nav2 goal without fake retry navigation.
+                if live:
+                    status=self._interlock.acknowledge_coverage(
+                        token=active_token,cells=result.new_cells,
+                        producer=producer,map_digest=digest)
+                else:
+                    status=self._interlock.acknowledge_post_goal_coverage(
+                        token=tail_token,cells=result.new_cells,
+                        producer=producer,map_digest=digest)
+                    self._post_goal_measured+=len(result.new_cells)
+                self._acknowledged_measured_cells+=len(result.new_cells)
+                self._sweep_tried.clear()
+                if status["state"]=="completed":
+                    self._next_after_succeeded=None
+            self._publish()
+        except (CoverageError,AdmissionError,JobError) as exc:
+            self._meter_last_state="invalid: "+str(exc)
+            if self._job is not None and self._job.status()["state"]=="running":
+                self._freeze("COVERAGE_EVIDENCE_INVALID")
+            self.get_logger().warning("coverage meter rejected: "+str(exc))
 
     def _on_battery(self, m):
         # Unknown/invalid battery percentage must not authorize motion.
@@ -198,8 +300,18 @@ class ExperimentalCleaningNode(Node):
         if self._interlock is None:
             self._frozen = "ORPHAN_NAV2_RESULT"
             return
-        self._interlock.on_goal_result(token=token, outcome=outcome)
-        # Navigation success is NOT proof of measured floor coverage.
+        accepted=self._interlock.on_goal_result(token=token, outcome=outcome)
+        if accepted and self._meter_accepted_token==token:
+            self._meter_accepted_token=None
+        if (accepted and self._job is not None
+            and self._job.status()["cleaned_cells"] > self._cleaned_at_dispatch):
+            self._sweep_tried.clear()
+        if (accepted and outcome=="succeeded" and self._auto_continue
+            and self._job is not None and self._job.status()["state"]=="running"):
+            # Let the 1 Hz external coverage meter publish one final sample.
+            self._next_after_succeeded=self._now()+1.2
+            self._meter_received_at_success=self._meter.received if self._meter else None
+        # Navigation success itself NEVER credits cleaned cells.
         self._publish()
 
     def _on_fault(self, token: str, reason: str):
@@ -213,6 +325,7 @@ class ExperimentalCleaningNode(Node):
 
     def _on_accepted(self, token: str):
         self._accepted_count += 1
+        self._meter_accepted_token=token
         self._publish()
 
     def _freeze(self, reason: str):
@@ -252,6 +365,14 @@ class ExperimentalCleaningNode(Node):
             raise JobError("battery status missing or stale")
         if self._battery.needed():
             raise JobError("resource hold: " + self._battery.needed())
+        if self._coverage_mode=="sim_ground_truth":
+            if (self._meter is None or not self._meter.ready
+                or self._meter_received is None
+                or self._now()-self._meter_received>4.0
+                or self._meter_unstable is not False
+                or self._meter_stability_received is None
+                or self._now()-self._meter_stability_received>4.0):
+                raise JobError("ground-truth coverage meter baseline/stability not fresh")
         x,y=self._fresh_pose()
         cell=self._map.cell_at(x,y)
         grid = Grid(self._map.width, self._map.height, self._map.data,
@@ -270,7 +391,7 @@ class ExperimentalCleaningNode(Node):
             origin_x=m.origin_x,origin_y=m.origin_y,origin_yaw=m.yaw,
             stamp=self.get_clock().now().to_msg())
 
-    def _dispatch(self, cell: int):
+    def _dispatch(self, cell: int, *, thru_sweep: bool = False):
         if self._interlock is None or self._port is None or self._map is None:
             raise JobError("no active interlock")
         if not self._port.client.server_is_ready() or not self._nav2_ready():
@@ -279,9 +400,27 @@ class ExperimentalCleaningNode(Node):
             or self._now()-self._costmap_received > 6):
             raise JobError("Nav2 costmap no longer fresh")
         checker=CostmapChecker(self._map,self._costmap, max_cost=self._max_cost)
+        proposed=None
+        if thru_sweep and self._coverage_mode=="sim_ground_truth":
+            if self._job is None:
+                raise JobError("no job for measured sweep")
+            remaining=frozenset(set(self._job.state["targets"])-
+                                set(self._job.state["cleaned"]))
+            try:
+                proposed=select_sweep_route(
+                    self._job.grid,cell,remaining,
+                    admit=checker.route_admitted,
+                    previously_tried=frozenset(self._sweep_tried))
+            except NoSafeSweep as exc:
+                self._freeze("COVERAGE_NO_SAFE_SWEEP")
+                raise JobError("no admissible through-sweep goal") from exc
         goal=self._interlock.dispatch(
-            pose_cell=cell, admit_route=checker.route_admitted)
+            pose_cell=cell, admit_route=checker.route_admitted,
+            route_override=proposed)
+        if proposed is not None:
+            self._sweep_tried.add(proposed[-1])
         self._sent_count += 1
+        self._cleaned_at_dispatch=self._job.status()["cleaned_cells"]
         return goal.token
 
     def _handle(self, request: dict) -> dict:
@@ -312,24 +451,32 @@ class ExperimentalCleaningNode(Node):
                 raise JobError("spot x/y numeric coordinates required")
             m,grid,pose,battery=self._ready()
             spot=m.cell_at(float(x),float(y))
+            radius_m=request.get("radius_m",0.0)
+            if (type(radius_m) not in (float,int) or not math.isfinite(radius_m)
+                or not 0<=radius_m<=0.5):
+                raise JobError("spot radius_m must be finite and within 0..0.5m")
             px,py=m.centre(pose);gx,gy=m.centre(spot)
             if math.hypot(gx-px,gy-py)>5.0:
                 raise JobError("spot beyond 5m lab test limit")
             checker=CostmapChecker(m,self._costmap,max_cost=self._max_cost)
             # Verify route before committing the new job checkpoint.
-            route=grid.path_to_nearest(pose,frozenset([spot]))
+            target_cells=grid.targets(mode="spot",spot=spot,radius_m=radius_m)
+            route=grid.path_to_nearest(pose,target_cells)
             if not checker.route_admitted(route):
                 raise JobError("dynamic footprint/costmap rejected proposed route")
             job=CleaningJobs(grid,self._checkpoint)
             job.start(job_id,mode="spot",start_cell=pose,spot=spot,
-                      radius_m=0.0,resources=battery)
+                      radius_m=radius_m,resources=battery)
             self._job=job
             port=AsyncNav2Transport.from_ros2(self, self._build_nav_goal,
                  on_terminal=self._on_terminal, on_fault=self._on_fault,
                  on_accepted=self._on_accepted)
             self._port=port
-            self._interlock=NavigationInterlock(job,port,coverage_source="unconfigured_no_credit",
-                                                cancel_timeout_s=12)
+            self._interlock=NavigationInterlock(job,port,
+                coverage_source=("oomwoo_sim_ground_truth_meter"
+                                 if self._coverage_mode=="sim_ground_truth"
+                                 else "unconfigured_no_credit"),
+                cancel_timeout_s=12)
             if not port.client.server_is_ready():
                 job.suspend_recovery("NAV2_SERVER_UNAVAILABLE")
                 raise JobError("Nav2 not ready; checkpoint left safely paused")
@@ -340,15 +487,19 @@ class ExperimentalCleaningNode(Node):
         if self._interlock is None or self._job is None:
             raise JobError("no active cleaning job")
         if op=="pause":
+            self._next_after_succeeded=None
             self._interlock.pause()
             return {"ok":True,"op":op}
         if op=="cancel":
+            self._next_after_succeeded=None
             self._interlock.cancel_job()
             return {"ok":True,"op":op}
         if op=="resume":
             _,_,pose,battery=self._ready()
             self._interlock.resume(pose_cell=pose,resources=battery)
-            token=self._dispatch(pose)
+            self._next_after_succeeded=None
+            self._no_progress_successes=0
+            token=self._dispatch(pose, thru_sweep=self._auto_continue)
             return {"ok":True,"op":op,"goal_token":token}
         raise JobError("invalid command")
 
@@ -380,11 +531,41 @@ class ExperimentalCleaningNode(Node):
                 self._freeze("COSTMAP_STALE")
             elif self._battery_received is None or self._now()-self._battery_received>15:
                 self._freeze("BATTERY_TELEMETRY_STALE")
+            elif (self._coverage_mode=="sim_ground_truth"
+                  and (self._meter_received is None
+                       or self._now()-self._meter_received>4.0
+                       or self._meter_unstable is not False
+                       or self._meter_stability_received is None
+                       or self._now()-self._meter_stability_received>4.0)):
+                self._freeze("COVERAGE_METER_STALE")
             else:
                 try:
                     self._fresh_pose()
                 except Exception:
                     self._freeze("LOCALIZATION_STALE")
+        if (self._auto_continue and self._next_after_succeeded is not None
+            and self._now()>=self._next_after_succeeded
+            # Wait until at least ONE post-terminal external meter sample.
+            # Do not discard a late 1Hz frame just to issue another goal.
+            and (self._meter is None or self._meter_received_at_success is None
+                 or self._meter.received>self._meter_received_at_success)):
+            self._next_after_succeeded=None
+            if (self._job is not None and self._interlock is not None
+                and self._interlock.can_dispatch() and self._frozen is None):
+                progress=self._job.status()["cleaned_cells"]
+                if progress==self._cleaned_at_dispatch:
+                    self._no_progress_successes+=1
+                else:
+                    self._no_progress_successes=0
+                if self._no_progress_successes>=self._max_no_progress:
+                    self._freeze("COVERAGE_NO_PROGRESS")
+                else:
+                    try:
+                        _,_,pose,_=self._ready()
+                        self._dispatch(pose, thru_sweep=True)
+                    except Exception as exc:
+                        self._freeze("AUTONOMOUS_NEXT_GOAL_FAILED")
+                        self.get_logger().warning("next verified goal unavailable: "+str(exc))
         self._publish()
 
     def snapshot(self) -> dict:
@@ -402,6 +583,17 @@ class ExperimentalCleaningNode(Node):
                   and self._now()-self._battery_received<=15,
               "sent_goals":self._sent_count,"accepted_goals":self._accepted_count,
               "last_terminal":self._last_terminal,
+              "coverage_mode":self._coverage_mode,
+              "coverage_ready":self._meter is not None and self._meter.ready
+                   and self._meter_unstable is False,
+              "coverage_last_state":self._meter_last_state,
+              "coverage_observed_cells":self._meter.observed if self._meter else None,
+              "coverage_credited_cells":self._acknowledged_measured_cells,
+              "post_success_measured_cells":self._post_goal_measured,
+              "auto_continue":self._auto_continue,
+              "no_progress_successes":self._no_progress_successes,
+              "max_no_progress_attempts":self._max_no_progress,
+              "sweep_endpoints_tried":len(self._sweep_tried),
               "last_command":self._last_command}
         if self._interlock is not None:
             snap["interlock"]=self._interlock.snapshot()

@@ -1,0 +1,125 @@
+{
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "limitations": "Nine-cell small spot in test_room; not a whole-room/hardware result. Synthetic battery input.",
+  "recorded_utc": "2026-10-27T03:26:13.320389+00:00",
+  "runs": [
+    {
+      "battery": "synthetic test feed",
+      "cleaned_cells": 9,
+      "external_meter_credited": 9,
+      "frozen": null,
+      "goal_count": 2,
+      "initial_credited": 0,
+      "job_state": "completed",
+      "last_terminal": "canceled",
+      "ok": true,
+      "post_job_active_goal": null,
+      "progress": [
+        {
+          "cleaned_cells": 0,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 4,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 9,
+          "nav_goals": 2,
+          "state": "completed"
+        }
+      ],
+      "reason": null,
+      "source": "unmodified OOMWOO ground-truth meter",
+      "target_cells": 9,
+      "target_pose": [
+        1.2750000428408383,
+        0.02500004582107085
+      ],
+      "test": "small_spot_completion"
+    },
+    {
+      "battery": "synthetic test feed",
+      "cleaned_cells": 9,
+      "external_meter_credited": 9,
+      "frozen": null,
+      "goal_count": 2,
+      "initial_credited": 0,
+      "job_state": "completed",
+      "last_terminal": "canceled",
+      "ok": true,
+      "post_job_active_goal": null,
+      "progress": [
+        {
+          "cleaned_cells": 0,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 5,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 7,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 9,
+          "nav_goals": 2,
+          "state": "completed"
+        }
+      ],
+      "reason": null,
+      "source": "unmodified OOMWOO ground-truth meter",
+      "target_cells": 9,
+      "target_pose": [
+        1.2750000428408383,
+        -0.02499995492398721
+      ],
+      "test": "small_spot_completion"
+    },
+    {
+      "battery": "synthetic test feed",
+      "cleaned_cells": 9,
+      "external_meter_credited": 9,
+      "frozen": null,
+      "goal_count": 2,
+      "initial_credited": 0,
+      "job_state": "completed",
+      "last_terminal": "canceled",
+      "ok": true,
+      "post_job_active_goal": null,
+      "progress": [
+        {
+          "cleaned_cells": 0,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 5,
+          "nav_goals": 1,
+          "state": "running"
+        },
+        {
+          "cleaned_cells": 9,
+          "nav_goals": 2,
+          "state": "completed"
+        }
+      ],
+      "reason": null,
+      "source": "unmodified OOMWOO ground-truth meter",
+      "target_cells": 9,
+      "target_pose": [
+        1.2750000428408383,
+        -0.02499995492398721
+      ],
+      "test": "small_spot_completion"
+    }
+  ],
+  "scope": "official_oomwoo_gazebo_real_nav2_and_meter",
+  "source": "unmodified upstream oomwoo_sim_support coverage_meter, real OOMWOO Gazebo/Nav2"
+}

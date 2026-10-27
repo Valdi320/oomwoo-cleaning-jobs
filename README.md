@@ -1,8 +1,8 @@
-# OOMWOO cleaning-jobs: checkpoints + persistent experimental ROS2/Nav2 controller
+# OOMWOO cleaning-jobs: measured coverage and bounded Nav2 orchestration
 
 [OOMWOO](https://github.com/makerspet/oomwoo) · [cleaning-jobs RFC](https://github.com/makerspet/oomwoo/tree/main/contributions/cleaning-jobs) · [software interface contract](https://github.com/makerspet/oomwoo/blob/main/docs/SOFTWARE_INTERFACES.md)
 
-A **testable job-state core, asynchronous Nav2 ActionClient, and long-running experimental ROS2 controller** for OOMWOO. Start, pause, resume, cancel and simulated low-battery interruption have now been tested end-to-end with the real Nav2 BT Navigator moving OOMWOO in Gazebo. This is **not a canonical OOMWOO public job API, completed cleaning-jobs RFC, or physical-robot safety controller**.
+An experimental ROS2 cleaning-job core with durable checkpoints, real Nav2 actions, simulator-measured floor coverage and bounded automatic follow-up goals. Start, pause, resume and low-battery recovery have been tested with OOMWOO in Gazebo. This is **not a public canonical API, complete multi-room cleaner or physical safety controller**.
 
 ## What works today
 
@@ -12,17 +12,28 @@ A **testable job-state core, asynchronous Nav2 ActionClient, and long-running ex
 - `start`, `waypoint`, `acknowledge_cleaned`, `pause`, `resume`, `cancel`, `observe_resources`, `fail`, `status`; battery/bin/mop service interruptions; priority for low battery; clean resumption without erasing earlier progress.
 - Strict fail-closed conditions for missing/unreachable start pose, keepout violations, stale changed maps, corrupted checkpoints, service still needed, and invalid state transitions.
 - The job-state and interlock core remain dependency-free; the optional experimental ROS2 controller requires ROS2 Jazzy, Nav2 and TF2 in OOMWOO's official development image.
+- **Measured coverage:** only fresh cells from the official OOMWOO simulated ground-truth meter count, never mere Nav2 success. A bounded 3-second post-success meter tail captures delayed measurements without unlocking future navigation. See [measured coverage](docs/MEASURED_COVERAGE_AND_AUTO_CONTINUE.md).
 - **Phase-1 Nav2-facing interlock:** only one outstanding navigation goal; on pause, recovery or low battery request cancellation and wait for a terminal result before allowing another goal.
 - An uncertain send/cancel or timeout **latches a fault**, requiring external Nav2 idle verification; late results and stale coverage acknowledgements cannot silently rearm the robot.
 - **Manual/externally verified rearm after restart** (goal handles may be lost even while Nav2 continues moving). See [navigation handoff contract](docs/NAVIGATION_HANDOFF.md).
-- **104 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
+- **148 pure-Python regression tests** and ROS2 middleware probes. **New Phase 3:** a private, persistent ROS2 node using actual /map, map-to-base_link TF, Nav2 global costmap, lifecycle GetState, /battery_state and NavigateToPose. A [Gazebo end-to-end regression](docs/EXPERIMENTAL_ROS_NODE.md) confirms start/pause/resume/cancel and *automatic battery-low cancellation*, with [machine evidence](docs/evidence/ros_persistent_gazebo_20261027.json).
+
+### Repeatable measured spot completion
+
+**3/3 independent cold-start Gazebo trials** finished the same small
+9-cell test-room spot with **9/9 externally measured cells**, two
+Nav2 goals and a confirmed terminal cancellation in every run.
+[Repetition evidence](docs/evidence/ros_verified_small_spot_repeats_20261027.json)
+and [root-cause analysis](docs/SMALL_SPOT_MEASURED_COMPLETION.md)
+document the route overshoot and delayed-meter fix. This does **not**
+establish multi-room or whole-floor performance.
 
 ## What it deliberately does **not** do
 
 - **No physical motor or MCU safety validation; no finalized public ROS2 job action/service API yet.** The long-running controller uses private simulation-only JSON topics, not official OOMWOO interfaces. The tested Gazebo cancel cannot certify stopping on a physical robot. Cliff/bumper/wheel-drop/current safety must remain independently STM32-owned.
 - The chosen paths represent *grid cell centres* and do not prove a robot with finite footprint, wheel slip, localization noise, dynamic obstacles or a specific nozzle cleaning width can traverse or clean them. Real execution must use Nav2 costmaps with correctly inflated keepout, robust localization, collision checks, recovery and progress feedback.
 - Rooms are **manually labelled**; automatic room segmentation and editing UI are future work. Occupancy `0` is considered traversable; `-1` (unknown) and all other values are blocked intentionally.
-- Coverage is **acknowledged cell-centre progress**, *not* proof that physical floor area or the cleaning swath was cleaned. The integration adapter must transform trusted coverage updates into cell IDs and persist them.
+- Coverage can be acknowledged from OOMWOO's external ground-truth simulated cleaning-disk meter, but this is **not physical dirt removal**. Hardware requires a separately validated estimator and actuator-state gating.
 - The experimental ROS2 node subscribes to real /battery_state and fresh TF in its private test. The official Gazebo test-room has no functional battery publisher, so the harness explicitly injects **synthetic BatteryState telemetry** to test a battery-low pause/recharge. Actual dock services remain unimplemented.
 - One job/checkpoint and one writer per instance; new job needs a fresh checkpoint. Cross-process coordination should happen at the ROS adapter layer.
 
@@ -60,8 +71,8 @@ Both commands run in plain Linux without ROS2, Docker, network access or hardwar
 
 ## Next PRs needed to meet the entire RFC
 
-1. Promote the **tested experimental long-running ROS2 controller** to a maintainer-approved public job action/service API; integrate **trusted measured** clean-and-map swept-area feedback, without granting cleaning credit for mere Nav2 arrival.
-2. Nav2 KeepoutFilter mask + inflation tests with robot footprint, dynamic obstacles, cliffs and recovery. Run headless Gazebo regressions on `living_room` and `multi_room`.
+1. Promote the private experimental controller to a maintainer-approved job API; replace simulator ground truth with hardware-validated coverage estimation and actuator-state gating.
+2. Integrate upstream `oomwoo_coverage`'s existing full-room sweep under one Nav2 action owner, add real keepout filter masks, and test multiple rooms with dynamic obstacles.
 3. Automatic room segmentation, persisted human room labels, spot editing and zone UI; integrate dock-cycle recharge/bin/mop interruptions. Assess swath coverage and localization error, not only cell-centre completion.
 4. Evaluate algorithmic efficiency against upstream's coverage planner; nearest-cell routing here optimizes correctness of a small reference, **not** cleaning time or energy.
 

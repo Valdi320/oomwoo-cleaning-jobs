@@ -1,0 +1,60 @@
+{
+  "battery_source": "synthetic ROS2 BatteryState injected by isolated harness; not official sensor telemetry",
+  "coverage_source": "Official, unmodified oomwoo_sim_support/coverage_meter_node using ground_truth/pose",
+  "image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "image_id": "65bec2e9c5122c286ef4f34e9e99e94f90e3583d8a9f960cc3422c624e61452f",
+  "limitations": [
+    "The test targeted 69 scoped cell centres; it did NOT complete that zone",
+    "1 observed newly covered cell was durably counted before battery pause",
+    "Simulation ground-truth coverage is not a production estimator",
+    "Auto next-goal proof additionally uses a fake-action-server ROS2 middleware regression",
+    "No hardware, MCU safety, true mop/vacuum actuation or multi-room coverage verified"
+  ],
+  "measurement_units": "map cells marked by simulated cleaning disk; not physical suction or dirt removal",
+  "real_robot_hardware": false,
+  "recorded_utc": "2026-10-27T02:55:54.959562+00:00",
+  "result": {
+    "auto_continue_enabled": true,
+    "battery_interrupted_after_coverage": true,
+    "battery_source": "synthetic BatteryState from isolated harness",
+    "checkpoint_cells_on_pause": 1,
+    "coverage_source_confirmed": true,
+    "final_before_cleanup": {
+      "cleaned_cells": 1,
+      "coverage_fraction": 0.014492753623188406,
+      "job_id": "verified_swept_meter",
+      "reason_code": null,
+      "recoverable": false,
+      "resume_count": 1,
+      "revision": 4,
+      "source": "oomwoo_cleaning_jobs",
+      "state": "running",
+      "target_cells": 69
+    },
+    "first_goal_accepted": true,
+    "first_sweep_state": "running",
+    "goals_accepted": 3,
+    "initial_job_credited": 0,
+    "initial_meter_covered": 29,
+    "last_meter_state": "not_active",
+    "last_state": "cancelled",
+    "measured_cells_total": 1,
+    "no_progress_count": 1,
+    "observed_new_cells": 1,
+    "ok": true,
+    "resume_after_battery": true,
+    "source": "official OOMWOO simulator ground-truth coverage_meter",
+    "spot": {
+      "cell": 8469,
+      "radius_m": 0.24,
+      "target_cells": 69,
+      "x": 1.875000051781535,
+      "y": -0.02499995492398721
+    }
+  },
+  "simulator": "Official OOMWOO One test_room.world / ROS2 Jazzy/Nav2",
+  "source_topics": [
+    "/coverage_meter/covered_grid",
+    "/coverage_meter/sim_unstable"
+  ]
+}
