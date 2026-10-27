@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oomwoo-cleaning-jobs"
-version = "0.5.0"
-description = "Simulation-only ROS2 jobs with measured coverage and bounded Nav2 continuation"
+version = "0.6.0"
+description = "Simulation-only ROS2 jobs, measured Nav2 coverage, offline room and no-go zone plans"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }

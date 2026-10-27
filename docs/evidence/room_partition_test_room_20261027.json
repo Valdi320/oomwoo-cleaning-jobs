@@ -1,0 +1,44 @@
+{
+  "limitation": "Open test room is not representative of an apartment with multiple enclosed rooms.",
+  "mode": "READ ONLY, no ROS2 movement",
+  "result": {
+    "conservative_safe_cells": 12394,
+    "map_fingerprint": "474543b7e2db45427c0a7f80b7b660d6160bd0f5023c9d3d352b1f39b0b01569",
+    "map_size": [
+      140,
+      140
+    ],
+    "occupancy_cells": 19600,
+    "proposals": [
+      {
+        "distance_threshold_cells": 2,
+        "elapsed_s": 0.256,
+        "number_of_proposed_rooms": 1,
+        "partition_is_exact": true,
+        "room_size_cells": [
+          12394
+        ]
+      },
+      {
+        "distance_threshold_cells": 3,
+        "elapsed_s": 0.26,
+        "number_of_proposed_rooms": 1,
+        "partition_is_exact": true,
+        "room_size_cells": [
+          12394
+        ]
+      },
+      {
+        "distance_threshold_cells": 4,
+        "elapsed_s": 0.26,
+        "number_of_proposed_rooms": 1,
+        "partition_is_exact": true,
+        "room_size_cells": [
+          12394
+        ]
+      }
+    ]
+  },
+  "source": "Official unmodified OOMWOO /map topic in isolated Jazzy/Gazebo test_room",
+  "verified_at_utc": "2026-10-27T03:42:04.723252+00:00"
+}

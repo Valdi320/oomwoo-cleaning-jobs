@@ -1,0 +1,22 @@
+{
+  "observed_utc": "2026-10-27T03:47:40.119114+00:00",
+  "result": {
+    "contains_real_movement": false,
+    "labels_and_masks_roundtripped": true,
+    "map": [
+      140,
+      140,
+      0.05000000074505806
+    ],
+    "mask_100_cells": 116,
+    "nav2_keepout_filter_tested": false,
+    "ok": true,
+    "room_plan_stale_after_zone_edit_rejected": true,
+    "safe_after": 11761,
+    "safe_before": 12394,
+    "safety": "candidate masks only; NAV2 must independently load a KeepoutFilter before using them",
+    "source": "official OOMWOO test_room /map; offline only"
+  },
+  "safety_boundary": "prototype mask, NOT configured into Nav2 KeepoutFilter",
+  "source": "isolated official OOMWOO test_room ROS2 /map"
+}
