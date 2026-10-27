@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oomwoo-cleaning-jobs"
+version = "0.1.0"
+description = "Headless, hardware-independent cleaning job checkpoint and routing reference for OOMWOO"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Valdi320" }]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
