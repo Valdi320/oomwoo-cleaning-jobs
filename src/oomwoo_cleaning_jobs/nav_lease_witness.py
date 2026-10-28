@@ -97,10 +97,16 @@ class NavLeaseWitness:
             self.fault="Nav2 goal UUID changed without terminal proof"
             return
         if self.saw_terminal:
-            # Once a goal is observed terminal, it must remain durably
-            # terminal. A concurrent writer can never revert it.
+            # ROS2 and the durable journal must keep agreeing on the SAME
+            # terminal outcome for our UUID. A later contradictory status
+            # may be stale/misrouted; never retain an old handoff permit.
             if record["state"]!="terminal" or record["outcome"]!=self.terminal_kind:
                 self.fault="terminal Nav2 proof retracted"
+                return
+            own_status=next((code for uuid,code in statuses
+                             if uuid==self.uuid),None)
+            if own_status is not None and TERMINAL.get(own_status)!=self.terminal_kind:
+                self.fault="conflicting terminal Nav2 status for current UUID"
             return
         terminal=[code for uuid,code in statuses
                   if uuid==self.uuid and code in TERMINAL]

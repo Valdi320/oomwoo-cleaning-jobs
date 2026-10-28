@@ -174,5 +174,57 @@ class DockNavUUIDWitnessTests(unittest.TestCase):
         self.assertFalse(valid_nav_status_snapshot(((UUID,4),(UUID,4))))
         self.assertFalse(valid_nav_status_snapshot(((UUID,0),)))
 
+
+    def test_terminal_canceled_then_succeeded_revokes_release(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("canceled")
+        self.w.observe(((UUID,5),))
+        self.assertTrue(self.w.can_release_for_dock())
+        self.w.observe(((UUID,4),))
+        self.assertFalse(self.w.can_release_for_dock())
+        self.assertIsNotNone(self.w.fault)
+        self.assertIn("conflicting terminal",self.w.fault)
+
+    def test_terminal_succeeded_then_canceled_revokes_release(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("succeeded")
+        self.w.observe(((UUID,4),))
+        self.assertTrue(self.w.can_release_for_dock())
+        self.w.observe(((UUID,5),))
+        self.assertFalse(self.w.can_release_for_dock())
+        self.assertIsNotNone(self.w.fault)
+        self.assertIn("conflicting terminal",self.w.fault)
+
+    def test_terminal_aborted_then_succeeded_faults(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("aborted")
+        self.w.observe(((UUID,6),))
+        self.assertFalse(self.w.can_release_for_dock())
+        self.w.observe(((UUID,4),))
+        self.assertIsNotNone(self.w.fault)
+        self.assertIn("conflicting terminal",self.w.fault)
+
+    def test_terminal_repeat_and_foreign_terminal_do_not_fault(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("canceled")
+        self.w.observe(((UUID,5),))
+        self.w.observe(((UUID,5),(OTHER,4)))
+        self.assertIsNone(self.w.fault)
+        self.assertTrue(self.w.can_release_for_dock())
+
+    def test_terminal_conflict_is_latched_even_when_old_code_returns(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("canceled")
+        self.w.observe(((UUID,5),))
+        self.w.observe(((UUID,4),))
+        self.w.observe(((UUID,5),))
+        self.assertIsNotNone(self.w.fault)
+        self.assertFalse(self.w.can_release_for_dock())
+
 if __name__=="__main__":
     unittest.main()

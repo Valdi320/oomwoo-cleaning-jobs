@@ -1,0 +1,30 @@
+{
+  "evidence_level": "host pure Python only; no live ROS2/Nav2/Gazebo",
+  "hardware": "none; no motors, battery, MCU or robot",
+  "license": "Apache-2.0",
+  "owner": "Valdi320",
+  "parent": "f7f475f1b93ac23d44f4338888def781567b3186",
+  "postpatch": {
+    "demo_excerpt": "{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}",
+    "demo_exit": 0,
+    "focused_exit": 0,
+    "focused_tests": 24,
+    "full_exit": 0,
+    "full_tests": 480,
+    "optimized_exit": 0,
+    "optimized_tests": 480
+  },
+  "prepatch": {
+    "errors": 0,
+    "exit": 1,
+    "failures": [
+      "test_terminal_canceled_then_succeeded_revokes_release",
+      "test_terminal_succeeded_then_canceled_revokes_release",
+      "test_terminal_aborted_then_succeeded_faults",
+      "test_terminal_conflict_is_latched_even_when_old_code_returns"
+    ],
+    "tests": 24
+  },
+  "security_limits": "ROS2 statuses are not authenticated; not physical safety",
+  "utc": "2026-10-28T03:57:00.466369+00:00"
+}
