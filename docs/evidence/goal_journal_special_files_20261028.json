@@ -1,0 +1,57 @@
+{
+  "scope": "Linux synthetic filesystem; no ROS2/Nav2/Gazebo or hardware",
+  "base_sha": "5f93fa4e43a887a849e1be32b8d30dc3fa589caa",
+  "negative_control": "Prepatch reproduced FIFO read timeout (2 seconds) and hardlink lock accepted (1 error, 1 failure of 4).",
+  "python": "3.14.3 (main, Mar 26 2026, 00:00:00) [GCC 15.2.1 20260123 (Red Hat 15.2.1-7)]",
+  "utc": "2026-10-28T17:49:53.214756+00:00",
+  "runs": [
+    {
+      "name": "focal",
+      "command": "/usr/bin/python3 -m unittest discover -s tests -p test_goal_journal_special_files_20261028.py -v",
+      "exit": 0,
+      "tests": 4,
+      "status": "PASS",
+      "output_tail": "test_fifo_instead_of_journal_fails_closed_without_hanging (test_goal_journal_special_files_20261028.SpecialFileJournalTests.test_fifo_instead_of_journal_fails_closed_without_hanging) ... ok\ntest_fifo_lock_refuses_begin_and_never_creates_journal (test_goal_journal_special_files_20261028.SpecialFileJournalTests.test_fifo_lock_refuses_begin_and_never_creates_journal) ... ok\ntest_hardlinked_lock_rejected_without_goal_write (test_goal_journal_special_files_20261028.SpecialFileJournalTests.test_hardlinked_lock_rejected_without_goal_write) ... ok\ntest_private_regular_journal_and_lock_still_work (test_goal_journal_special_files_20261028.SpecialFileJournalTests.test_private_regular_journal_and_lock_still_work) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.094s\n\nOK\n\n"
+    },
+    {
+      "name": "goal_journal",
+      "command": "/usr/bin/python3 -m unittest discover -s tests -p test_goal_journal*.py -q",
+      "exit": 0,
+      "tests": 30,
+      "status": "PASS",
+      "output_tail": "----------------------------------------------------------------------\nRan 30 tests in 0.577s\n\nOK\n\n"
+    },
+    {
+      "name": "full",
+      "command": "/usr/bin/python3 -m unittest discover -s tests -q",
+      "exit": 0,
+      "tests": 601,
+      "status": "PASS",
+      "output_tail": "----------------------------------------------------------------------\nRan 601 tests in 14.407s\n\nOK\n\n"
+    },
+    {
+      "name": "optimized",
+      "command": "/usr/bin/python3 -O -m unittest discover -s tests -q",
+      "exit": 0,
+      "tests": 601,
+      "status": "PASS",
+      "output_tail": "----------------------------------------------------------------------\nRan 601 tests in 14.341s\n\nOK\n\n"
+    },
+    {
+      "name": "compile",
+      "command": "/usr/bin/python3 -m compileall -q src tests",
+      "exit": 0,
+      "tests": null,
+      "status": "PASS",
+      "output_tail": "\n"
+    },
+    {
+      "name": "demo",
+      "command": "/usr/bin/python3 -m oomwoo_cleaning_jobs.demo",
+      "exit": 0,
+      "tests": null,
+      "status": "PASS",
+      "output_tail": "\n{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}\n"
+    }
+  ]
+}

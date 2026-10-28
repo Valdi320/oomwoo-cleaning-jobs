@@ -9,6 +9,8 @@ reconciled. An accepted cancel ACK alone cannot mark it terminal.
 No ROS2 dependency. A stable nonblocking Linux flock guards each
 journal transition across cooperating processes sharing one path.
 This does NOT replace an exclusive cross-process Nav2 action owner.
+Special filesystem nodes never block journal admission: open uses O_NONBLOCK
+before inode validation, then rejects every non-private regular file.
 """
 from __future__ import annotations
 
@@ -55,7 +57,7 @@ class GoalJournal:
         # Linux-only fail-closed read. A symlink to an unrelated terminal
         # journal must NEVER clear the unknown in-flight Nav2 UUID.
         try:
-            fd=os.open(self.path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+            fd=os.open(self.path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
         except FileNotFoundError:
             return None
         except OSError as exc:
@@ -119,14 +121,16 @@ class GoalJournal:
         """
         self.path.parent.mkdir(parents=True, exist_ok=True)
         lock_path=self.path.with_name(self.path.name+".lock")
-        flags=os.O_RDWR | os.O_CREAT | getattr(os,"O_NOFOLLOW",0)
+        flags=(os.O_RDWR | os.O_CREAT | getattr(os,"O_NOFOLLOW",0)
+               | getattr(os,"O_NONBLOCK",0))
         try:
             fd=os.open(lock_path,flags,0o600)
         except OSError as exc:
             raise GoalJournalError("Nav2 journal lock unavailable: refuse action") from exc
         try:
-            mode=os.fstat(fd).st_mode
-            if not stat.S_ISREG(mode) or stat.S_IMODE(mode)&0o077:
+            info=os.fstat(fd)
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink!=1
+                or stat.S_IMODE(info.st_mode)&0o077):
                 raise GoalJournalError("Nav2 journal lock inode/permissions unsafe")
             try:
                 fcntl.flock(fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
