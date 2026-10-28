@@ -4,7 +4,8 @@ ROS2 Odometry and pose history alone do NOT prove cleaning. Any credit
 requires a trusted upstream estimator, positive and recent actuator
 telemetry, localization, and an active, accepted navigation goal.
 This policy only screens already measured cell IDs; no fake cells are
-generated and no motor commands are issued.
+generated and no motor commands are issued. A trusted observation time
+must be bound to fresh earlier actuator and localization samples.
 
 Upstream robot firmware/sensor trust remains to be implemented. Unlike
 the Gazebo ground-truth meter this cannot establish physical dirt removal
@@ -42,23 +43,28 @@ class PhysicalCoverageAdmission:
     def __init__(self, *, max_age_s:float=.65,
                  max_position_stddev_m:float=.09,
                  max_yaw_stddev_rad:float=.17,
-                 minimum_vacuum_current_a:float=.12):
+                 minimum_vacuum_current_a:float=.12,
+                 max_sample_skew_s:float=.15):
         vals=(max_age_s,max_position_stddev_m,max_yaw_stddev_rad,
-              minimum_vacuum_current_a)
+              minimum_vacuum_current_a,max_sample_skew_s)
         if any(type(v) not in (float,int) or not math.isfinite(v) or v<=0
                for v in vals):
             raise ValueError("invalid robot cleaning admission limits")
+        if max_sample_skew_s>max_age_s:
+            raise ValueError("skew exceeds measurement freshness")
         self.max_age=float(max_age_s)
+        self.max_skew=float(max_sample_skew_s)
         self.max_pos=float(max_position_stddev_m)
         self.max_yaw=float(max_yaw_stddev_rad)
         self.min_current=float(minimum_vacuum_current_a)
 
-    def admit(self, *,now_s:float,cells:tuple[int,...],actuator:ActuatorReading,
+    def admit(self, *,now_s:float,measurement_stamp_s:float,
+              cells:tuple[int,...],actuator:ActuatorReading,
               localization:LocalizationReading,goal_accepted:bool,
               job_running:bool,mode:str,
               trusted_coverage_source:bool,source_map_matches:bool) -> tuple[int,...]:
         if (type(now_s) not in (int,float) or not math.isfinite(now_s)
-            or type(cells) is not tuple or not cells
+            or now_s<0 or type(cells) is not tuple or not cells
             or any(type(i) is not int or i<0 for i in cells)
             or len(cells)>10000 or len(set(cells))!=len(cells)):
             raise PhysicalCoverageNotVerified("invalid measured cells/robot clock")
@@ -70,10 +76,15 @@ class PhysicalCoverageAdmission:
             raise PhysicalCoverageNotVerified("untrusted source, map or inactive cleaning job")
         if mode not in ("vacuum","mop","vacuum_and_mop"):
             raise PhysicalCoverageNotVerified("unknown cleaning actuator mode")
-        timestamps=(actuator.stamp_s,localization.stamp_s)
+        # Do not use a LATER on-current / pose to certify an EARLIER cell.
+        # These readings MUST share one monotonic timebase.
+        timestamps=(measurement_stamp_s,actuator.stamp_s,localization.stamp_s)
         if any(type(t) not in (int,float) or not math.isfinite(t)
-               or not 0<=now_s-t<=self.max_age for t in timestamps):
-            raise PhysicalCoverageNotVerified("stale/future cleaning or localization telemetry")
+               or t<0 or not 0<=now_s-t<=self.max_age for t in timestamps):
+            raise PhysicalCoverageNotVerified("stale/future coverage or sensor telemetry")
+        if (not 0<=measurement_stamp_s-actuator.stamp_s<=self.max_skew
+            or not 0<=measurement_stamp_s-localization.stamp_s<=self.max_skew):
+            raise PhysicalCoverageNotVerified("coverage lacks simultaneous prior actuation and pose")
         if localization.frame!="map":
             raise PhysicalCoverageNotVerified("pose not in known map frame")
         noise=(localization.position_stddev_m,localization.yaw_stddev_rad)

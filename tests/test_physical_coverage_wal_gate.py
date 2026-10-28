@@ -18,6 +18,7 @@ class PhysicalCoverageWALGateTests(unittest.TestCase):
         self.wal.producer = "physical"
         self.gate = PhysicalCoverageWALGate(self.wal, PhysicalCoverageAdmission())
         self.kw = dict(event_id="receipt1", cells=(4, 7), now_s=10.,
+            measurement_stamp_s=10.,
             actuator=ActuatorReading(10., True, .25, False, False),
             localization=LocalizationReading(10., "map", .02, .03),
             goal_accepted=True, job_running=True, mode="vacuum",

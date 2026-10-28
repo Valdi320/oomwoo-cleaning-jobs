@@ -27,12 +27,14 @@ class PhysicalCoverageWALGate:
         self.admission = admission
 
     def stage(self, event_id: str, cells: tuple[int, ...], *,
-              now_s: float, actuator: ActuatorReading,
+              now_s: float, measurement_stamp_s: float,
+              actuator: ActuatorReading,
               localization: LocalizationReading, goal_accepted: bool,
               job_running: bool, mode: str,
               trusted_coverage_source: bool, source_map_matches: bool) -> None:
         verified = self.admission.admit(
-            now_s=now_s, cells=cells, actuator=actuator,
+            now_s=now_s, measurement_stamp_s=measurement_stamp_s,
+            cells=cells, actuator=actuator,
             localization=localization, goal_accepted=goal_accepted,
             job_running=job_running, mode=mode,
             trusted_coverage_source=trusted_coverage_source,

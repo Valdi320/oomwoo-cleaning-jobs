@@ -11,7 +11,8 @@ class PhysicalAdmissionTests(unittest.TestCase):
         self.policy=PhysicalCoverageAdmission()
         self.act=ActuatorReading(100.,True,.41,True,True)
         self.loc=LocalizationReading(100.,"map",.03,.07)
-        self.base={"now_s":100.2,"cells":(52,53,54),
+        self.base={"now_s":100.2,"measurement_stamp_s":100.1,
+            "cells":(52,53,54),
             "actuator":self.act,"localization":self.loc,
             "goal_accepted":True,"job_running":True,
             "mode":"vacuum_and_mop","trusted_coverage_source":True,

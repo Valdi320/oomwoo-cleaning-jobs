@@ -1,0 +1,44 @@
+{
+  "created_utc": "2026-10-28T05:44:35.492141+00:00",
+  "limitations": {
+    "hardware": false,
+    "physical_cleaning_proven": false,
+    "pure_python": true,
+    "ros2_gazebo": false
+  },
+  "negative_control_expected_fail": {
+    "returncode": 1,
+    "stderr_tail": "sts.test_legacy_unstamped_claim_rejected)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documentos/Contribuciones_OOMWOO/oomwoo_physical_time_coupling_20261028_0639/tests/test_physical_coverage_temporal.py\", line 25, in test_legacy_unstamped_claim_rejected\n    with self.assertRaises(TypeError):self.p.admit(**kw)\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^\nAssertionError: TypeError not raised\n\n----------------------------------------------------------------------\nRan 15 tests in 0.004s\n\nFAILED (failures=1, errors=14)\n"
+  },
+  "new_branch": "contrib/cleaning-jobs-physical-time-coupling-20261028-0639",
+  "owner": "Valdi320",
+  "parent_sha": "913519b47f9d56651ac3518bef56bf01f1c6cde8",
+  "schema": 1,
+  "tests": {
+    "demo": {
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": "{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}\n"
+    },
+    "focused": {
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 15 tests in 0.001s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "full": {
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 507 tests in 13.368s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "optimized": {
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 507 tests in 13.332s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "syntax": {
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": ""
+    }
+  }
+}
