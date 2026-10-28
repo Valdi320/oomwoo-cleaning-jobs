@@ -64,11 +64,21 @@ def swept_disk_clear(raster,world_a,world_b,radius_m,max_cost):
     if x0<0 or y0<0 or x1>=raster.width or y1>=raster.height:
         return False # unobserved rolling costmap edge cannot be safe
     radius2=radius_m*radius_m
+    # Known safe pixels cannot cause a collision regardless of geometry.
+    # Test those values FIRST; expensive segment-rectangle geometry is
+    # necessary only for UNKNOWN or high-cost pixels. This preserves the
+    # original exact capsule test and its conservative edge rejection.
+    data=raster.data
+    width=raster.width
+    tolerance=radius2+1e-12
     for row in range(y0,y1+1):
         bottom=row*res
+        row_offset=row*width
         for col in range(x0,x1+1):
+            cost=data[row_offset+col]
+            if 0 <= cost <= max_cost:
+                continue
             left=col*res
-            if _segment_box2(ax,ay,bx,by,left,bottom,left+res,bottom+res)<=radius2+1e-12:
-                cost=raster.data[row*raster.width+col]
-                if cost<0 or cost>max_cost:return False
+            if _segment_box2(ax,ay,bx,by,left,bottom,left+res,bottom+res)<=tolerance:
+                return False
     return True

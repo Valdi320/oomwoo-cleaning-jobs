@@ -1,0 +1,99 @@
+{
+  "base_commit": "8d58ea220f745c68949e3936f916169b5eccf15b",
+  "date_utc": "2026-10-28",
+  "host": {
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "python": "3.13.5"
+  },
+  "level": "host-only Python synthetic data; no ROS2/Gazebo/hardware",
+  "limitations": [
+    "no full local repository checkout",
+    "no target Raspberry Pi benchmark",
+    "no Gazebo/ROS2 validation",
+    "no hardware safety guarantee"
+  ],
+  "microbenchmark": {
+    "all_safe": {
+      "optimized_median_ms": 0.5908,
+      "reference_median_ms": 30.667,
+      "speedup_x": 51.91
+    },
+    "command": "PYTHONPATH=src python tests/bench_swept_fastpath.py",
+    "iterations": 30,
+    "map": "240x240 at 0.01m; radius 0.21m; diagonal path 0.9899m",
+    "off_path_hazards": {
+      "optimized_median_ms": 0.6765,
+      "reference_median_ms": 29.0811,
+      "speedup_x": 42.99
+    }
+  },
+  "owner": "Valdi320",
+  "prepatch_negative_control": {
+    "expected": true,
+    "failed": 1,
+    "failure": "test_all_safe_map_skips_expensive_geometry",
+    "focused_tests": 7
+  },
+  "real_user_pc_regression": {
+    "demo": {
+      "pass": true,
+      "rc": 0,
+      "tail": "{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}\n\n"
+    },
+    "focused": {
+      "pass": true,
+      "rc": 0,
+      "tail": "\n----------------------------------------------------------------------\nRan 7 tests in 0.168s\n\nOK\n"
+    },
+    "full": {
+      "pass": true,
+      "rc": 0,
+      "tail": "\n----------------------------------------------------------------------\nRan 523 tests in 13.609s\n\nOK\n"
+    },
+    "optimized": {
+      "pass": true,
+      "rc": 0,
+      "tail": "\n----------------------------------------------------------------------\nRan 523 tests in 13.914s\n\nOK\n"
+    }
+  },
+  "schema": 1,
+  "tests": {
+    "complete_repository_regression": "not run locally; waiting for GitHub CI",
+    "local_two_module_suite": {
+      "fail": 0,
+      "pass": 16
+    },
+    "local_two_module_suite_python_optimized": {
+      "fail": 0,
+      "pass": 16
+    },
+    "new_focused": {
+      "fail": 0,
+      "pass": 7
+    },
+    "prior_swept": {
+      "fail": 0,
+      "pass": 9
+    }
+  },
+  "user_pc_benchmark_reproduced": {
+    "map": "240x240 cells at 1cm; 0.21m disk; 0.99m diagonal",
+    "platform": "Linux-6.17.7-ba29.fc43.x86_64-x86_64-with-glibc2.42",
+    "python": "3.14.3",
+    "results": {
+      "all_safe": {
+        "optimized_median_ms": 0.4083,
+        "reference_median_ms": 27.959,
+        "repeats": 30,
+        "speedup_x": 68.47
+      },
+      "off_path_hazards": {
+        "optimized_median_ms": 0.4826,
+        "reference_median_ms": 28.0782,
+        "repeats": 30,
+        "speedup_x": 58.18
+      }
+    },
+    "type": "synthetic CPython host benchmark only"
+  }
+}
