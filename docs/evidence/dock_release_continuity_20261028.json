@@ -1,0 +1,30 @@
+{
+  "license": "Apache-2.0",
+  "limits": [
+    "no live ROS2/Gazebo",
+    "no hardware/motor/charging",
+    "untrusted ROS2 status not authenticated",
+    "no official upstream runtime integration"
+  ],
+  "owner": "Valdi320",
+  "parent_sha": "72ff69144da6ffcd0c426c19bf9ce14c6618f291",
+  "postpatch": {
+    "demo_excerpt": "{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}",
+    "demo_exit": 0,
+    "focal": 12,
+    "focal_exit": 0,
+    "full": 492,
+    "full_exit": 0,
+    "optimized": 492,
+    "optimized_exit": 0,
+    "ros_adapter_syntax_exit": 0
+  },
+  "prepatch": {
+    "count": 12,
+    "documented_legacy_terminal_replay_in_test": true,
+    "exit": 1,
+    "expected_missing_renewal_method": true
+  },
+  "scope": "Host Python + syntax compile; no live ROS2/Gazebo or hardware",
+  "utc": "2026-10-28T04:47:32.652372+00:00"
+}

@@ -92,10 +92,13 @@ class ExperimentalDockVelocityRelay(Node):
         self._nav_status=tuple(
             (bytes(s.goal_info.goal_id.uuid).hex(),int(s.status))
             for s in msg.status_list)
-        if self.mux.owner==self.mux.NAV and self._goal_witness is not None:
+        if (self._goal_witness is not None and
+            (self.mux.owner in (self.mux.NAV, self.mux.DOCK)
+             or self._released_nav)):
             self._goal_witness.observe(self._nav_status)
             if self._goal_witness.fault is not None:
                 self.mux.reset(self._goal_witness.fault)
+                self._released_nav=False
 
     def _on_dock_state(self,msg):
         self._dock_state=str(msg.data)
@@ -137,12 +140,11 @@ class ExperimentalDockVelocityRelay(Node):
             and nav_status_idle(self._nav_status))
 
     def _nav_confirmed_terminal(self):
+        # Revocable: never trust the terminal witness only from NAV phase.
         return (self._nav_idle()
-            and bool(self._nav_status)
             and self._goal_witness is not None
-            and self._goal_witness.can_release_for_dock()
-            and any(uuid==self._goal_witness.uuid and status in _TERMINAL
-                    for uuid,status in self._nav_status))
+            and self._nav_status is not None
+            and self._goal_witness.still_authorizes_dock(self._nav_status))
 
     def _on_cmd(self,source,msg):
         stamp=time.monotonic()
@@ -184,8 +186,10 @@ class ExperimentalDockVelocityRelay(Node):
             self._released_nav=True
         elif name=="claim_dock":
             self.mux.claim_dock(now=now,
-                    nav2_relinquished=self._released_nav and self._nav_idle(),
+                    nav2_relinquished=(self._released_nav
+                        and self._nav_confirmed_terminal()),
                     dock_drive_input_isolated=True)
+            self._released_nav=False  # one-shot, never replay a stale release
         elif name=="finish_dock":
             # This lab-only node cannot independently prove an actual
             # physical dock controller has exited. Check last DONE/
@@ -257,6 +261,9 @@ class ExperimentalDockVelocityRelay(Node):
                 self.mux.reset("Nav2 status expired during velocity lease")
             elif owner==self.mux.DOCK and not self._nav_idle():
                 self.mux.reset("new Nav2 action started during dock velocity ownership")
+            elif owner==self.mux.DOCK and not self._nav_confirmed_terminal():
+                self.mux.reset("Nav2 terminal proof expired during dock velocity ownership")
+                self._released_nav=False
             elif owner==self.mux.NAV and (
                     self._goal_witness is None or
                     self._goal_witness.fault is not None):

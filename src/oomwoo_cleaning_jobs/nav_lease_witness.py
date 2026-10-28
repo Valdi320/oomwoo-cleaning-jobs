@@ -132,6 +132,24 @@ class NavLeaseWitness:
             and record["outcome"] in ("succeeded","canceled")
             and record["outcome"]==self.terminal_kind)
 
+    def still_authorizes_dock(self, statuses) -> bool:
+        """Revalidate live ROS2 snapshot AND durable UUID after Nav2 release.
+
+        A prior true can_release_for_dock() is not an enduring permission:
+        status can change while mux owner is STOP or DOCK. Require the
+        exact same terminal result to be present NOW, without any other
+        active goal, duplicate/unknown status or altered journal.
+        """
+        if not self.saw_terminal or self.fault is not None:
+            return False
+        self.observe(statuses)
+        return (self.fault is None
+                and nav_status_idle(statuses)
+                and self.can_release_for_dock()
+                and any(uuid == self.uuid and
+                        TERMINAL.get(code) == self.terminal_kind
+                        for uuid, code in statuses))
+
     def current_active_matches(self)->bool:
         # A cached ACTIVE ROS2 status must not outlive its durable journal.
         if self.fault or not self.saw_active or self.saw_terminal or self.uuid is None:
