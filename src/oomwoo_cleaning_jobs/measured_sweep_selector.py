@@ -15,7 +15,9 @@ import math
 
 from .grid import Grid
 from .map_admission import Raster,AdmissionError
-from .upstream_sweep_adapter import SafeSweepPlan,SweepAdaptationError
+from .upstream_sweep_adapter import (
+    SafeSweepPlan, SweepAdaptationError, raster_geometry_digest,
+)
 
 
 @dataclass(frozen=True)
@@ -36,8 +38,10 @@ class MeasuredSweepSelector:
         swath_radius_m:float=.16,
         skip_when_covered_fraction:float=.80,
     ):
-        if not isinstance(plan,SafeSweepPlan) or plan.map_digest!=grid.fingerprint():
-            raise SweepAdaptationError("sweep plan does not match source map")
+        if (not isinstance(plan,SafeSweepPlan)
+            or plan.map_digest!=grid.fingerprint()
+            or plan.raster_geometry_digest!=raster_geometry_digest(raster)):
+            raise SweepAdaptationError("sweep plan does not match source map geometry")
         if (raster.width!=grid.width or raster.height!=grid.height
             or raster.data!=grid.occupancy or abs(raster.resolution-grid.resolution_m)>1e-6):
             raise SweepAdaptationError("plan raster and grid diverge")

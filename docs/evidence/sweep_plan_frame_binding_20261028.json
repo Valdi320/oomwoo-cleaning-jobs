@@ -1,0 +1,65 @@
+{
+  "base_sha": "8123edd8b30e01fcbb46470af4d3470aa4326473",
+  "environment": {
+    "python": "3.14.3",
+    "architecture": "x86_64",
+    "platform": "Linux-6.17.7-ba29.fc43.x86_64-x86_64-with-glibc2.42"
+  },
+  "before": {
+    "expected_failed_cases": 3,
+    "tests_total": 5,
+    "source_sha": "8123edd8b30e01fcbb46470af4d3470aa4326473"
+  },
+  "after": {
+    "focal": {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_sweep_plan_geometry_provenance_20261028.py",
+        "-v"
+      ],
+      "returncode": 0,
+      "out_tail": "",
+      "err_tail": "test_forged_frame_digest_rejected (test_sweep_plan_geometry_provenance_20261028.SweepFrameBindingTests.test_forged_frame_digest_rejected) ... ok\ntest_fresh_adaptation_still_works_and_is_bound_to_new_map (test_sweep_plan_geometry_provenance_20261028.SweepFrameBindingTests.test_fresh_adaptation_still_works_and_is_bound_to_new_map) ... ok\ntest_identical_map_restart_digest_stable (test_sweep_plan_geometry_provenance_20261028.SweepFrameBindingTests.test_identical_map_restart_digest_stable) ... ok\ntest_persistent_campaign_rejects_foreign_frame_before_file_write (test_sweep_plan_geometry_provenance_20261028.SweepFrameBindingTests.test_persistent_campaign_rejects_foreign_frame_before_file_write) ... ok\ntest_same_grid_different_translation_rejected_before_selector (test_sweep_plan_geometry_provenance_20261028.SweepFrameBindingTests.test_same_grid_different_translation_rejected_before_selector) ... ok\ntest_same_grid_different_yaw_rejected_before_selector (test_sweep_plan_geometry_provenance_20261028.SweepFrameBindingTests.test_same_grid_different_yaw_rejected_before_selector) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.005s\n\nOK\n"
+    },
+    "regression": {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-q"
+      ],
+      "returncode": 0,
+      "out_tail": "",
+      "err_tail": "----------------------------------------------------------------------\nRan 623 tests in 10.065s\n\nOK\n"
+    },
+    "regression_optimized": {
+      "argv": [
+        "python3",
+        "-O",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-q"
+      ],
+      "returncode": 0,
+      "out_tail": "",
+      "err_tail": "----------------------------------------------------------------------\nRan 623 tests in 9.971s\n\nOK\n"
+    }
+  },
+  "diff_check": {
+    "returncode": 0,
+    "stderr": ""
+  },
+  "validation_type": "pure Python synthetic Linux; no ROS2/Gazebo/MCU/hardware"
+}

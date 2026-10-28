@@ -27,6 +27,7 @@ class SweepAdaptationError(ValueError):
 class SafeSweepPlan:
     """Provenance-bound, conservative ordered candidate waypoints."""
     map_digest: str
+    raster_geometry_digest: str
     plan_digest: str
     selected: tuple[int,...]
     originally_requested: int
@@ -45,6 +46,27 @@ class SafeSweepPlan:
         if type(index) is not int or not 0<=index<len(self.selected):
             raise SweepAdaptationError("waypoint index out of range")
         return self.selected[index]
+
+
+def raster_geometry_digest(raster: Raster) -> str:
+    """Bind a waypoint plan to the physical world transform of its grid.
+
+    Grid.fingerprint() covers pixels/keepouts but deliberately excludes ROS
+    origin translation and rotation. Without this binding, a persisted cell
+    waypoint can be replayed in a *different physical place* after map edits.
+    Exact binary float encoding is intentionally fail-closed on any change.
+    """
+    if not isinstance(raster, Raster):
+        raise SweepAdaptationError("invalid source raster")
+    signature = {
+        "frame": raster.frame, "width": raster.width, "height": raster.height,
+        "resolution": float(raster.resolution).hex(),
+        "origin_x": float(raster.origin_x).hex(),
+        "origin_y": float(raster.origin_y).hex(),
+        "yaw": float(raster.yaw).hex(),
+    }
+    return hashlib.sha256(json.dumps(
+        signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def adapt_upstream_plan(
@@ -72,6 +94,7 @@ def adapt_upstream_plan(
     if (type(max_shift_m) not in (float,int)
         or not math.isfinite(max_shift_m) or not .02<=max_shift_m<=.6):
         raise SweepAdaptationError("unreasonable waypoint shift allowance")
+    geometry_digest=raster_geometry_digest(raster)
     reachable=grid.traversable
     if not reachable:
         raise SweepAdaptationError("no safe cells in current grid")
@@ -123,12 +146,14 @@ def adapt_upstream_plan(
         plan_repr.append((round(x,5),round(y,5),chosen))
     digest=hashlib.sha256(json.dumps({
         "source_map":grid.fingerprint(),
+        "raster_geometry":geometry_digest,
         "source_waypoints":plan_repr,
         "max_shift_m":max_shift_m},sort_keys=True,separators=(",",":")).encode()).hexdigest()
     if not selected:
         raise SweepAdaptationError("not a single waypoint admitted")
     return SafeSweepPlan(
-       map_digest=grid.fingerprint(),plan_digest=digest,
+       map_digest=grid.fingerprint(),raster_geometry_digest=geometry_digest,
+       plan_digest=digest,
        selected=tuple(selected),originally_requested=len(poses),
        adjusted=adjusted,maximum_adjustment_m=round(max_adjust,5),
        rejected=tuple(failed))

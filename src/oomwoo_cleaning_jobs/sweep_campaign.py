@@ -22,7 +22,7 @@ from typing import Mapping
 
 from .grid import Grid
 from .map_admission import Raster
-from .upstream_sweep_adapter import SafeSweepPlan
+from .upstream_sweep_adapter import SafeSweepPlan, raster_geometry_digest
 from .measured_sweep_selector import MeasuredSweepSelector, SweepChoice
 
 
@@ -70,8 +70,10 @@ class SweepCampaign:
     ):
         if not isinstance(grid,Grid) or not isinstance(raster,Raster):
             raise SweepStateError("missing map")
-        if not isinstance(plan,SafeSweepPlan) or plan.map_digest!=grid.fingerprint():
-            raise SweepStateError("imported plan source map mismatches campaign")
+        if (not isinstance(plan,SafeSweepPlan)
+            or plan.map_digest!=grid.fingerprint()
+            or plan.raster_geometry_digest!=raster_geometry_digest(raster)):
+            raise SweepStateError("imported plan source map geometry mismatches campaign")
         if (raster.width,raster.height)!=(grid.width,grid.height) or raster.data!=grid.occupancy:
             raise SweepStateError("raster and grid occupancy disagree")
         if (not isinstance(scope,frozenset) or not scope or not scope<=grid.traversable
