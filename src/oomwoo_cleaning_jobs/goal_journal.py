@@ -136,6 +136,16 @@ class GoalJournal:
                 fcntl.flock(fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError as exc:
                 raise GoalJournalError("Nav2 journal lock busy/unavailable") from exc
+            # A same-user cleanup/rotation can replace the pathname after
+            # open() but before flock(). The old inode's lock would then
+            # serialize nobody opening the replacement, including another
+            # Nav2 issuer. Fail closed before any journal transition.
+            try:
+                named=os.stat(lock_path,follow_symlinks=False)
+            except OSError as exc:
+                raise GoalJournalError("Nav2 journal lock vanished after acquisition") from exc
+            if named.st_dev!=info.st_dev or named.st_ino!=info.st_ino:
+                raise GoalJournalError("Nav2 journal lock replaced after open")
             yield
         finally:
             os.close(fd)

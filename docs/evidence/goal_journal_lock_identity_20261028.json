@@ -1,0 +1,60 @@
+{
+  "date_local": "2026-10-28T22:46:06.075224+00:00",
+  "source_base": "f8e0e6413a8105f877f971c085b65daafa185ba9",
+  "scope": "Synthetic Linux; goal journal lock pathname rotation, no ROS2 action or hardware",
+  "pre_fix_negative_controls": {
+    "focused": 3,
+    "failed_as_expected": 2,
+    "passed": 1,
+    "source_code_unmodified": true
+  },
+  "python": "3.14.3",
+  "platform": "Linux-6.17.7-ba29.fc43.x86_64-x86_64-with-glibc2.42",
+  "command_prefix": "PYTHONPATH=src",
+  "tests": [
+    {
+      "name": "new_focal",
+      "passed": true,
+      "count": 3,
+      "returncode": 0,
+      "log_tail": "----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nOK\n"
+    },
+    {
+      "name": "existing_lock",
+      "passed": true,
+      "count": 4,
+      "returncode": 0,
+      "log_tail": "----------------------------------------------------------------------\nRan 4 tests in 0.490s\n\nOK\n"
+    },
+    {
+      "name": "journal",
+      "passed": true,
+      "count": 15,
+      "returncode": 0,
+      "log_tail": "----------------------------------------------------------------------\nRan 15 tests in 0.009s\n\nOK\n"
+    },
+    {
+      "name": "full",
+      "passed": true,
+      "count": 633,
+      "returncode": 0,
+      "log_tail": "----------------------------------------------------------------------\nRan 633 tests in 8.712s\n\nOK\n"
+    },
+    {
+      "name": "optimized",
+      "passed": true,
+      "count": 633,
+      "returncode": 0,
+      "log_tail": "----------------------------------------------------------------------\nRan 633 tests in 8.613s\n\nOK\n"
+    }
+  ],
+  "diff_check_pass": true,
+  "diff_check_log": "",
+  "diff_stat": "src/oomwoo_cleaning_jobs/goal_journal.py | 10 ++++++++++\n 1 file changed, 10 insertions(+)",
+  "limitations": [
+    "Only same-host local POSIX journal paths tested",
+    "Does not guarantee protection from malicious renames AFTER identity check",
+    "Not global Nav2 arbitration across distinct journal paths",
+    "No real ROS2/Gazebo, SBC power, motors, docking or hardware"
+  ]
+}
