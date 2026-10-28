@@ -12,6 +12,7 @@ costmap/filter-info observations and must never use a force override.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import fcntl
 import hashlib
 import json
 import os
@@ -63,12 +64,11 @@ class ZoneUpdateTransaction:
             loaded=self._read()
             if loaded["current_digest"]!=self.current_hash:
                 raise ZoneUpdateError("saved live zone digest does not match caller")
-            if loaded["state"]!="active":
-                # Stale work is never resumed just because a process reopened.
-                loaded={**loaded,"state":"paused_recovery","proof_samples":0,
-                        "revision":loaded["revision"]+1}
-                self._write(loaded)
             self._state=loaded
+            if loaded["state"]!="active":
+                # Revision must be compared under the writer lock, not blindly
+                # rewritten from a stale process snapshot.
+                self._set(state="paused_recovery",proof_samples=0)
         else:
             self._write({
                 "schema":2,"source_map_digest":self.source_hash,
@@ -104,24 +104,40 @@ class ZoneUpdateTransaction:
 
     def _write(self,item):
         self._validate(item)
-        if self._state is not None:
-            disk=self._read()
-            if disk["revision"]!=self._state["revision"]:
-                raise ZoneUpdateError("zone revision modified by competing writer")
         self.path.parent.mkdir(parents=True,exist_ok=True)
-        fd,tmp=tempfile.mkstemp(prefix=".zone-update-",dir=self.path.parent)
+        # A stable, private lock inode guards check+replace. Locking the
+        # transaction JSON itself would not survive atomic os.replace().
+        lock_path=self.path.with_name(self.path.name+".lock")
+        flags=os.O_RDWR | os.O_CREAT | getattr(os,"O_NOFOLLOW",0)
         try:
-            with os.fdopen(fd,"w",encoding="utf-8") as f:
-                json.dump(item,f,separators=(",",":"),sort_keys=True)
-                f.write("\n");f.flush();os.fsync(f.fileno())
-            os.replace(tmp,self.path)
-            if hasattr(os,"O_DIRECTORY"):
-                dfd=os.open(self.path.parent,os.O_DIRECTORY)
-                try:os.fsync(dfd)
-                finally:os.close(dfd)
-        finally:
-            if os.path.exists(tmp):os.unlink(tmp)
-        self._state=item
+            lock_fd=os.open(lock_path,flags,0o600)
+            try:
+                # Never stall navigation on a competing writer: fail CLOSED.
+                fcntl.flock(lock_fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
+                if self._state is None:
+                    if self.path.exists():
+                        raise ZoneUpdateError("concurrent zone revision initializer")
+                else:
+                    disk=self._read()
+                    if disk["revision"]!=self._state["revision"]:
+                        raise ZoneUpdateError("zone revision modified by competing writer")
+                fd,tmp=tempfile.mkstemp(prefix=".zone-update-",dir=self.path.parent)
+                try:
+                    with os.fdopen(fd,"w",encoding="utf-8") as f:
+                        json.dump(item,f,separators=(",",":"),sort_keys=True)
+                        f.write("\n");f.flush();os.fsync(f.fileno())
+                    os.replace(tmp,self.path)
+                    if hasattr(os,"O_DIRECTORY"):
+                        dfd=os.open(self.path.parent,os.O_DIRECTORY)
+                        try:os.fsync(dfd)
+                        finally:os.close(dfd)
+                finally:
+                    if os.path.exists(tmp):os.unlink(tmp)
+                self._state=item
+            finally:
+                os.close(lock_fd)
+        except OSError as exc:
+            raise ZoneUpdateError("zone revision lock or durable write failed") from exc
 
     def _set(self,**changes):
         self._write({**self._state,**changes,"revision":self._state["revision"]+1})
@@ -204,4 +220,10 @@ class ZoneUpdateTransaction:
                   last_global_seq=-1,last_local_seq=-1)
 
     def must_block_nav(self):
-        return self._state["state"]!="active"
+        # Process-local ACTIVE is not authority after another instance edits
+        # the durable mask. Read atomically replaced on-disk state every time.
+        try:
+            disk=self._read()
+        except (ZoneUpdateError,OSError):
+            return True
+        return disk!=self._state or disk["state"]!="active"

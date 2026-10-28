@@ -1,0 +1,35 @@
+{
+  "base_sha": "6f286d01f0ad053223b2338e97418cb495aed140",
+  "content_sha256": {
+    "docs/ZONE_WRITER_LOCK_20261028.md": "3ab3c8db6927e69cba7654a4525940e5977702c66647d55d4d93252eab12e7f7",
+    "src/oomwoo_cleaning_jobs/zone_revision.py": "b914e9c58d068ef87ec340780881ef0ed247220853e86cf7e8a61d09c70fc3b2",
+    "tests/test_zone_writer_lock.py": "56a882585bc8f2be8c3390b93d1b06cfe3d54ece87c21e2d85bb6122a17ce4ab"
+  },
+  "demo": "PASS",
+  "focal": {
+    "fail": 0,
+    "pass": 5
+  },
+  "full_suite": {
+    "fail": 0,
+    "pass": 586
+  },
+  "hardware": "NOT RUN",
+  "level": "Linux-host Python synthetic-raster multi-process",
+  "optimized_suite": {
+    "fail": 0,
+    "pass": 586
+  },
+  "prepatch_controls": {
+    "stale_owner_authorized_nav": true,
+    "two_concurrent_writers_both_claimed_success": true
+  },
+  "py_compile": "PASS",
+  "raspberry_pi": "NOT RUN",
+  "ros2_gazebo": "NOT RUN",
+  "utc": "2026-10-28T13:54:00+00:00",
+  "zone_transaction": {
+    "fail": 0,
+    "pass": 17
+  }
+}
