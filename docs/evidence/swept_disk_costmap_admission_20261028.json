@@ -1,0 +1,55 @@
+{
+  "branch": "contrib/cleaning-jobs-swept-footprint-20261028-0740",
+  "created_utc": "2026-10-28T06:47:44.531162+00:00",
+  "negative_control_before_patch": {
+    "exit": 1,
+    "failed_cases": 4,
+    "stderr_tail": "t_probes_rejected (test_swept_footprint.SweptFootprintTests.test_unknown_pixel_between_eight_probes_rejected)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documentos/Contribuciones_OOMWOO/oomwoo_swept_footprint_20261028_0740/tests/test_swept_footprint.py\", line 19, in test_unknown_pixel_between_eight_probes_rejected\n    self.assertFalse(CostmapChecker(self.static,self.live(value=-1)).route_admitted((self.cell,)))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 9 tests in 0.017s\n\nFAILED (failures=4)\n"
+  },
+  "owner": "Valdi320",
+  "schema": 1,
+  "scope": {
+    "hardware": false,
+    "python_host": true,
+    "ros2_gazebo": false
+  },
+  "source_parent_sha": "bc3ffb07fbf0b2d824eabb5e0e67f549770555f3",
+  "tests": {
+    "demo": {
+      "elapsed_s": 0.059,
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": "{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}\n"
+    },
+    "existing_map": {
+      "elapsed_s": 0.098,
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 12 tests in 0.002s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "focused": {
+      "elapsed_s": 0.134,
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 9 tests in 0.041s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "full": {
+      "elapsed_s": 13.743,
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 516 tests in 13.529s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "optimized": {
+      "elapsed_s": 13.894,
+      "returncode": 0,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 516 tests in 13.463s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    "syntax": {
+      "elapsed_s": 0.042,
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": ""
+    }
+  }
+}

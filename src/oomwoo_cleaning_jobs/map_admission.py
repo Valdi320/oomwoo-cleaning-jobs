@@ -9,6 +9,8 @@ from dataclasses import dataclass
 import math
 from typing import Sequence
 
+from .swept_footprint import swept_disk_clear
+
 
 class AdmissionError(ValueError):
     """Unsafe, stale or geometrically incompatible costmap."""
@@ -86,31 +88,24 @@ class CostmapChecker:
         if not cells:
             return False
         previous=None
-        radius=self.footprint_radius_m
-        offsets=[(0.0,0.0)]
-        # Sample centre, four cardinal and four diagonal boundary points.
-        for a in range(8):
-            theta=a*math.pi/4
-            offsets.append((radius*math.cos(theta),radius*math.sin(theta)))
+        previous_xy=None
         for cell in cells:
             if type(cell) is not int or not 0 <= cell < len(self.static_map.data):
                 return False
             if self.static_map.data[cell] != 0:
                 return False
             if previous is not None:
-                a=cell%self.static_map.width
-                b=cell//self.static_map.width
-                x=previous%self.static_map.width
-                y=previous//self.static_map.width
+                a,b=cell%self.static_map.width,cell//self.static_map.width
+                x,y=previous%self.static_map.width,previous//self.static_map.width
                 if abs(a-x)+abs(b-y)!=1:
                     return False
-            x,y=self.static_map.centre(cell)
-            for dx,dy in offsets:
-                try:
-                    cost=self.live_costmap.data[self.live_costmap.cell_at(x+dx,y+dy)]
-                except AdmissionError:
-                    return False
-                if cost<0 or cost>self.max_cost:
-                    return False
+            xy=self.static_map.centre(cell)
+            # Inspect the entire moving footprint, including pixels between
+            # 8 former perimeter samples and between adjacent map waypoints.
+            if not swept_disk_clear(self.live_costmap,
+                previous_xy if previous_xy is not None else xy,xy,
+                self.footprint_radius_m,self.max_cost):
+                return False
             previous=cell
+            previous_xy=xy
         return True
