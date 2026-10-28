@@ -1,0 +1,34 @@
+{
+  "date_utc": "2026-10-28T14:50:52.374100+00:00",
+  "kind": "synthetic_python_linux_multiprocess",
+  "base_sha": "39bd32612bf40b596c7a7077294939233e5b63e9",
+  "negative_control": {
+    "returncode": 1,
+    "expected_failure_reproduced": true,
+    "tail": "lJournalError not raised\n\n======================================================================\nFAIL: test_lockfile_persists_with_private_permissions (test_goal_journal_writer_lock.GoalJournalWriterLockTests.test_lockfile_persists_with_private_permissions)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documentos/Contribuciones_OOMWOO/oomwoo_goal_journal_writer_lock_20261028_1542/tests/test_goal_journal_writer_lock.py\", line 121, in test_lockfile_persists_with_private_permissions\n    self.assertTrue(lock.is_file())\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 4 tests in 0.029s\n\nFAILED (failures=3, errors=1)\n"
+  },
+  "focal": {
+    "returncode": 0,
+    "tests": 4,
+    "tail": "goal_send (test_goal_journal_writer_lock.GoalJournalWriterLockTests.test_lock_symlink_rejected_before_goal_send) ... ok\ntest_lockfile_persists_with_private_permissions (test_goal_journal_writer_lock.GoalJournalWriterLockTests.test_lockfile_persists_with_private_permissions) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.477s\n\nOK\n"
+  },
+  "legacy": {
+    "returncode": 0,
+    "tests": 15,
+    "tail": "----------------------------------------------------------------------\nRan 15 tests in 0.007s\n\nOK\n"
+  },
+  "full": {
+    "returncode": 0,
+    "tests": 590,
+    "tail": "----------------------------------------------------------------------\nRan 590 tests in 14.402s\n\nOK\n"
+  },
+  "python_O": {
+    "returncode": 0,
+    "tests": 590,
+    "tail": "----------------------------------------------------------------------\nRan 590 tests in 14.298s\n\nOK\n"
+  },
+  "compileall_returncode": 0,
+  "ros2_gazebo_executed": false,
+  "physical_hardware_executed": false,
+  "limitations": "not exclusive Nav2 arbitration across paths; no MCU safety"
+}

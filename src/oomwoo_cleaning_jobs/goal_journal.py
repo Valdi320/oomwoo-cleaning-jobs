@@ -6,12 +6,17 @@ written atomically to disk BEFORE send_goal_async. A journal with a
 nonterminal entry blocks new goal issuance until the old UUID is
 reconciled. An accepted cancel ACK alone cannot mark it terminal.
 
-No ROS2 dependency, safe to test in ordinary Python. A single writer
-owns this file; it is NOT an inter-process locking implementation.
+No ROS2 dependency. A stable nonblocking Linux flock guards each
+journal transition across cooperating processes sharing one path.
+This does NOT replace an exclusive cross-process Nav2 action owner.
 """
 from __future__ import annotations
 
 import json
+import fcntl
+import stat
+from contextlib import contextmanager
+from functools import wraps
 import os
 from pathlib import Path
 import re
@@ -27,6 +32,16 @@ _UUID = re.compile(r"[0-9a-f]{32}\Z")
 _TOKEN = re.compile(r"[0-9a-f]{32}-[1-9][0-9]*\Z")
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _TERMINAL = frozenset(("succeeded","canceled","aborted","rejected"))
+
+
+
+def _serialized_writer(method):
+    """Serialize one durable transition across local cooperating processes."""
+    @wraps(method)
+    def execute(self, *args, **kwargs):
+        with self._writer_lock():
+            return method(self, *args, **kwargs)
+    return execute
 
 
 class GoalJournal:
@@ -75,6 +90,34 @@ class GoalJournal:
         finally:
             if os.path.exists(tmp):os.unlink(tmp)
 
+
+    @contextmanager
+    def _writer_lock(self):
+        """Stable lock inode guards journal read/compare/atomic replacement.
+
+        Nonblocking; contention, link substitution or unsafe mode refuses
+        the transition. All callers must share this filesystem/path.
+        """
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path=self.path.with_name(self.path.name+".lock")
+        flags=os.O_RDWR | os.O_CREAT | getattr(os,"O_NOFOLLOW",0)
+        try:
+            fd=os.open(lock_path,flags,0o600)
+        except OSError as exc:
+            raise GoalJournalError("Nav2 journal lock unavailable: refuse action") from exc
+        try:
+            mode=os.fstat(fd).st_mode
+            if not stat.S_ISREG(mode) or stat.S_IMODE(mode)&0o077:
+                raise GoalJournalError("Nav2 journal lock inode/permissions unsafe")
+            try:
+                fcntl.flock(fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as exc:
+                raise GoalJournalError("Nav2 journal lock busy/unavailable") from exc
+            yield
+        finally:
+            os.close(fd)
+
+    @_serialized_writer
     def begin(self,*,uuid_hex:str,token:str,job_id:str,
               map_digest:str,target_cell:int) -> dict:
         old=self.read()
@@ -94,6 +137,7 @@ class GoalJournal:
         self._write(record)
         return record
 
+    @_serialized_writer
     def accepted(self,*,token:str,uuid_hex:str):
         old=self.read()
         if old is None or old["token"]!=token or old["uuid"]!=uuid_hex:
@@ -103,6 +147,7 @@ class GoalJournal:
         if old["state"]!="accepted":
             self._write({**old,"state":"accepted","revision":old["revision"]+1})
 
+    @_serialized_writer
     def terminal(self,*,token:str,uuid_hex:str,outcome:str):
         old=self.read()
         if old is None or old["token"]!=token or old["uuid"]!=uuid_hex:
@@ -120,6 +165,7 @@ class GoalJournal:
         entry=self.read()
         return entry["uuid"] if entry and entry["state"]!="terminal" else None
 
+    @_serialized_writer
     def mark_reconciled_canceled(self,witness:OrphanNav2Witness)->None:
         """Only after direct trusted ROS2 observation yielded this witness.
 
@@ -137,4 +183,7 @@ class GoalJournal:
             or proof["cancel_response_named_old_goal"] is not True
             or proof["terminal_canceled"] is not True):
             raise GoalJournalError("orphan witness and durable UUID do not match")
-        self.terminal(token=current["token"],uuid_hex=current["uuid"],outcome="canceled")
+        # Do not re-enter a second file lock: the proof and journal
+        # transition MUST be one atomic writer transaction.
+        self._write({**current,"state":"terminal","outcome":"canceled",
+                     "revision":current["revision"]+1})
