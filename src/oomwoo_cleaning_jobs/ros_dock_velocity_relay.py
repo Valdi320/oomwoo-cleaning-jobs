@@ -30,7 +30,7 @@ from oomwoo_cleaning_jobs_lab_interfaces.srv import (
 from .dock_handoff import ExclusiveVelocityMux,Velocity,DockHandoffError
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .goal_journal import GoalJournal,GoalJournalError
-from .nav_lease_witness import NavLeaseWitness,ACTIVE
+from .nav_lease_witness import NavLeaseWitness,ACTIVE,nav_status_idle
 
 
 _ACTIVE=frozenset((1,2,3))
@@ -134,8 +134,7 @@ class ExperimentalDockVelocityRelay(Node):
 
     def _nav_idle(self):
         return (self._fresh(self._last_status,3.)
-            and self._nav_status is not None
-            and not any(code in _ACTIVE for _,code in self._nav_status))
+            and nav_status_idle(self._nav_status))
 
     def _nav_confirmed_terminal(self):
         return (self._nav_idle()

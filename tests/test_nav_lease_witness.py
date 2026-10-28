@@ -4,7 +4,8 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from oomwoo_cleaning_jobs.goal_journal import GoalJournal
-from oomwoo_cleaning_jobs.nav_lease_witness import NavLeaseWitness
+from oomwoo_cleaning_jobs.nav_lease_witness import (NavLeaseWitness,nav_status_idle,
+                                               valid_nav_status_snapshot)
 
 UUID="b6"*16
 OTHER="c7"*16
@@ -129,6 +130,49 @@ class DockNavUUIDWitnessTests(unittest.TestCase):
                      map_digest=DIGEST,target_cell=2)
         self.assertFalse(self.w.current_active_matches())
 
+
+
+    def test_unknown_status_revokes_nav_lease(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.assertTrue(self.w.current_active_matches())
+        self.w.observe(((UUID,2),(OTHER,0)))
+        self.assertFalse(self.w.current_active_matches())
+        self.assertIsNotNone(self.w.fault)
+
+    def test_unknown_status_blocks_terminal_dock_release(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("canceled")
+        self.w.observe(((UUID,5),(OTHER,0)))
+        self.assertFalse(self.w.can_release_for_dock())
+        self.assertIsNotNone(self.w.fault)
+
+    def test_nav_idle_rejects_unknown_duplicate_and_invalid(self):
+        self.assertTrue(nav_status_idle(()))
+        self.assertTrue(nav_status_idle(((UUID,4),(OTHER,5))))
+        self.assertFalse(nav_status_idle(((UUID,2),)))
+        self.assertFalse(nav_status_idle(((OTHER,0),)))
+        self.assertFalse(nav_status_idle(((OTHER,7),)))
+        self.assertFalse(nav_status_idle(((UUID,4),(UUID,5))))
+        self.assertFalse(nav_status_idle((("bad-uuid",5),)))
+        self.assertFalse(nav_status_idle(((UUID,True),)))
+        self.assertFalse(nav_status_idle(None))
+
+    def test_duplicate_or_malformed_active_snapshot_faults(self):
+        self.start()
+        for statuses in (((UUID,2),(UUID,2)), ((UUID,2),(UUID,5)),
+                         ((UUID,2),(OTHER,-1)), ((UUID,2),("bad",4))):
+            w=NavLeaseWitness(self.j)
+            w.observe(statuses)
+            self.assertIsNotNone(w.fault)
+            self.assertFalse(w.can_release_for_dock())
+
+    def test_snapshot_validator_known_terminal_only(self):
+        self.assertTrue(valid_nav_status_snapshot(()))
+        self.assertTrue(valid_nav_status_snapshot(((UUID,4),(OTHER,6))))
+        self.assertFalse(valid_nav_status_snapshot(((UUID,4),(UUID,4))))
+        self.assertFalse(valid_nav_status_snapshot(((UUID,0),)))
 
 if __name__=="__main__":
     unittest.main()

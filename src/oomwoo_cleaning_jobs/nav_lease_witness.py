@@ -12,6 +12,8 @@ independent MCU/actuator layer and a controlled robot DDS graph.
 """
 from __future__ import annotations
 
+import re
+
 from .goal_journal import GoalJournal, GoalJournalError
 
 
@@ -21,6 +23,32 @@ class NavLeaseError(RuntimeError):
 
 ACTIVE=frozenset((1,2,3))
 TERMINAL={4:"succeeded",5:"canceled",6:"aborted"}
+
+_GOAL_UUID = re.compile(r"[0-9a-f]{32}\Z")
+_KNOWN_CODES = ACTIVE | frozenset(TERMINAL)
+
+
+def valid_nav_status_snapshot(statuses) -> bool:
+    """UNKNOWN=0 is not idle. Reject invalid states, UUIDs and duplicates."""
+    if not isinstance(statuses, tuple):
+        return False
+    seen = set()
+    for entry in statuses:
+        if not isinstance(entry, tuple) or len(entry) != 2:
+            return False
+        uuid, code = entry
+        if (type(uuid) is not str or _GOAL_UUID.fullmatch(uuid) is None
+            or type(code) is not int or code not in _KNOWN_CODES
+            or uuid in seen):
+            return False
+        seen.add(uuid)
+    return True
+
+
+def nav_status_idle(statuses) -> bool:
+    """Conservative idle predicate, usable without ROS2 imports."""
+    return (valid_nav_status_snapshot(statuses)
+            and not any(code in ACTIVE for _, code in statuses))
 
 
 class NavLeaseWitness:
@@ -38,11 +66,8 @@ class NavLeaseWitness:
         self.fault=None
 
     def observe(self,statuses:tuple[tuple[str,int],...]):
-        if (not isinstance(statuses,tuple)
-            or any(not isinstance(t,tuple) or len(t)!=2
-                   or type(t[0]) is not str or type(t[1]) is not int
-                   for t in statuses)):
-            self.fault="malformed ROS2 goal status"
+        if not valid_nav_status_snapshot(statuses):
+            self.fault="unknown, duplicated or malformed ROS2 goal status"
             return
         active=[uuid for uuid,code in statuses if code in ACTIVE]
         if len(set(active))>1:
