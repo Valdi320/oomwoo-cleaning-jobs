@@ -74,5 +74,44 @@ class VerifiedGlobalKeepoutTests(unittest.TestCase):
                                   max_covered_cells=3)
 
 
+    def test_subcell_only_centre_lethal_is_not_enforced(self):
+        base=Raster(4,4,.1,0.,0.,0.,(0,)*16)
+        mask=[0]*16;mask[5]=100
+        mask=Raster(4,4,.1,0.,0.,0.,tuple(mask))
+        costs=[0]*64;costs[3*8+3]=100
+        observed=Raster(8,8,.05,0.,0.,0.,tuple(costs))
+        with self.assertRaises(KeepoutNotEnforced):
+            VerifiedGlobalKeepout(base,mask,observed)
+
+    def test_four_fine_resolution_subcells_required_and_sufficient(self):
+        base=Raster(4,4,.1,0.,0.,0.,(0,)*16)
+        mask=[0]*16;mask[5]=100
+        mask=Raster(4,4,.1,0.,0.,0.,tuple(mask))
+        costs=[0]*64
+        for row in (2,3):
+            for col in (2,3): costs[row*8+col]=100
+        observed=Raster(8,8,.05,0.,0.,0.,tuple(costs))
+        self.assertEqual(VerifiedGlobalKeepout(base,mask,observed).forbidden_count,1)
+        costs[2*8+2]=-1
+        with self.assertRaises(KeepoutNotEnforced):
+            VerifiedGlobalKeepout(base,mask,Raster(8,8,.05,0.,0.,0.,tuple(costs)))
+
+    def test_unobserved_fraction_of_forbidden_square_rejected(self):
+        base=Raster(4,4,.1,0.,0.,0.,(0,)*16)
+        mask=[100]+[0]*15
+        mask=Raster(4,4,.1,0.,0.,0.,tuple(mask))
+        observed=Raster(8,8,.05,.025,0.,0.,(100,)*64)
+        with self.assertRaises(KeepoutNotEnforced):
+            VerifiedGlobalKeepout(base,mask,observed)
+
+    def test_rotated_full_observation_still_passes(self):
+        import math
+        base=Raster(4,4,.1,0.,0.,0.,(0,)*16)
+        mask=[0]*16;mask[5]=100
+        mask=Raster(4,4,.1,0.,0.,0.,tuple(mask))
+        observed=Raster(40,40,.025,-.5,-.5,math.pi/9,(100,)*1600)
+        self.assertEqual(VerifiedGlobalKeepout(base,mask,observed).forbidden_count,1)
+
+
 if __name__=="__main__":
     unittest.main()

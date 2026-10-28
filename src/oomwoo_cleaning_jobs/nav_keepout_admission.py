@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .map_admission import Raster, AdmissionError
+from .keepout_raster_proof import KeepoutRasterProofError, prove_forbidden_area
 
 
 class KeepoutNotEnforced(AdmissionError):
@@ -49,14 +50,12 @@ class VerifiedGlobalKeepout:
             raise KeepoutNotEnforced("empty / oversized keepout mask")
         # Audit actual POST-FILTER costmap, not just filter_info,
         # static map or ROS topic discovery. Missing mask => refuse.
-        for i in forbidden:
-            x,y=m.centre(i)
-            try:
-                index=c.cell_at(x,y)
-            except AdmissionError as exc:
-                raise KeepoutNotEnforced("global costmap does not cover a mask cell") from exc
-            if c.data[index]<self.min_lethal_cost:
-                raise KeepoutNotEnforced("at least one prohibited cell is not lethal")
+        # Checking just one lethal sample at a prohibited cell's centre
+        # does NOT prove an entire forbidden square is filtered.
+        try:
+            prove_forbidden_area(m,c,forbidden,self.min_lethal_cost)
+        except KeepoutRasterProofError as exc:
+            raise KeepoutNotEnforced("global costmap does not fully enforce prohibited mask area") from exc
         object.__setattr__(self,"_forbidden",frozenset(forbidden))
 
     def accept_target(self,cell: int) -> bool:

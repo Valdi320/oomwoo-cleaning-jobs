@@ -1,0 +1,53 @@
+{
+  "baseline_commit": "22e1a857fae3f1b74c58b48e0c5e4625d6c1f5d0",
+  "date": "2026-10-28",
+  "evidence_kind": "host-python-synthetic-only",
+  "focal": {
+    "errors": 0,
+    "failures": 0,
+    "passed": true,
+    "tests": 9
+  },
+  "full_repo_regression": "PENDING GitHub CI after publication",
+  "limits": [
+    "2D grid geometry only",
+    "not a motor-safety or authenticated sensor test",
+    "local rolling costmap centre-only edit audit remains independent",
+    "conservative failure on coverage or computation-budget uncertainty"
+  ],
+  "negative_control": {
+    "forbidden_resolution_m": 0.1,
+    "legacy_would_accept": true,
+    "mask_index": 5,
+    "new_full_area_check": "REJECTS - tested",
+    "observed_resolution_m": 0.05,
+    "original_code_semantics": "mask-centre-only proof",
+    "sampled_costmap_index": 27,
+    "single_lethal_costmap_index": 27
+  },
+  "optimized_focal": "PASS (separately run: python3 -O -m unittest -q test_keepout_raster_proof.py)",
+  "physical_hardware": "NOT RUN",
+  "python_version": "3.13.5",
+  "ros2_gazebo": "NOT RUN",
+  "syntax": "PASS (python3 -m py_compile)",
+  "tested_code": "standalone full-area helper; integration with existing VerifiedGlobalKeepout pending CI",
+  "pc_owner_host": {
+    "utc": "2026-10-28T11:55:17+00:00",
+    "python": "3.14.3",
+    "baseline_negative_control": "old centre-only gate accepted (incorrect)",
+    "focal": 9,
+    "integration": 14,
+    "full": 569,
+    "python_optimized": 569,
+    "demo": "PASS",
+    "syntax": "PASS",
+    "level": "real Python tests, synthetic costmaps; NOT ROS2/Gazebo or hardware"
+  },
+  "files_sha256": {
+    "tests/test_keepout_raster_proof.py": "1c4beabd4b96fb0437be2d1bac16e8c66106975f8a0d25993f3330f8272446c6",
+    "tests/test_nav_keepout_admission.py": "cf44a40574e36447c22671fa96fe257180381ba0eb6611c70343b9e93c3e49ae",
+    "docs/KEEPOUT_FULL_AREA_PROOF_20261028.md": "98a18d3f2d41c5728cde72a7e95d3f93b686cc4291e7e6942948c90349d402dd",
+    "src/oomwoo_cleaning_jobs/keepout_raster_proof.py": "ef0c8c80119056fabf5729b8ccad98909c8e2f867996b2083ea51dd57bfc3571",
+    "src/oomwoo_cleaning_jobs/nav_keepout_admission.py": "6d5a63c3a93cc9ccb8a42c2291507a721c9516d6d5a575932db770f58b79e8b5"
+  }
+}
