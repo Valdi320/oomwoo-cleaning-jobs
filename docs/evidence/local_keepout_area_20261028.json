@@ -1,0 +1,39 @@
+{
+  "base_commit": "b6705a0f7eb1602915007e563e1a8d39df39804b",
+  "content_sha256": {
+    "docs/LOCAL_KEEPOUT_AREA_20261028.md": "f5b9cb4c5e1e3fffc711496cbcd781ae752bd778e52c6d4c18370a23155386e4",
+    "src/oomwoo_cleaning_jobs/local_keepout_proof.py": "3d4cb85c717feadc6462ca100c3e7a6c94654f9c4d7a67813fb5bf2b2992c5e8",
+    "src/oomwoo_cleaning_jobs/zone_revision.py": "36e1dd1477065f563678d9624db42c0351dbcda62a3c3127056cb95821a4bebd",
+    "tests/test_local_keepout_proof.py": "3e03583ff3b87429bdbba6e4f66b3d7714576a4526b77ad3da209b7a99bdfe82",
+    "tests/test_zone_revision.py": "59b0349073747c896bf653a65e29bb49533bffb95a113a0f7442d8a41762638f"
+  },
+  "demo": "PASS",
+  "focal": {
+    "failed": 0,
+    "passed": 10
+  },
+  "full_suite": {
+    "failed": 0,
+    "passed": 581
+  },
+  "hardware": "NOT RUN",
+  "level": "host-Python-tests-with-synthetic-Raster-only",
+  "limits": [
+    "Local costmap synthetic not real ROS2",
+    "No physical MCU/motors",
+    "Raspberry Pi CPU budget unmeasured",
+    "Not a safety-certified hard-stop"
+  ],
+  "prepatch_negative_control": "centre-only local mask accepted with 3 of 4 subcells FREE",
+  "py_compile": "PASS",
+  "python_optimized": {
+    "failed": 0,
+    "passed": 581
+  },
+  "ros2_gazebo": "NOT RUN",
+  "utc": "2026-10-28T12:48:05+00:00",
+  "zone_transaction": {
+    "failed": 0,
+    "passed": 17
+  }
+}

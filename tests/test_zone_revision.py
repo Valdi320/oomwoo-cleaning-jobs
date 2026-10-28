@@ -152,5 +152,42 @@ class TransactionalZoneEditTests(unittest.TestCase):
         with self.assertRaises(ZoneUpdateError):
             ZoneUpdateTransaction(self.map,self.old,self.file)
 
+    def test_local_costmap_finer_centre_only_trick_rejected(self):
+        self.stage()
+        pixels = [0] * (40 * 40)
+        for index, value in enumerate(self.new.data):
+            if value == 100:
+                x, y = self.new.centre(index)
+                col = int((x + 1.) / .05)
+                row = int((y + 1.) / .05)
+                pixels[row * 40 + col] = 100
+        fine = Raster(40, 40, .05, -1., -1., 0., tuple(pixels))
+        # Legacy rule checked only these lethal centre samples, admitting
+        # free 5 cm subcells in each 10 cm forbidden mask square.
+        for i, value in enumerate(self.new.data):
+            if value == 100:
+                self.assertEqual(fine.data[fine.cell_at(*self.new.centre(i))], 100)
+        with self.assertRaisesRegex(ZoneUpdateError, "local"):
+            self.verify(local=fine)
+        self.assertTrue(self.tx.must_block_nav())
+
+    def test_local_costmap_finer_full_square_proofs_allow_two_samples(self):
+        self.stage()
+        pixels = [0] * (40 * 40)
+        for i, value in enumerate(self.new.data):
+            if value != 100:
+                continue
+            col = i % self.new.width
+            row = i // self.new.width
+            for dy in (0, 1):
+                for dx in (0, 1):
+                    pixels[(row * 2 + dy) * 40 + col * 2 + dx] = 100
+        fine = Raster(40, 40, .05, -1., -1., 0., tuple(pixels))
+        self.verify(local=fine)
+        self.verify(local=fine)
+        self.assertEqual(self.tx.status().state, "verified")
+        self.tx.commit(nav2_idle=True, fresh_pose=True, job_paused=True)
+        self.assertFalse(self.tx.must_block_nav())
+
 if __name__=="__main__":
     unittest.main()

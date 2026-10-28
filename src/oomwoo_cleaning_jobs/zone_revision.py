@@ -18,7 +18,8 @@ import os
 from pathlib import Path
 import tempfile
 
-from .map_admission import Raster,AdmissionError
+from .map_admission import Raster
+from .local_keepout_proof import LocalKeepoutProofError, prove_local_keepout_area
 from .nav_keepout_admission import VerifiedGlobalKeepout,KeepoutNotEnforced
 
 
@@ -175,22 +176,15 @@ class ZoneUpdateTransaction:
             VerifiedGlobalKeepout(self.source_map,actual_mask,global_costmap)
         except KeepoutNotEnforced as exc:
             raise ZoneUpdateError("global costmap not updated to forbidden cells") from exc
-        # Local costmap is rolling; demand lethal costs for mask cells
-        # currently in its raster, and at least ONE known prohibited
-        # cell in the local observation. Remote cells cannot be audited
-        # locally from here, so the upcoming navigation checks local
-        # costmap continuously.
-        overlap=0
-        for i,cost in enumerate(actual_mask.data):
-            if cost!=100:continue
-            x,y=actual_mask.centre(i)
-            try:idx=local_costmap.cell_at(x,y)
-            except AdmissionError:continue
-            overlap+=1
-            if local_costmap.data[idx]<95:
-                raise ZoneUpdateError("local Nav2 costmap missed a prohibited cell")
-        if overlap<1:
-            raise ZoneUpdateError("local mask overlap never actually observed")
+        # A rolling local window sees only PART of the mask; prove the
+        # FULL geometric overlap instead of sampling cell centres.
+        # Off-window prohibited regions stay guarded by global proof.
+        try:
+            prove_local_keepout_area(actual_mask,local_costmap,
+                (i for i,cost in enumerate(actual_mask.data) if cost==100),
+                min_lethal_cost=95)
+        except LocalKeepoutProofError as exc:
+            raise ZoneUpdateError("local Nav2 costmap does not enforce observed forbidden area") from exc
         samples=min(2,self._state["proof_samples"]+1)
         self._set(proof_samples=samples,
                   last_global_seq=global_sequence,
