@@ -96,5 +96,39 @@ class DockNavUUIDWitnessTests(unittest.TestCase):
         self.assertIsNotNone(self.w.fault)
 
 
+    def test_terminal_journal_blocks_cached_active_motion(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.assertTrue(self.w.current_active_matches())
+        self.end("canceled")
+        self.assertFalse(self.w.current_active_matches())
+        self.assertIsNone(self.w.fault)
+
+    def test_replaced_journal_uuid_blocks_old_active_status(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("succeeded")
+        self.j.begin(uuid_hex=OTHER,token="cd"*16+"-2",job_id="lab",
+                     map_digest=DIGEST,target_cell=2)
+        self.j.accepted(token="cd"*16+"-2",uuid_hex=OTHER)
+        self.assertFalse(self.w.current_active_matches())
+        self.assertIsNotNone(self.w.fault)
+
+    def test_corrupted_journal_blocks_latched_active_motion(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.file.write_text("{",encoding="utf-8")
+        self.assertFalse(self.w.current_active_matches())
+        self.assertIsNotNone(self.w.fault)
+
+    def test_durable_submitting_goal_cannot_drive(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.end("succeeded")
+        self.j.begin(uuid_hex=OTHER,token="de"*16+"-3",job_id="lab",
+                     map_digest=DIGEST,target_cell=2)
+        self.assertFalse(self.w.current_active_matches())
+
+
 if __name__=="__main__":
     unittest.main()

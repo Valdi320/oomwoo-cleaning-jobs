@@ -102,5 +102,22 @@ class NavLeaseWitness:
             and record["outcome"]==self.terminal_kind)
 
     def current_active_matches(self)->bool:
-        return bool(self.saw_active and not self.saw_terminal
-                    and self.uuid is not None and not self.fault)
+        # A cached ACTIVE ROS2 status must not outlive its durable journal.
+        if self.fault or not self.saw_active or self.saw_terminal or self.uuid is None:
+            return False
+        try:
+            record=self.journal.read()
+        except GoalJournalError:
+            self.fault="Nav2 goal journal missing/corrupted while active"
+            return False
+        if record is None or record["uuid"]!=self.uuid:
+            self.fault="Nav2 goal journal changed while active"
+            return False
+        # A terminal journal stops velocity immediately, without authorizing
+        # the later dock handoff (which still needs exact terminal status).
+        if record["state"]=="terminal":
+            return False
+        if record["state"]!="accepted":
+            self.fault="Nav2 goal no longer durably accepted"
+            return False
+        return True
