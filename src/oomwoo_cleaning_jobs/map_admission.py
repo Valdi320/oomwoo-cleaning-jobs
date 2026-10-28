@@ -16,6 +16,24 @@ class AdmissionError(ValueError):
     """Unsafe, stale or geometrically incompatible costmap."""
 
 
+def _ros_planar_yaw(q) -> float:
+    """Decode a 2D OccupancyGrid origin only from a valid planar rotation.
+
+    A zero/scaled quaternion can silently produce an apparently safe yaw
+    even though the occupancy grid's world-frame placement is undefined.
+    Keep the tolerance aligned with the existing map<-odom TF validator.
+    """
+    values = tuple(getattr(q, axis, None) for axis in ("x", "y", "z", "w"))
+    if any(type(v) not in (int, float) or not math.isfinite(v)
+           for v in values):
+        raise AdmissionError("non-finite or nonnumeric grid origin quaternion")
+    x, y, z, w = values
+    norm = math.sqrt(sum(v*v for v in values))
+    if not .995 <= norm <= 1.005 or abs(x) > .03 or abs(y) > .03:
+        raise AdmissionError("non-unit or non-planar grid origin quaternion")
+    return math.atan2(2*(w*z+x*y), 1-2*(y*y+z*z))
+
+
 @dataclass(frozen=True)
 class Raster:
     width: int
@@ -65,7 +83,7 @@ class Raster:
     @classmethod
     def from_ros(cls, grid) -> "Raster":
         q=grid.info.origin.orientation
-        yaw=math.atan2(2*(q.w*q.z+q.x*q.y),1-2*(q.y*q.y+q.z*q.z))
+        yaw=_ros_planar_yaw(q)
         return cls(grid.info.width,grid.info.height,grid.info.resolution,
                    grid.info.origin.position.x,grid.info.origin.position.y,
                    yaw,tuple(grid.data),grid.header.frame_id)

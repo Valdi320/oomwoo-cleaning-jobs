@@ -1,0 +1,31 @@
+{
+  "date_local": "2026-10-28",
+  "base_commit": "2762d6555e9ff69d1b0d1a658ba40f666654931d",
+  "scope": "synthetic ROS OccupancyGrid origin quaternion / map-frame route admission",
+  "prepatch_expected_failure": "failures=7, errors=1",
+  "host_python": {
+    "focal": {
+      "status": "PASS",
+      "count": 10
+    },
+    "regression": {
+      "status": "PASS",
+      "count": 541
+    },
+    "optimized": {
+      "status": "PASS",
+      "count": 541
+    },
+    "demo": {
+      "status": "PASS",
+      "count": null
+    },
+    "compile": {
+      "status": "PASS",
+      "count": null
+    }
+  },
+  "github_ci": "not yet run at evidence writing",
+  "actual_ros2_gazebo": false,
+  "real_hardware": false
+}
