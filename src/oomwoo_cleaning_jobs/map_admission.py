@@ -100,11 +100,17 @@ class CostmapChecker:
                 if abs(a-x)+abs(b-y)!=1:
                     return False
             xy=self.static_map.centre(cell)
-            # Inspect the entire moving footprint, including pixels between
-            # 8 former perimeter samples and between adjacent map waypoints.
-            if not swept_disk_clear(self.live_costmap,
-                previous_xy if previous_xy is not None else xy,xy,
-                self.footprint_radius_m,self.max_cost):
+            # Both sources must independently clear the swept robot disk.
+            # The static grid can contain mapped walls that a stale or
+            # cropped rolling live costmap currently reports as free.
+            # Only occupancy 0 is safe in the static saved map.
+            start_xy = previous_xy if previous_xy is not None else xy
+            if not swept_disk_clear(self.static_map, start_xy, xy,
+                                    self.footprint_radius_m, 0):
+                return False
+            # A separate, thresholded test is still needed for live hazards.
+            if not swept_disk_clear(self.live_costmap, start_xy, xy,
+                                    self.footprint_radius_m, self.max_cost):
                 return False
             previous=cell
             previous_xy=xy

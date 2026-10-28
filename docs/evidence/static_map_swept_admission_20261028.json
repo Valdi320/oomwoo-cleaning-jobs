@@ -1,0 +1,39 @@
+{
+  "utc": "2026-10-28T08:49:51+00:00",
+  "baseline": "e59247eaa48c3d3880f2fd998ddcdb4869bab21d",
+  "branch": "contrib/cleaning-jobs-static-swept-map-20261028-0943",
+  "source_owner": "Valdi320",
+  "license": "Apache-2.0",
+  "test_level": "synthetic host Python",
+  "pre_fix_negative_control": {
+    "tests": 8,
+    "expected_failures": 5
+  },
+  "focal": {
+    "status": "PASS",
+    "tests": 8
+  },
+  "full": {
+    "status": "PASS",
+    "tests": 531
+  },
+  "optimized": {
+    "status": "PASS",
+    "tests": 531
+  },
+  "demo": {
+    "status": "PASS",
+    "exit_code": 0
+  },
+  "limits": [
+    "No actual ROS2/Gazebo runtime or physical hardware used",
+    "Conservative circular footprint is not a measured chassis polygon",
+    "Input maps require validated Raster and fresh localization",
+    "No real MCU motor, bumper or cliff interlock safety certification"
+  ],
+  "sha256": {
+    "src/oomwoo_cleaning_jobs/map_admission.py": "9d522f5c79200430966cbf671fa332da973fb1661fe898d68008058b03674cd9",
+    "tests/test_static_swept_admission.py": "548c480985928d2ffcb669fe781af4208d0521f11c649e686f381a0cb631d45d",
+    "docs/STATIC_MAP_SWEPT_ADMISSION_20261028.md": "310d49ac4a1dec6607d4cf0879c520694b06b99283a2692ce91fc7c0558abb48"
+  }
+}
