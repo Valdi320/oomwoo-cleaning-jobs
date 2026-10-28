@@ -46,6 +46,24 @@ def valid_nav_status_snapshot(statuses) -> bool:
 
 
 
+
+def only_own_nav2_goal_active(statuses, known_uuid: str) -> bool:
+    """Strict in-flight fallback when the Nav2 lifecycle service jitters.
+
+    A matching active UUID is insufficient if the SAME packet also
+    contains duplicate/unknown statuses or another active goal.
+    Only a single, well-formed active goal matching the fsynced UUID
+    is accepted; terminal history from other goals remains valid.
+    This is not a clock-freshness, DDS-authentication, or global lock.
+    """
+    if (type(known_uuid) is not str
+        or _GOAL_UUID.fullmatch(known_uuid) is None
+        or not valid_nav_status_snapshot(statuses)):
+        return False
+    active = [(uuid, code) for uuid, code in statuses if code in ACTIVE]
+    return len(active) == 1 and active[0][0] == known_uuid
+
+
 def fresh_nav2_status_idle(statuses, *, received_s, now_s, max_age_s=2.5) -> bool:
     """Conservative status preflight before a NEW Nav2 goal.
 

@@ -37,7 +37,7 @@ from .sim_coverage import SimCoverageBridge, CoverageError
 from .sweep_target import select_sweep_route, NoSafeSweep
 from .nav_keepout_admission import VerifiedGlobalKeepout, KeepoutNotEnforced
 from .goal_journal import GoalJournal
-from .nav_lease_witness import fresh_nav2_status_idle
+from .nav_lease_witness import fresh_nav2_status_idle, only_own_nav2_goal_active
 from .ros_restart import AsyncOrphanRecovery
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .rooms import RoomPlan
@@ -232,8 +232,7 @@ class ExperimentalCleaningNode(Node):
             and self._now()-self._nav_action_status_received<2.5
             and self._nav2_goal_journal.orphaned_uuid() is not None):
             known=self._nav2_goal_journal.orphaned_uuid()
-            return any(uuid==known and status in _ACTIVE
-                       for uuid,status in self._active_goal_statuses)
+            return only_own_nav2_goal_active(self._active_goal_statuses, known)
         return False
 
     def _poll_nav2_lifecycle(self):

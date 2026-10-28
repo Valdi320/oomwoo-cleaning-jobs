@@ -1,0 +1,28 @@
+{
+  "commands": [
+    "PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_nav2_inflight_status_integrity_20261029.py' -q",
+    "PYTHONPATH=src python3 -m unittest discover -s tests -q",
+    "PYTHONPATH=src python3 -O -m unittest discover -s tests -q"
+  ],
+  "focal_tests": {
+    "fail": 0,
+    "pass": 8
+  },
+  "kind": "synthetic_linux_python_no_ros2",
+  "limitations": "AST integration test, synthetic pure Python only. No ROS2 runtime, Gazebo, DDS trust, Nav2 action owner arbitration or physical motor/MCU verification.",
+  "optimized_python_tests": {
+    "fail": 0,
+    "pass": 641
+  },
+  "pre_fix_false_admissions_reproduced": [
+    "other_active_while_known_active",
+    "duplicate_terminal_and_active_same_uuid",
+    "unknown_status_with_known_active"
+  ],
+  "regression_tests": {
+    "fail": 0,
+    "pass": 641
+  },
+  "source_base_sha": "694aaf3bb401a90973d4624fb711d7cb78b4973a",
+  "tested_at_utc": "2026-10-28T23:47:34.485532+00:00"
+}
