@@ -1,0 +1,140 @@
+{
+  "affinity": "one available CPU core in each child; NOT equal to a cheap SBC",
+  "base_sha": "ac4ccd7c83691cab589ad21653886a906b6473eb",
+  "baseline": [
+    {
+      "affinity_cores": 1,
+      "architecture": "x86_64",
+      "max_rss_kib": 22960,
+      "python": "3.14.3",
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      },
+      "scope": "synthetic three-room Python controller, 30x18 cells; no ROS2/Gazebo/hardware",
+      "seed": 0,
+      "system_cpu_seconds": 0.06174,
+      "user_cpu_seconds": 9.03766,
+      "wall_seconds": 9.18903
+    },
+    {
+      "affinity_cores": 1,
+      "architecture": "x86_64",
+      "max_rss_kib": 23168,
+      "python": "3.14.3",
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      },
+      "scope": "synthetic three-room Python controller, 30x18 cells; no ROS2/Gazebo/hardware",
+      "seed": 0,
+      "system_cpu_seconds": 0.05784,
+      "user_cpu_seconds": 8.86178,
+      "wall_seconds": 9.0196
+    }
+  ],
+  "baseline_max_rss_kib": 23168,
+  "branch": "contrib/cleaning-jobs-selector-resource-baseline-20261028",
+  "command": "PYTHONPATH=src python3 tests/bench_home_resources.py --seed 0 --one-core",
+  "date_utc": "2026-10-28T19:49:28.758094+00:00",
+  "limitations": "Two-run host-specific comparisons: GC/allocator, host loads and cold caches can alter timing. Measurements cover synthetic Python only. CPU power/thermal/ROS2/motor safety must be separately measured.",
+  "median_baseline_wall_s": 9.1043,
+  "median_optimized_wall_s": 0.7957,
+  "median_wall_improvement_percent": 91.26,
+  "optimized": [
+    {
+      "affinity_cores": 1,
+      "architecture": "x86_64",
+      "max_rss_kib": 23636,
+      "python": "3.14.3",
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      },
+      "scope": "synthetic three-room Python controller, 30x18 cells; no ROS2/Gazebo/hardware",
+      "seed": 0,
+      "system_cpu_seconds": 0.03268,
+      "user_cpu_seconds": 0.75456,
+      "wall_seconds": 0.79839
+    },
+    {
+      "affinity_cores": 1,
+      "architecture": "x86_64",
+      "max_rss_kib": 23832,
+      "python": "3.14.3",
+      "result": {
+        "completed": true,
+        "coverage_frames": 829,
+        "covered": 530,
+        "crash_restarts": 1,
+        "dock_cycles": 3,
+        "eligible": 530,
+        "goals": 125,
+        "keepout_entries": 0,
+        "map_cells": 540,
+        "repaired_routes": 0,
+        "rooms": [
+          "Salón",
+          "Cocina",
+          "Dormitorio"
+        ]
+      },
+      "scope": "synthetic three-room Python controller, 30x18 cells; no ROS2/Gazebo/hardware",
+      "seed": 0,
+      "system_cpu_seconds": 0.04843,
+      "user_cpu_seconds": 0.73663,
+      "wall_seconds": 0.79309
+    }
+  ],
+  "optimized_max_rss_kib": 23832,
+  "platform_machine": "x86_64",
+  "python": "3.14.3",
+  "rss_peak_reduction_percent": -2.87,
+  "semantic_equality": true,
+  "trials_each": 2,
+  "type": "synthetic OOMWOO Python three-room benchmark; NOT a ROS2/Gazebo/physical minimum",
+  "validation": {
+    "new_focus": "3 positive/negative unit tests PASS",
+    "normal_unittest": "PASS",
+    "optimized_unittest": "PASS"
+  }
+}

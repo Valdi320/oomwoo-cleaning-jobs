@@ -55,7 +55,7 @@ class MeasuredSweepSelector:
         self.threshold=float(skip_when_covered_fraction)
 
     def _coverage_fraction(self, cell:int, measured:Raster,
-                           scope:frozenset[int])->float:
+                           scope:frozenset[int],traversable:frozenset[int])->float:
         x,y=self.raster.centre(cell)
         cr=int(math.ceil(self.radius/self.raster.resolution))
         col,row=cell%self.grid.width,cell//self.grid.width
@@ -63,7 +63,7 @@ class MeasuredSweepSelector:
         for yy in range(max(0,row-cr),min(self.grid.height,row+cr+1)):
             for xx in range(max(0,col-cr),min(self.grid.width,col+cr+1)):
                 i=yy*self.grid.width+xx
-                if i not in scope or i not in self.grid.traversable:continue
+                if i not in scope or i not in traversable:continue
                 wx,wy=self.raster.centre(i)
                 if math.hypot(wx-x,wy-y)<=self.radius:
                     mask.append(i)
@@ -92,10 +92,11 @@ class MeasuredSweepSelector:
             raise SweepAdaptationError("external measurement mismatches planned map frame")
         if any(v not in (0,100) for v in measured.data):
             raise SweepAdaptationError("covered-grid not exact binary 0/100")
+        traversable=self.grid.traversable
         if (not isinstance(scope,frozenset) or not scope
-            or not scope<=self.grid.traversable
+            or not scope<=traversable
             or not isinstance(excluded,frozenset)
-            or not excluded<=self.grid.traversable
+            or not excluded<=traversable
             or type(start_index) is not int
             or not 0<=start_index<=len(self.plan.selected)):
             raise SweepAdaptationError("invalid scope/exclusion/cursor")
@@ -105,7 +106,7 @@ class MeasuredSweepSelector:
             if cell not in scope or cell in excluded:
                 other_skip+=1
                 continue
-            portion=self._coverage_fraction(cell,measured,scope)
+            portion=self._coverage_fraction(cell,measured,scope,traversable)
             if portion>=self.threshold:
                 covered_skip+=1
                 continue
