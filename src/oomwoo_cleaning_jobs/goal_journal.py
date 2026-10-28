@@ -47,13 +47,32 @@ def _serialized_writer(method):
 class GoalJournal:
     def __init__(self,path:Path):
         self.path=Path(path)
-        if self.path.exists():
-            self.read()
+        # Always check even a dangling symlink: Path.exists() follows links
+        # and would mistake a broken/substituted journal for a clean start.
+        self.read()
 
     def read(self) -> dict | None:
-        if not self.path.exists():return None
+        # Linux-only fail-closed read. A symlink to an unrelated terminal
+        # journal must NEVER clear the unknown in-flight Nav2 UUID.
         try:
-            obj=json.loads(self.path.read_text("utf-8"))
+            fd=os.open(self.path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise GoalJournalError("goal journal inaccessible/linked: do NOT rearm Nav2") from exc
+        try:
+            with os.fdopen(fd,"rb") as source:
+                info=os.fstat(source.fileno())
+                if (not stat.S_ISREG(info.st_mode)
+                    or info.st_nlink!=1
+                    or stat.S_IMODE(info.st_mode)&0o077):
+                    raise GoalJournalError("goal journal inode/permissions unsafe")
+                # A single Nav2 goal record should be tiny. Bound corrupted
+                # files before JSON parsing to avoid unbounded RAM use.
+                raw=source.read(65537)
+            if len(raw)>65536:
+                raise GoalJournalError("goal journal too large: refuse rearm")
+            obj=json.loads(raw)
         except (OSError,ValueError) as exc:
             raise GoalJournalError("goal journal unreadable: do NOT rearm Nav2") from exc
         if not isinstance(obj,dict):

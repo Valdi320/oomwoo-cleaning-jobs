@@ -1,0 +1,40 @@
+{
+  "timestamp_utc": "2026-10-28T15:46:24.032952+00:00",
+  "base_sha": "a6582801fa9ce88e3b5cce7a4d696aa26645aa90",
+  "scope": "synthetic Linux filesystem / no ROS2",
+  "negative_control": {
+    "fail_expected": true,
+    "returncode": 1,
+    "tail": "============================\nFAIL: test_symlink_to_valid_terminal_record_is_not_trusted (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_symlink_to_valid_terminal_record_is_not_trusted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documentos/Contribuciones_OOMWOO/oomwoo_goal_journal_inode_20261028_1640/tests/test_goal_journal_inode_20261028.py\", line 31, in test_symlink_to_valid_terminal_record_is_not_trusted\n    with self.assertRaises(GoalJournalError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: GoalJournalError not raised\n\n======================================================================\nFAIL: test_world_readable_journal_is_refused_before_action (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_world_readable_journal_is_refused_before_action)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documentos/Contribuciones_OOMWOO/oomwoo_goal_journal_inode_20261028_1640/tests/test_goal_journal_inode_20261028.py\", line 52, in test_world_readable_journal_is_refused_before_action\n    with self.assertRaises(GoalJournalError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: GoalJournalError not raised\n\n----------------------------------------------------------------------\nRan 7 tests in 0.005s\n\nFAILED (failures=5)\n"
+  },
+  "focal": {
+    "pass": true,
+    "tests": 7,
+    "tail": "urnal_survives_restart) ... ok\ntest_world_readable_journal_is_refused_before_action (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_world_readable_journal_is_refused_before_action) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.003s\n\nOK\n"
+  },
+  "legacy": {
+    "pass": true,
+    "tests": 15,
+    "tail": "----------------------------------------------------------------------\nRan 15 tests in 0.007s\n\nOK\n"
+  },
+  "regression": {
+    "pass": true,
+    "tests": 597,
+    "tail": "----------------------------------------------------------------------\nRan 597 tests in 14.381s\n\nOK\n"
+  },
+  "python_optimized": {
+    "pass": true,
+    "tests": 597,
+    "tail": "----------------------------------------------------------------------\nRan 597 tests in 14.257s\n\nOK\n"
+  },
+  "syntax": {
+    "pass": true
+  },
+  "ros2_gazebo_executed": false,
+  "hardware_executed": false,
+  "limitations": [
+    "no cross-path Nav2 arbitration",
+    "no physical MCU safety",
+    "same-user filesystem mutation outside cooperative lock not secured"
+  ]
+}
