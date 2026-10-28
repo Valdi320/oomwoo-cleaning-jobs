@@ -37,6 +37,7 @@ from .sim_coverage import SimCoverageBridge, CoverageError
 from .sweep_target import select_sweep_route, NoSafeSweep
 from .nav_keepout_admission import VerifiedGlobalKeepout, KeepoutNotEnforced
 from .goal_journal import GoalJournal
+from .nav_lease_witness import fresh_nav2_status_idle
 from .ros_restart import AsyncOrphanRecovery
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .rooms import RoomPlan
@@ -566,6 +567,16 @@ class ExperimentalCleaningNode(Node):
             raise JobError("localized pose fails static footprint clearance")
         return self._map, grid, cell, self._battery
 
+    def _require_fresh_nav2_idle(self):
+        # Every new action requires recently observed Nav2 statuses.
+        # UNKNOWN, duplicates, malformed, stale or other ACTIVE UUIDs
+        # reject preflight. A snapshot is NOT exclusive arbitration.
+        if not fresh_nav2_status_idle(
+                self._active_goal_statuses,
+                received_s=self._nav_action_status_received,
+                now_s=self._now()):
+            raise JobError("Nav2 action status not fresh/idle; reject new goal")
+
     def _build_nav_goal(self, goal):
         m=self._map
         if m is None:
@@ -583,6 +594,7 @@ class ExperimentalCleaningNode(Node):
         if (self._costmap is None or self._costmap_received is None
             or self._now()-self._costmap_received > 6):
             raise JobError("Nav2 costmap no longer fresh")
+        self._require_fresh_nav2_idle()
         checker=CostmapChecker(self._map,self._costmap, max_cost=self._max_cost)
         keepout=self._keepout_gate()
         def admit(route):
@@ -620,6 +632,7 @@ class ExperimentalCleaningNode(Node):
         if (self._costmap is None or self._costmap_received is None
             or self._now()-self._costmap_received>6):
             raise JobError("room dispatch requires fresh real global costmap")
+        self._require_fresh_nav2_idle()
         checker=CostmapChecker(self._map,self._costmap,max_cost=self._max_cost)
         keepout=self._keepout_gate()
         def admit(route):
@@ -643,7 +656,8 @@ class ExperimentalCleaningNode(Node):
             raise JobError("job already attached")
         port=AsyncNav2Transport.from_ros2(self,self._build_nav_goal,
              on_terminal=self._on_terminal,on_fault=self._on_fault,
-             on_accepted=self._on_accepted,journal=self._nav2_goal_journal)
+             on_accepted=self._on_accepted,journal=self._nav2_goal_journal,
+             pre_send=self._require_fresh_nav2_idle)
         self._job=job
         self._port=port
         self._interlock=NavigationInterlock(job,port,
@@ -711,6 +725,7 @@ class ExperimentalCleaningNode(Node):
                      grid,m,source,
                      self._checkpoint.parent/(self._checkpoint.stem+"_campaign"),
                      job_id=job_id,rooms=selected)
+                self._require_fresh_nav2_idle()
                 job=CleaningJobs(grid,self._checkpoint)
                 job.start(job_id,mode="rooms",rooms=selected,
                           start_cell=pose,resources=battery)
@@ -746,6 +761,7 @@ class ExperimentalCleaningNode(Node):
             if not checker.route_admitted(route) or (keepout is not None and
                  not keepout.accept_target(spot)):
                 raise JobError("dynamic costmap/keepout rejected proposed target or route")
+            self._require_fresh_nav2_idle()
             job=CleaningJobs(grid,self._checkpoint)
             job.start(job_id,mode="spot",start_cell=pose,spot=spot,
                       radius_m=radius_m,resources=battery)

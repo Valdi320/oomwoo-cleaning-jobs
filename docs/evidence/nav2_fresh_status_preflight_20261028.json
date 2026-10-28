@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "scope": "Linux host Python only (synthetic), no ROS2/Gazebo runtime, no physical hardware",
+  "base": "6dca3bbd0ad708f53683f14eeee7dd626593ab38",
+  "matrix": [
+    {
+      "name": "focal",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_nav2_fresh_status_preflight_20261028.py",
+        "-v"
+      ],
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "20261028.FreshStatusContractTests.test_fresh_terminal_observation_is_idle) ... ok\ntest_missing_observation_is_not_idle (test_nav2_fresh_status_preflight_20261028.FreshStatusContractTests.test_missing_observation_is_not_idle) ... ok\ntest_monotonic_age_bounds (test_nav2_fresh_status_preflight_20261028.FreshStatusContractTests.test_monotonic_age_bounds) ... ok\ntest_stale_or_future_status_refused (test_nav2_fresh_status_preflight_20261028.FreshStatusContractTests.test_stale_or_future_status_refused) ... ok\ntest_unknown_duplicate_or_malformed_snapshot_is_not_idle (test_nav2_fresh_status_preflight_20261028.FreshStatusContractTests.test_unknown_duplicate_or_malformed_snapshot_is_not_idle) ... ok\ntest_untrusted_numeric_time_inputs_refused (test_nav2_fresh_status_preflight_20261028.FreshStatusContractTests.test_untrusted_numeric_time_inputs_refused) ... ok\ntest_foreign_goal_prevents_send_and_pending_mutation (test_nav2_fresh_status_preflight_20261028.TransportAdmissionTests.test_foreign_goal_prevents_send_and_pending_mutation) ... ok\ntest_invalid_pre_send_callback_refused (test_nav2_fresh_status_preflight_20261028.TransportAdmissionTests.test_invalid_pre_send_callback_refused) ... ok\ntest_pre_send_is_checked_before_request_builder (test_nav2_fresh_status_preflight_20261028.TransportAdmissionTests.test_pre_send_is_checked_before_request_builder) ... ok\ntest_ros2_node_checks_before_spot_and_room_dispatch_and_send (test_nav2_fresh_status_preflight_20261028.TransportAdmissionTests.test_ros2_node_checks_before_spot_and_room_dispatch_and_send) ... ok\ntest_stale_status_prevents_send (test_nav2_fresh_status_preflight_20261028.TransportAdmissionTests.test_stale_status_prevents_send) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 0.014s\n\nOK\n"
+    },
+    {
+      "name": "journal",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_goal_journal*.py",
+        "-q"
+      ],
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 30 tests in 0.602s\n\nOK\n"
+    },
+    {
+      "name": "regression",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-q"
+      ],
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 614 tests in 14.432s\n\nOK\n"
+    },
+    {
+      "name": "optimized",
+      "argv": [
+        "python3",
+        "-O",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-q"
+      ],
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 614 tests in 14.300s\n\nOK\n"
+    },
+    {
+      "name": "syntax",
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "src",
+        "tests"
+      ],
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": ""
+    },
+    {
+      "name": "synthetic_demo",
+      "argv": [
+        "python3",
+        "-m",
+        "oomwoo_cleaning_jobs.demo"
+      ],
+      "returncode": 0,
+      "stdout_tail": "{\n  \"all_targets_completed\": true,\n  \"cleaned_cells\": 18,\n  \"coverage_fraction\": 1.0,\n  \"example\": \"headless (no ROS2, no robot)\",\n  \"job_id\": \"demo_whole\",\n  \"no_go_excluded\": true,\n  \"reason_code\": null,\n  \"recoverable\": false,\n  \"resume_count\": 1,\n  \"revision\": 21,\n  \"source\": \"oomwoo_cleaning_jobs\",\n  \"state\": \"completed\",\n  \"target_cells\": 18\n}\n",
+      "stderr_tail": ""
+    }
+  ]
+}

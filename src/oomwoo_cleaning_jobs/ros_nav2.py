@@ -46,6 +46,7 @@ class AsyncNav2Transport:
         on_fault: Callable[[str, str], None],
         on_accepted: Callable[[str], None] | None = None,
         journal: GoalJournal | None = None,
+        pre_send: Callable[[], None] | None = None,
     ):
         if not callable(goal_builder) or not callable(on_terminal) or not callable(on_fault):
             raise ValueError("goal_builder, on_terminal and on_fault required")
@@ -55,6 +56,9 @@ class AsyncNav2Transport:
         self.on_fault = on_fault
         self.on_accepted = on_accepted
         self.journal = journal
+        if pre_send is not None and not callable(pre_send):
+            raise ValueError("pre_send must be callable")
+        self.pre_send = pre_send
         self._journal_uuids: dict[str,str] = {}
         self._pending: dict[str, _Pending] = {}
 
@@ -65,6 +69,7 @@ class AsyncNav2Transport:
         on_fault: Callable[[str, str], None],
         on_accepted: Callable[[str], None] | None = None,
         journal: GoalJournal | None = None,
+        pre_send: Callable[[], None] | None = None,
         action_name: str = "/navigate_to_pose",
     ) -> "AsyncNav2Transport":
         """Construct actual ROS2 Jazzy NavigateToPose ActionClient."""
@@ -74,7 +79,7 @@ class AsyncNav2Transport:
             ActionClient(node, NavigateToPose, action_name),
             goal_builder, on_terminal=on_terminal, on_fault=on_fault,
             on_accepted=on_accepted,
-            journal=journal,
+            journal=journal, pre_send=pre_send,
         )
 
     def wait_for_server(self, timeout_sec: float = 10.0) -> bool:
@@ -83,6 +88,11 @@ class AsyncNav2Transport:
     def send_goal(self, goal: Goal) -> None:
         if goal.token in self._pending:
             raise ValueError("duplicate goal token")
+        # Require a fresh exclusive-status preflight at the actual send
+        # boundary, BEFORE durable journal mutation or network submission.
+        # An exception here proves the action was not sent by this adapter.
+        if self.pre_send is not None:
+            self.pre_send()
         request = self.goal_builder(goal)
         # Pre-allocate the ROS2 UUID. Journal MUST be fsynced *before*
         # send_goal_async: the process can crash after writing on the socket

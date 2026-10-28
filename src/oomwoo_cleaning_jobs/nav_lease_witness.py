@@ -45,6 +45,25 @@ def valid_nav_status_snapshot(statuses) -> bool:
     return True
 
 
+
+def fresh_nav2_status_idle(statuses, *, received_s, now_s, max_age_s=2.5) -> bool:
+    """Conservative status preflight before a NEW Nav2 goal.
+
+    Timestamps must be from the SAME local monotonic clock, and this is
+    only a single ROS2 status-snapshot gate. It is NOT an atomic ownership
+    arbitration, authenticated DDS evidence, or a motor safety interlock.
+    """
+    import math
+    if (type(received_s) not in (float, int)
+        or type(now_s) not in (float, int)
+        or type(max_age_s) not in (float, int)
+        or not all(math.isfinite(v) for v in (received_s, now_s, max_age_s))
+        or max_age_s <= 0):
+        return False
+    age=now_s-received_s
+    return 0.0 <= age <= max_age_s and nav_status_idle(statuses)
+
+
 def nav_status_idle(statuses) -> bool:
     """Conservative idle predicate, usable without ROS2 imports."""
     return (valid_nav_status_snapshot(statuses)
