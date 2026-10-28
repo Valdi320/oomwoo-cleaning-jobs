@@ -37,7 +37,7 @@ def _stamp_s(stamp):
     return stamp.sec+stamp.nanosec*1e-9
 
 
-def rolling_costmap_in_map(
+def _rolling_costmap_in_map(
     grid, *,
     map_from_odom=None,
     sim_now_s:float,
@@ -92,3 +92,20 @@ def rolling_costmap_in_map(
                ox,oy,a+grid_yaw,tuple(grid.data),"map")
     except AdmissionError as ex:
         raise CostmapFrameError("converted costmap invalid") from ex
+
+
+def rolling_costmap_in_map(
+    grid, *, map_from_odom=None, sim_now_s: float,
+    max_age_s: float = 3.0, max_future_lead_s: float = 6.0,
+) -> Raster:
+    """Normalize malformed ROS2 costmap/TF inputs to a catchable STOP error.
+
+    Existing stale/future/geometry errors remain unchanged. This does NOT
+    authenticate ROS messages or ensure that hardware obeys a STOP.
+    """
+    try:
+        return _rolling_costmap_in_map(
+            grid, map_from_odom=map_from_odom, sim_now_s=sim_now_s,
+            max_age_s=max_age_s, max_future_lead_s=max_future_lead_s)
+    except (AttributeError, TypeError, OverflowError) as exc:
+        raise CostmapFrameError("malformed ROS2 costmap or TF payload") from exc

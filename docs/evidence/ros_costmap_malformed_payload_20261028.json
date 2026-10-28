@@ -1,0 +1,30 @@
+{
+  "utc": "2026-10-28T10:51:41+00:00",
+  "base": "63f00848724200adc680f8cb555fe7b3bb0f0bd5",
+  "branch": "contrib/cleaning-jobs-ros-malformed-payload-20261028-1145",
+  "license": "Apache-2.0",
+  "level": "host-only synthetic Python",
+  "prepatch": {
+    "total": 15,
+    "wrong_exceptions": 12,
+    "passed_controls": 3
+  },
+  "postpatch": {
+    "focal_pass": 15,
+    "full_pass": 556,
+    "optimized_pass": 556,
+    "demo": "PASS",
+    "syntax": "PASS"
+  },
+  "not_tested": [
+    "ROS2/Nav2/Gazebo",
+    "motors/MCU",
+    "batteries/charge",
+    "physical STOP"
+  ],
+  "sha256": {
+    "src/oomwoo_cleaning_jobs/costmap_frame.py": "1d5b2482188d1eb3a7235834bb593e9d240d7229fe0d2a6f070bfbc9d369f117",
+    "tests/test_costmap_malformed_payload.py": "d34e8004522db250da23669d4021df7f510c17fa370b5f1c7c8646015e075306",
+    "docs/ROS_COSTMAP_MALFORMED_PAYLOAD_20261028.md": "7411ac89550731a8c90de28e09405cf2d45143e398a9eca9da350127311896b6"
+  }
+}
