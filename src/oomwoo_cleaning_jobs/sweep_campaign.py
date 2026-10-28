@@ -12,6 +12,9 @@ when the imported upstream plan omits/misses target cells.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
+import fcntl
+import stat
 import hashlib
 import json
 import os
@@ -97,14 +100,15 @@ class SweepCampaign:
             "max_attempts":max_attempts,
         }
         self._state=None
-        if self.path.exists():
+        if os.path.lexists(self.path):
             v=self._read()
+            old_revision=v["revision"]
             # Surviving an unexpected process death never means the
             # previously sent Nav2 goal was cancelled: re-arm externally.
             if v["state"]=="running" or v["active_index"] is not None:
                 v={**v,"state":"paused_recovery","reason":"INTERRUPTED_UNKNOWN_GOAL",
                    "revision":v["revision"]+1}
-                self._write(v)
+                self._write(v, expected_revision=old_revision)
             self._state=v
         else:
             state=dict(self._metadata,
@@ -158,35 +162,110 @@ class SweepCampaign:
         if v["state"] in ("paused","paused_recovery","manual_review") and not v["reason"]:
             raise SweepStateError("paused/review campaign missing cause")
 
+    # Large synthetic maps need headroom but a damaged checkpoint must not
+    # allocate unbounded RAM or allow a nonblocking FIFO to hang startup.
+    _MAX_CHECKPOINT_BYTES = 16 * 1024 * 1024
+
     def _read(self):
+        """Fail closed on links, special nodes and oversized JSON.
+
+        An atomic replace makes unlocked reads consistent for cooperating
+        writers. Noncooperating/malicious processes are outside this lock.
+        """
+        flags = (os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+                 | getattr(os, "O_NONBLOCK", 0)
+                 | getattr(os, "O_CLOEXEC", 0))
         try:
-            v=json.loads(self.path.read_text("utf-8"))
-        except (OSError,ValueError) as exc:
-            raise SweepStateError("missing/corrupt campaign: refuse Nav2 work") from exc
+            fd = os.open(self.path, flags)
+        except OSError as exc:
+            raise SweepStateError("campaign missing/linked: refuse Nav2 work") from exc
+        try:
+            with os.fdopen(fd, "rb") as stream:
+                info = os.fstat(stream.fileno())
+                if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                        or stat.S_IMODE(info.st_mode) & 0o077):
+                    raise SweepStateError("campaign inode/permissions unsafe")
+                if info.st_size > self._MAX_CHECKPOINT_BYTES:
+                    raise SweepStateError("campaign checkpoint too large")
+                raw = stream.read(self._MAX_CHECKPOINT_BYTES + 1)
+            if len(raw) > self._MAX_CHECKPOINT_BYTES:
+                raise SweepStateError("campaign checkpoint too large")
+            v = json.loads(raw)
+        except (OSError, ValueError, UnicodeError, RecursionError) as exc:
+            raise SweepStateError("corrupt campaign: refuse Nav2 work") from exc
         self._validate(v)
         return v
 
-    def _write(self,v):
+    @contextmanager
+    def _writer_lock(self):
+        """Serialize compare+atomic replace using stable local Linux flock."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path = self.path.with_name(self.path.name + ".lock")
+        flags = (os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+                 | getattr(os, "O_NONBLOCK", 0)
+                 | getattr(os, "O_CLOEXEC", 0))
+        try:
+            fd = os.open(lock_path, flags, 0o600)
+        except OSError as exc:
+            raise SweepStateError("campaign writer lock unavailable") from exc
+        try:
+            info = os.fstat(fd)
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                    or stat.S_IMODE(info.st_mode) & 0o077):
+                raise SweepStateError("campaign writer lock inode/permissions unsafe")
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as exc:
+                raise SweepStateError("campaign writer lock busy/unavailable") from exc
+            # Do not trust a renamed/replaced lock inode after opening it.
+            named = os.stat(lock_path, follow_symlinks=False)
+            if named.st_dev != info.st_dev or named.st_ino != info.st_ino:
+                raise SweepStateError("campaign writer lock replaced")
+            yield
+        finally:
+            os.close(fd)
+
+    def _write(self, v, *, expected_revision=None):
+        """One serialized optimistic transition, including crash recovery.
+
+        expected_revision is provided only by the constructor recovering
+        a preexisting RUNNING checkpoint. Normal transitions use _state.
+        Initial creation refuses to overwrite an unexpectedly present file.
+        """
         self._validate(v)
         if self._state is not None:
-            disk=self._read()
-            if disk["revision"]!=self._state["revision"]:
-                raise SweepStateError("another writer modified campaign checkpoint")
-        self.path.parent.mkdir(parents=True,exist_ok=True)
-        fd,name=tempfile.mkstemp(prefix=".sweep-campaign-",suffix=".tmp",dir=self.path.parent)
-        try:
-            with os.fdopen(fd,"w",encoding="utf-8") as stream:
-                json.dump(v,stream,separators=(",",":"),sort_keys=True)
-                stream.write("\n")
-                stream.flush();os.fsync(stream.fileno())
-            os.replace(name,self.path)
-            if hasattr(os,"O_DIRECTORY"):
-                dfd=os.open(self.path.parent,os.O_DIRECTORY)
-                try:os.fsync(dfd)
-                finally:os.close(dfd)
-        finally:
-            if os.path.exists(name):os.unlink(name)
-        self._state=v
+            if expected_revision is not None:
+                raise SweepStateError("ambiguous campaign writer revision")
+            expected_revision = self._state["revision"]
+        with self._writer_lock():
+            if expected_revision is None:
+                if v["revision"] != 1 or os.path.lexists(self.path):
+                    raise SweepStateError("checkpoint appeared during initialization")
+            else:
+                disk = self._read()
+                if disk["revision"] != expected_revision:
+                    raise SweepStateError("another writer modified campaign checkpoint")
+                if v["revision"] != expected_revision + 1:
+                    raise SweepStateError("campaign revision must advance by one")
+            fd, name = tempfile.mkstemp(prefix=".sweep-campaign-",
+                                         suffix=".tmp", dir=self.path.parent)
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                    json.dump(v, stream, separators=(",", ":"), sort_keys=True)
+                    stream.write("\n")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(name, self.path)
+                if hasattr(os, "O_DIRECTORY"):
+                    dfd = os.open(self.path.parent, os.O_DIRECTORY)
+                    try:
+                        os.fsync(dfd)
+                    finally:
+                        os.close(dfd)
+            finally:
+                if os.path.exists(name):
+                    os.unlink(name)
+            self._state = v
 
     def _transition(self,**changes):
         self._write({**self._state,**changes,"revision":self._state["revision"]+1})

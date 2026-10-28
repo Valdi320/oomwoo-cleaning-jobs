@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-28",
+  "project": "Valdi320/oomwoo-cleaning-jobs",
+  "scope": "sweep campaign durability; synthetic Linux only",
+  "base_sha": "b778d81786ab6d71684a455f00486e9fbe23d3af",
+  "negative_controls_before_fix": [
+    {
+      "test": "forced_interleaving",
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "meaning": "cancellation overwritten by interleaved stale writer"
+    },
+    {
+      "test": "symlinked_checkpoint",
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "meaning": "checkpoint symlink admitted"
+    },
+    {
+      "test": "hardlinked_checkpoint",
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "meaning": "hardlinked checkpoint admitted"
+    }
+  ],
+  "after_fix": {
+    "focal": {
+      "passed": 7,
+      "total": 7
+    },
+    "campaign": {
+      "passed": 18,
+      "total": 18
+    },
+    "whole": {
+      "passed": 630,
+      "total": 630
+    },
+    "whole_optimized": {
+      "passed": 630,
+      "total": 630
+    }
+  },
+  "reproduction": [
+    "PYTHONPATH=src python3 -m unittest discover -s tests -p test_sweep_campaign_serialization_20261028.py -q",
+    "PYTHONPATH=src python3 -m unittest discover -s tests -p test_sweep_campaign.py -q",
+    "PYTHONPATH=src python3 -m unittest discover -s tests -q",
+    "PYTHONPATH=src python3 -O -m unittest discover -s tests -q"
+  ],
+  "limits": [
+    "No ROS2/Nav2/Gazebo in this iteration",
+    "No physical hardware tests",
+    "Requires cooperating Linux local filesystem locking; not exclusive global Nav2 arbitration",
+    "Legacy checkpoint file mode must be private (0600)"
+  ]
+}
