@@ -115,7 +115,8 @@ class ExperimentalDockVelocityRelay(Node):
     def _on_docked(self,msg):
         self._docked=bool(msg.data)
         if (self.mux.owner==self.mux.DOCK and self._dock_state is not None
-            and (self._dock_state!="DONE" or self._docked)):
+            and (self._dock_state!="DONE" or self._docked
+                 or self.mux.docking_proven)):
             try:self.mux.observe_dock(now=time.monotonic(),
                  drive_state=self._dock_state,docked=self._docked)
             except DockHandoffError as exc:self.mux.reset(str(exc))

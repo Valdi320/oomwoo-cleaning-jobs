@@ -60,6 +60,11 @@ class ExclusiveVelocityMux:
     def stop_reason(self):
         return self._stop_reason
 
+    @property
+    def docking_proven(self) -> bool:
+        """Current lease witnessed SEARCH(False), followed by DONE(True)."""
+        return self.owner == self.DOCK and self._dock_done and self._docked
+
     def reset(self,reason:str):
         if not isinstance(reason,str) or not reason:
             raise DockHandoffError("invalid stop reason")
@@ -135,6 +140,12 @@ class ExclusiveVelocityMux:
             raise DockHandoffError("cannot credit docking while not dock owner")
         if docked is not True and docked is not False:
             raise DockHandoffError("invalid docked message")
+        # Any later contradictory state/contact REVOKES the old DONE proof.
+        # The previous SEARCH(False) branch preserved _dock_done/_docked
+        # and could falsely authorize finish_dock after undocking.
+        if self._dock_done and (drive_state != "DONE" or docked is not True):
+            self.reset("dock completion proof retracted")
+            raise DockHandoffError("dock state/contact contradicted DONE")
         if drive_state=="SEARCH" and not docked:
             self._dock_started=True
         elif drive_state=="DONE" and docked and self._dock_started:
