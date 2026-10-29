@@ -1,0 +1,86 @@
+{
+  "date_local": "2026-10-29",
+  "parent_commit": "39d87156c8d43c34f19b06b5112b4080f92a716d",
+  "branch": "contrib/reactive-keepout-envelope-lab-20261029-1245",
+  "platform": {
+    "system": "Linux-6.17.7-ba29.fc43.x86_64-x86_64-with-glibc2.42",
+    "machine": "x86_64",
+    "python": "3.14.3",
+    "logical_cpus": 12
+  },
+  "runs": [
+    {
+      "name": "focused",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_reactive_keepout_envelope_20261029.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "tests": 22,
+      "seconds": 0.103,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 22 tests in 0.017s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    {
+      "name": "regression",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_*.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "tests": 766,
+      "seconds": 7.179,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 766 tests in 7.005s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    {
+      "name": "optimized",
+      "argv": [
+        "python3",
+        "-O",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_*.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "tests": 766,
+      "seconds": 6.253,
+      "stderr_tail": "----------------------------------------------------------------------\nRan 766 tests in 5.643s\n\nOK\n",
+      "stdout_tail": ""
+    },
+    {
+      "name": "benchmark",
+      "argv": [
+        "python3",
+        "benchmarks/bench_reactive_keepout_20261029.py"
+      ],
+      "exit_code": 0,
+      "tests": null,
+      "seconds": 1.12,
+      "stderr_tail": "",
+      "stdout_tail": "{\"cached_immutable_mask\": {\"median_ms\": 0.23311, \"per_call_ms\": [0.22753, 0.23457, 0.23311]}, \"frames\": \"map\", \"full_mask_scan_each_tick\": {\"median_ms\": 3.22561, \"per_call_ms\": [3.22561, 3.19784, 3.35384]}, \"identical_timestamp_note\": \"fixed logical time, repeated steady-state call\", \"machine\": \"x86_64\", \"python\": \"3.14.3\", \"raster_cells\": 160000, \"samples_per_block\": 100, \"scope\": \"pure-Python x86 synthetic output microbench; not ROS2, SBC or motor\", \"speedup\": 13.84}\n"
+    }
+  ],
+  "scope": "synthetic x86 Linux; no ROS2, Gazebo, ARM SBC, motor, physical e-stop or actual charging",
+  "risk": "The external adapter must independently prove current map/pose, single /cmd_vel publisher, brakes and safety; prediction horizon and stop margin unverified on hardware.",
+  "publish_status": "local only, maintainers PR #79 intentionally not touched"
+}
