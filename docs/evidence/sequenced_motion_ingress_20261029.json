@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-29",
+  "component": "SequencedMotionMux",
+  "scope": "local isolated branch only",
+  "starting_sha": "664c5c06a9c969c5607c219ff53d08204ef143d7",
+  "commands": [
+    "PYTHONPATH=src /usr/bin/python3 -m unittest discover -s tests -p test_sequenced_motion_ingress_20261029.py -q",
+    "PYTHONPATH=src /usr/bin/python3 -m unittest discover -s tests -p test_*.py -q",
+    "PYTHONPATH=src /usr/bin/python3 -O -m unittest discover -s tests -p test_*.py -q",
+    "git diff --check"
+  ],
+  "focused": {
+    "passed": 16,
+    "total": 16,
+    "rc": 0
+  },
+  "regression": {
+    "passed": 744,
+    "total": 744,
+    "rc": 0
+  },
+  "optimized": {
+    "passed": 744,
+    "total": 744,
+    "rc": 0
+  },
+  "diff_check": {
+    "status": "PASS",
+    "rc": 0
+  },
+  "evidence_level": "synthetic Python x86 Linux; no ROS2/Gazebo/physical",
+  "ci": "NOT RUN on local changes",
+  "published": false,
+  "upstream_pr79": "UNCHANGED per explicit maintainer request",
+  "limitations": [
+    "External identity is not authenticated",
+    "Sample timestamp shares trusted monotonic clock",
+    "Not a ROS2 adapter",
+    "Not a hardware stop chain"
+  ]
+}
