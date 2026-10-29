@@ -19,6 +19,7 @@ import math
 import time
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.clock import Clock, ClockType
 from rclpy.qos import (
@@ -852,6 +853,7 @@ def main():
     rclpy.init()
     node=ExperimentalDockVelocityRelay()
     try:rclpy.spin(node)
+    except (KeyboardInterrupt,ExternalShutdownException):pass
     finally:
         node.destroy_node()
         if rclpy.ok():rclpy.shutdown()
