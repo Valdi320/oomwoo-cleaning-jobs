@@ -62,10 +62,10 @@ The unmodified upstream OOMWOO 2D docking harness separately passed
 7/7 kinematic scenarios; this is NOT physical charging or docking
 verification. See [separated evidence](docs/evidence/ros2_exact_uuid_dock_relay_20261027.json).
 
-The optional three-source mode now has a private actual-controller Gazebo
-integration in progress. Its [current evidence and limits](docs/REACTIVE_THREE_WAY_MUX_WIP_20261029.md)
-separate DDS tests, Nav2/sweep handoffs and whole-room acceptance. The owner
-has no hardware; every result here is design, software or simulation evidence.
+The optional three-source mode has one complete Gazebo test_room sweep with
+Nav2/sweep arbitration and contact escape. Its [evidence and remaining limits](docs/REACTIVE_THREE_WAY_MUX_WIP_20261029.md)
+keep docking, active Keepout and clean shutdown open. The owner has no hardware;
+every result here is design, software or simulation evidence.
 
 ### Ten integrated engineering increments (new)
 

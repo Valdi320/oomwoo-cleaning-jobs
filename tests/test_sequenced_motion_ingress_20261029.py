@@ -2,6 +2,7 @@
 import ast
 import copy
 from dataclasses import replace
+import math
 from pathlib import Path
 from types import SimpleNamespace
 from tempfile import TemporaryDirectory
@@ -9,7 +10,7 @@ import unittest
 
 from oomwoo_cleaning_jobs.dock_handoff import Velocity
 from oomwoo_cleaning_jobs.goal_journal import GoalJournal, GoalJournalError
-from oomwoo_cleaning_jobs.nav_lease_witness import NavLeaseWitness, nav_status_idle
+from oomwoo_cleaning_jobs.nav_lease_witness import ACTIVE, NavLeaseWitness, nav_status_idle
 from oomwoo_cleaning_jobs.reactive_velocity import (
     MotionHealth, ReactiveMuxError, ThreeWayVelocityMux)
 from oomwoo_cleaning_jobs.sequenced_motion_ingress import (
@@ -184,7 +185,8 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         klass=next(n for n in tree.body if isinstance(n,ast.ClassDef)
                    and n.name=="ExperimentalDockVelocityRelay")
         names={"_on_motion_cmd","_reset","_motion_graph","_motion_now",
-               "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion"}
+               "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion",
+               "_motion_health"}
         methods=[copy.deepcopy(n) for n in klass.body if isinstance(n,ast.FunctionDef)
                  and n.name in names]
         self.assertEqual(len(methods),len(names))
@@ -194,6 +196,10 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         scope={"Velocity":Velocity,"ReactiveMuxError":ReactiveMuxError,
                "time":SimpleNamespace(monotonic=lambda:mono[0],time_ns=lambda:wall[0]),
                "GetState":SimpleNamespace(Request=object),"GoalJournalError":GoalJournalError,
+               "MotionHealth":MotionHealth,"math":math,
+               "_ACTIVE":ACTIVE,
+               "rclpy":SimpleNamespace(time=SimpleNamespace(Time=lambda:None)),
+               "TransformException":LookupError,"AdmissionError":ValueError,
                "nav_status_idle":nav_status_idle,
                "Twist":lambda:SimpleNamespace(linear=SimpleNamespace(x=0.),
                                                angular=SimpleNamespace(z=0.))}
@@ -410,6 +416,45 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         mono[0]=2.1
         relay._tick_motion()
         self.assertEqual(relay._last_status,0.)
+
+    def test_managed_contact_cancellation_mutes_nav_without_handing_out_a_sweep_lease(self):
+        relay,_=self.terminal_tick()
+        relay._motion_health=lambda:good_health(nav2_idle=False,nav2_active_goal="a"*32)
+        relay._goal_witness=SimpleNamespace(saw_active=True,saw_terminal=False,
+            current_active_matches=lambda:True)
+        relay._nav_status=(("a"*32,3),)
+        relay._sweep_state="TRANSIT_CANCEL"
+        relay.mux.accept_twist(source=relay.mux.NAV,token=relay._motion_token,
+                               now=1.93,velocity=Velocity(.1,0.))
+        self.assertEqual(relay.mux.output(now=1.94),Velocity(.1,0.))
+        relay._tick_motion()
+        self.assertEqual(relay._latest_output,Velocity())
+        self.assertEqual(relay.mux.owner,relay.mux.NAV)
+
+    def test_transit_cancel_phase_is_inactive_only_in_the_managed_protocol(self):
+        for managed in (False,True):
+            with self.subTest(managed=managed):
+                relay,mono,_,_,_,_=self.managed()
+                relay._managed_nav2=managed
+                relay.tf_buffer=SimpleNamespace(lookup_transform=lambda *args:SimpleNamespace(
+                    header=SimpleNamespace(stamp=SimpleNamespace(sec=1,nanosec=900_000_000)),
+                    transform=SimpleNamespace(translation=SimpleNamespace(x=0.,y=0.))))
+                relay._map_hash="known";relay._map_fault=False
+                relay._map_raster=SimpleNamespace(cell_at=lambda x,y:0,data=[0])
+                relay._nav_idle=lambda:False
+                relay._nav_status=(("a"*32,2),)
+                relay._last_status=mono[0]
+                relay._battery_fraction=.92;relay._battery_last=mono[0]
+                relay._clock_fault=False;relay._clock_advanced=mono[0]
+                relay._unstable=False;relay._unstable_last=mono[0]
+                relay._sweep_state="TRANSIT_CANCEL";relay._sweep_last=mono[0]
+                relay._dock_state="IDLE";relay._dock_last=mono[0]
+                relay._nav_single_dispatcher=True
+                proof=relay._motion_health()
+                self.assertTrue(proof.pose_fresh and proof.resources_ok and proof.isolated_sources)
+                self.assertEqual(proof.safety_loop_ok,managed)
+                self.assertEqual(proof.sweep_inactive,managed)
+                self.assertEqual(proof.nav2_active_goal,"a"*32)
 
 
 if __name__ == "__main__":

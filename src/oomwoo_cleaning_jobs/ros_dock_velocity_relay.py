@@ -581,7 +581,9 @@ class ExperimentalDockVelocityRelay(Node):
             map_current=self._map_hash is not None and not self._map_fault,
             safety_loop_ok=(not self._clock_fault and self._fresh(self._clock_advanced,.35)
                 and self._unstable is False and self._fresh(self._unstable_last,2.5)
-                and self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV","SWEEP","ESCAPE")
+                and (self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV","SWEEP","ESCAPE")
+                     or (getattr(self,"_managed_nav2",False)
+                         and self._sweep_state=="TRANSIT_CANCEL"))
                 and self._fresh(self._sweep_last,1.)
                 and (not getattr(self,"_managed_nav2",False)
                      or (self._nav_single_dispatcher and self._nav_backend_active
@@ -591,7 +593,8 @@ class ExperimentalDockVelocityRelay(Node):
             isolated_sources=self._motion_graph(),
             nav2_idle=idle,nav2_active_goal=active,
             dock_inactive=self._dock_state=="IDLE" and self._fresh(self._dock_last,3.),
-            sweep_inactive=self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV")
+            sweep_inactive=(self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV")
+                or (getattr(self,"_managed_nav2",False) and self._sweep_state=="TRANSIT_CANCEL"))
                 and self._fresh(self._sweep_last,1.))
 
     def _on_motion_cmd(self,source,msg,info):
@@ -823,6 +826,9 @@ class ExperimentalDockVelocityRelay(Node):
             self.mux.observe_health(now=self._motion_now(),proof=self._motion_health())
             velocity=self.mux.output(now=self._motion_now())
             if self.mux.owner==self.mux.NAV:
+                if (getattr(self,"_managed_nav2",False)
+                        and getattr(self,"_sweep_state",None)=="TRANSIT_CANCEL"):
+                    velocity=Velocity()
                 witnessed=(self._goal_witness is not None
                     and self._goal_witness.current_active_matches())
                 if not witnessed:
