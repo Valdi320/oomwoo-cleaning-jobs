@@ -152,3 +152,109 @@ cadence must be checked before choosing its observation contract. Next work is
 this real-controller/Gazebo integration and final single-writer bridge audit;
 this milestone does not substitute for it. Hardware availability is explicitly
 zero, and no physical strength, RF, charging or robot readiness is inferred.
+
+
+## Actual-controller adapter work — 29 October 2026, local WIP
+
+`managed_nav2=true` is an additional opt-in mode of this same relay and
+requires `three_way=true`. It is for the private Gazebo integration only.
+It does not enable a hardware motor topic or change the two-source default.
+The owner confirms that the project has **no hardware: design and simulation
+only**, so none of the evidence in this document is physical validation.
+
+A passive test_room observation found six actual Nav2 velocity endpoints
+(one controller and five behavior publishers), rather than one per node.
+Its action status changes on events; ACTIVE status is not a periodic health
+heartbeat. The initial managed experiment attempted to pin this multiwriter set and
+use a subscription-wide reception sequence. Actual movement was rejected:
+Fast DDS reports this sequence as UNSUPPORTED. The primary rmw_fastrtps
+implementation confirms that fact. This attempted adapter is not accepted.
+The managed launch now removes behavior_server and disables the unused
+NavigateThroughPoses navigator. It uses Nav2's stock no-recovery behavior tree
+with ComputePathToPose and FollowPath. Thus only controller_server can publish
+NAV input; every input retains one pinned endpoint, strict publication
+sequence and source timestamp checks. No new consolidator node/timer was
+added. A transit requiring Nav2 recovery fails and requires reconciliation;
+coverage's reactive bumper escape remains available while SWEEP owns motion.
+All roles share the same existing final lab publisher and timer.
+
+Fresh actual feedback can maintain an already witnessed exact ACTIVE UUID;
+it requires the matching durable journal and a current pose stamp. Idle
+reconciliation additionally requires a fresh ACTIVE lifecycle GetState reply
+and the sole external NavigateToPose SendGoal client coverage_planner. Jazzy
+also has an internal bt_navigator self-client: the primary implementation
+forwards the RViz goal_pose topic through that client. The managed launch
+remaps this alternative ingress to /valdi/disabled_nav2_goal_pose. The adapter
+requires its one expected bt_navigator subscriber and no publishers on either
+that topic or /goal_pose, with no subscriber remaining on /goal_pose. These
+observations apply to common managed health during movement as well as idle.
+DDS graph discovery is not access control or an atomic wiring guarantee.
+
+Primary source: [Nav2 Jazzy navigate_to_pose.cpp](https://github.com/ros-navigation/navigation2/blob/jazzy/nav2_bt_navigator/src/navigators/navigate_to_pose.cpp),
+blob 2f7ed68aa3d68e984e6473db09a64091aaeb7866, configure/onGoalPoseReceived.
+The actual runtime client inventory independently contained both nodes.
+Fast DDS source: [rmw_take.cpp](https://github.com/ros2/rmw_fastrtps/blob/jazzy/rmw_fastrtps_shared_cpp/src/rmw_take.cpp),
+blob 19d96fd61ef22992d8fbd4430de354aababccfe7, _assign_message_info.
+The stock no-recovery tree was read from the cached Jazzy image before use.
+
+Core odometry, leases, commands and health use the same ROS simulation clock
+in this managed mode; wall-time receipt/TF age, lifecycle query timeout and
+the independent clock-progress watchdog remain separate. The existing steady
+tick retries a lifecycle query after its unanswered future expires at 1.5 s.
+It never promotes an unanswered request to healthy. Terminal release still
+requires exact status/journal agreement; an unknown or aborted result fails.
+
+Focused actual-method tests cover quarantined self-client acceptance,
+rejection of public ingress/extra clients, feedback UUID/pose/journal freshness,
+consistent simulated lease time, and bounded lost startup query recovery.
+The pre-movement diagnostic runs remain negative integration evidence, not a
+successful arbitrated coverage run. Detailed final runtime evidence follows
+when the actual-controller scene is completed.
+
+The actual first transit reached its target and wrote a succeeded journal,
+but its subsequent handoff failed in the initial single-NAV-source run.
+Two event-order assumptions were corrected: the two-second initial ACTIVE
+watchdog must not restart after an already observed ACTIVE goal terminates;
+and a terminal status received before the result is fsynced must be correlated
+with that journal once the durable callback completes. The same received
+terminal snapshot is reconsidered only inside its original one-second
+freshness window; its receipt timestamp is never refreshed. Release still
+requires both exact matching sources. The actual-method regression uses a
+real GoalJournal and NavLeaseWitness with terminal-before-fsync ordering.
+A stale terminal event is not reconsidered as fresh.
+
+Native remap checks found that rclpy Client.srv_name retains the nominal name.
+The lifecycle and planner relay-client guards now use the public
+Node.resolve_service_name API, which applies remaps. The final managed
+constructor matrix passes three cases, including feedback and lifecycle
+redirection rejected before the output timer; it sends no Twist.
+Primary API source: [rclpy Node.resolve_service_name](https://github.com/ros2/rclpy/blob/jazzy/rclpy/rclpy/node.py#L1495),
+blob 1cace64a22670e3bb3cd9da7fc05e6d42faeff29. The corresponding failed native
+attempt is retained as negative evidence rather than a successful check.
+
+
+### Bounded actual-controller observation
+
+The final 180-second diagnostic ended normally at the scorer wall-time bound,
+with 22.55% partial measured coverage, no recorded relay fault, four acknowledged
+NAV releases and five SWEEP claims. Actual status records contain three
+successful goals and one canceled goal after the existing waypoint timeout.
+The command graph has one controller_server NAV publisher, one coverage_planner
+SWEEP publisher, one IDLE DockDrive publisher and one final relay writer consumed
+by ros_gz_bridge; /cmd_vel and /cmd_vel_nav have no publishers. There were no
+pose jumps or instability. Total collection wall time including setup/teardown:
+201.98 s. This is **not a whole-room PASS** (bank exit 1, wall_timeout).
+No escape entry occurred in this final scene, so its zero-on-entry correction
+is supported by the three focal method cases, not by this trajectory.
+
+Four separate focused modules pass 49 +31 +13 +8 cases; three native managed
+constructor/remap cases pass. Flake8 and pep257 pass on the six changed ROS2
+files. No full suite was run. See [exact scoped evidence and retained failures](evidence/managed_nav2_gazebo_codex_20261029.json).
+The managed boot deadline now also covers the wait before plan_started, so a
+lost Nav2 activation response cannot leave this mode waiting indefinitely.
+Remaining acceptance: full-room performance, actual escape exercise, docking
+trajectory/phase coordination and injected faults with the actual controllers.
+All work remains local; the owner has no hardware.
+
+The existing basic three-way DDS scenario also passes its 14 checks again
+on this relay source; its generated motion/health/status inputs remain synthetic.

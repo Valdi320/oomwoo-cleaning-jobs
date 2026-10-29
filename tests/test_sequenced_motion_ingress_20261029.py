@@ -4,9 +4,12 @@ import copy
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
+from tempfile import TemporaryDirectory
 import unittest
 
 from oomwoo_cleaning_jobs.dock_handoff import Velocity
+from oomwoo_cleaning_jobs.goal_journal import GoalJournal, GoalJournalError
+from oomwoo_cleaning_jobs.nav_lease_witness import NavLeaseWitness, nav_status_idle
 from oomwoo_cleaning_jobs.reactive_velocity import (
     MotionHealth, ReactiveMuxError, ThreeWayVelocityMux)
 from oomwoo_cleaning_jobs.sequenced_motion_ingress import (
@@ -180,7 +183,8 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         tree=ast.parse(source.read_text())
         klass=next(n for n in tree.body if isinstance(n,ast.ClassDef)
                    and n.name=="ExperimentalDockVelocityRelay")
-        names={"_on_motion_cmd","_reset","_motion_graph"}
+        names={"_on_motion_cmd","_reset","_motion_graph","_motion_now",
+               "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion"}
         methods=[copy.deepcopy(n) for n in klass.body if isinstance(n,ast.FunctionDef)
                  and n.name in names]
         self.assertEqual(len(methods),len(names))
@@ -188,7 +192,11 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
             name="Relay",bases=[],keywords=[],body=methods,decorator_list=[])],type_ignores=[]))
         mono=[1.94];wall=[10_000_000_000]
         scope={"Velocity":Velocity,"ReactiveMuxError":ReactiveMuxError,
-               "time":SimpleNamespace(monotonic=lambda:mono[0],time_ns=lambda:wall[0])}
+               "time":SimpleNamespace(monotonic=lambda:mono[0],time_ns=lambda:wall[0]),
+               "GetState":SimpleNamespace(Request=object),"GoalJournalError":GoalJournalError,
+               "nav_status_idle":nav_status_idle,
+               "Twist":lambda:SimpleNamespace(linear=SimpleNamespace(x=0.),
+                                               angular=SimpleNamespace(z=0.))}
         exec(compile(module,str(source),"exec"),scope)
         relay=scope["Relay"]();relay._three_way=True;relay.mux=ThreeWayVelocityMux()
         for i in range(8):relay.mux.observe_odom(now=1.+i*.12,linear_mps=0.,angular_rps=0.)
@@ -261,6 +269,147 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                 relay._claim_wall_ns=10_900_000_000;mono[0]=2.94;wall[0]=11_000_000_000
                 self.send(relay,sequence=sequence,stamp=10_990_000_000)
                 self.assertEqual(relay.mux.owner,owner)
+
+    def managed(self):
+        relay,mono,wall,graph=self.relay()
+        relay._managed_nav2=True
+        nav=graph["/valdi/nav2_cmd_vel"][0]
+        nav.node_name="controller_server";nav.node_namespace="/"
+        nav.topic_type="geometry_msgs/msg/Twist"
+        relay.get_clock=lambda:SimpleNamespace(now=lambda:SimpleNamespace(nanoseconds=1_940_000_000))
+        relay._nav_backend_query=None;relay._nav_backend_poll=mono[0]
+        relay._nav_backend_active=True;relay._nav_backend_last=mono[0]
+        relay._nav_lifecycle=SimpleNamespace(service_is_ready=lambda:False)
+        relay._nav_inventory_last=0.
+        nodes=[("coverage_planner","/"),("bt_navigator","/")]
+        relay.get_node_names_and_namespaces=lambda:nodes
+        relay.get_client_names_and_types_by_node=lambda *args:[
+            ("/navigate_to_pose/_action/send_goal",["nav2_msgs/action/NavigateToPose_SendGoal"])]
+        graph["/coverage_planner/motion_state"]=[SimpleNamespace(
+            node_name="coverage_planner",node_namespace="/")]
+        receivers={"/goal_pose":[],"/valdi/disabled_nav2_goal_pose":[SimpleNamespace(
+            node_name="bt_navigator",node_namespace="/",topic_type="geometry_msgs/msg/PoseStamped")]}
+        relay.get_subscriptions_info_by_topic=lambda topic:receivers[topic]
+        return relay,mono,wall,graph,nodes,receivers
+
+    def test_nav_backend_self_client_requires_quarantined_alternative_ingress(self):
+        for case in ("isolated","public_receiver","quarantine_publisher","extra_client"):
+            with self.subTest(case=case):
+                relay,_,_,_,nodes,receivers=self.managed()
+                if case=="public_receiver":receivers["/goal_pose"]=[object()]
+                if case=="quarantine_publisher":
+                    relay.count_publishers=lambda topic:int(topic=="/valdi/disabled_nav2_goal_pose")
+                if case=="extra_client":nodes.append(("rviz2","/"))
+                relay._poll_nav_backend()
+                self.assertEqual(relay._nav_single_dispatcher,case=="isolated")
+
+    def test_managed_claim_uses_same_simulated_clock_as_odometry(self):
+        relay,mono,_,_,_,_=self.managed()
+        relay.mux=ThreeWayVelocityMux()
+        relay._prior_terminal=None
+        for i in range(8):relay.mux.observe_odom(now=1.+i*.12,linear_mps=0.,angular_rps=0.)
+        relay._motion_health=lambda:good_health()
+        relay._goal_witness=SimpleNamespace(journal=SimpleNamespace(read=lambda:None))
+        relay._map_hash="m"
+        mono[0]=50_000.
+        result=relay._execute_motion({"operation":"claim_sweep"})
+        self.assertTrue(result["ok"])
+        self.assertEqual(relay.mux.owner,relay.mux.SWEEP)
+        self.assertAlmostEqual(relay.mux._health_time,1.94)
+
+    def test_managed_active_feedback_requires_current_uuid_pose_and_journal(self):
+        relay,mono,_,_,_,_=self.managed()
+        relay._motion_nav_uuid="a"*32
+        relay._goal_witness=SimpleNamespace(current_active_matches=lambda:True)
+        relay._nav_feedback=(relay._motion_nav_uuid,mono[0],1_800_000_000)
+        self.assertTrue(relay._feedback_live(relay._motion_nav_uuid))
+        self.assertFalse(relay._feedback_live("b"*32))
+        relay._nav_feedback=(relay._motion_nav_uuid,mono[0],1_000_000_000)
+        self.assertFalse(relay._feedback_live(relay._motion_nav_uuid))
+        relay._nav_feedback=(relay._motion_nav_uuid,mono[0],1_800_000_000)
+        relay._goal_witness.current_active_matches=lambda:False
+        self.assertFalse(relay._feedback_live(relay._motion_nav_uuid))
+        relay._goal_witness.current_active_matches=lambda:True
+        mono[0]+=1.01
+        self.assertFalse(relay._feedback_live(relay._motion_nav_uuid))
+
+    def test_lost_startup_lifecycle_query_cannot_suppress_fresh_queries(self):
+        relay,mono,_,_,_,_=self.managed()
+        canceled=[];requests=[]
+        old=SimpleNamespace(done=lambda:False,cancel=lambda:canceled.append(True))
+        replacement=SimpleNamespace(done=lambda:False)
+        relay._nav_backend_query=old
+        relay._nav_backend_poll=0.
+        relay._nav_lifecycle=SimpleNamespace(service_is_ready=lambda:True,
+            call_async=lambda request:requests.append(request) or replacement)
+        relay._poll_nav_backend()
+        self.assertEqual(canceled,[True])
+        self.assertEqual(len(requests),1)
+        self.assertIs(relay._nav_backend_query,replacement)
+        self.assertFalse(relay._nav_backend_active)
+
+    def test_managed_nav_accepts_supported_publication_sequence_then_rejects_second_writer(self):
+        relay,_,_,graph,_,_=self.managed()
+        zero=SimpleNamespace(linear=SimpleNamespace(x=0.),angular=SimpleNamespace(z=0.))
+        relay._on_motion_cmd(relay.mux.NAV,zero,{
+            "publication_sequence_number":1,"reception_sequence_number":0,
+            "source_timestamp":9_990_000_000})
+        self.assertEqual(relay.mux.owner,relay.mux.SWEEP)
+        graph["/valdi/nav2_cmd_vel"].append(SimpleNamespace(endpoint_gid=bytes([10])*24))
+        relay._on_motion_cmd(relay.mux.NAV,zero,{
+            "publication_sequence_number":2,"reception_sequence_number":0,
+            "source_timestamp":9_995_000_000})
+        self.assertEqual(relay.mux.owner,relay.mux.STOP)
+        self.assertIn("graph changed",relay.mux.stop_reason)
+
+    def terminal_tick(self):
+        relay,mono,_,_,_,_=self.managed()
+        relay.mux=ThreeWayVelocityMux()
+        for i in range(8):relay.mux.observe_odom(now=1.+i*.12,linear_mps=0.,angular_rps=0.)
+        relay.mux.observe_health(now=1.85,proof=good_health())
+        relay._motion_token=relay.mux.claim_transit(now=1.9,nav_goal_uuid="a"*32)
+        relay.mux.observe_health(now=1.92,proof=good_health(
+            nav2_idle=False,nav2_active_goal="a"*32))
+        relay._poll_nav_backend=lambda:None
+        relay._motion_health=lambda:good_health()
+        relay._nav_lease_started=0.
+        relay._last_status=mono[0]
+        relay._nav_status=(("a"*32,4),)
+        relay._nav_confirmed_terminal=lambda:False
+        relay.safe=SimpleNamespace(publish=lambda message:None)
+        return relay,mono
+
+    def test_terminal_callback_before_result_fsync_keeps_zero_and_does_not_rearm_watchdog(self):
+        relay,mono=self.terminal_tick()
+        with TemporaryDirectory() as scratch:
+            journal=GoalJournal(Path(scratch)/"goal.json")
+            token="b"*32+"-1"
+            journal.begin(uuid_hex="a"*32,token=token,job_id="coverage_sweep",
+                          map_digest="c"*64,target_cell=0)
+            journal.accepted(token=token,uuid_hex="a"*32)
+            witness=NavLeaseWitness(journal)
+            witness.observe((("a"*32,2),))
+            relay._goal_witness=witness
+            mono[0]=2.1
+            relay._tick_motion()
+            self.assertEqual(relay.mux.owner,relay.mux.NAV)
+            self.assertEqual(relay._latest_output,Velocity())
+            self.assertFalse(witness.can_release_for_dock())
+            journal.terminal(token=token,uuid_hex="a"*32,outcome="succeeded")
+            mono[0]=2.2
+            relay._tick_motion()
+            self.assertTrue(witness.can_release_for_dock())
+            self.assertEqual(relay._last_status,1.94)
+
+    def test_old_terminal_event_is_never_reconciled_as_fresh(self):
+        relay,mono=self.terminal_tick()
+        relay._last_status=0.
+        relay._goal_witness=SimpleNamespace(saw_active=True,saw_terminal=False,fault=None,
+            observe=lambda statuses:self.fail("stale terminal was replayed"),
+            current_active_matches=lambda:False)
+        mono[0]=2.1
+        relay._tick_motion()
+        self.assertEqual(relay._last_status,0.)
 
 
 if __name__ == "__main__":

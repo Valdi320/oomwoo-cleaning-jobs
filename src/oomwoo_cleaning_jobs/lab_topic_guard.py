@@ -50,9 +50,16 @@ LAB_THREE_WAY_INPUT_TOPICS = LAB_INPUT_TOPICS + (
 )
 
 
-def require_lab_input_subscriptions(subscriptions: object, *, three_way=False) -> None:
+LAB_MANAGED_NAV_INPUT_TOPICS = LAB_THREE_WAY_INPUT_TOPICS + (
+    "/navigate_to_pose/_action/feedback",
+)
+
+
+def require_lab_input_subscriptions(subscriptions: object, *, three_way=False,
+                                    managed_nav2=False) -> None:
     """Deny ROS2 subscriber remaps or source collisions before timers."""
-    expected = LAB_THREE_WAY_INPUT_TOPICS if three_way else LAB_INPUT_TOPICS
+    expected = (LAB_MANAGED_NAV_INPUT_TOPICS if managed_nav2 else
+                LAB_THREE_WAY_INPUT_TOPICS if three_way else LAB_INPUT_TOPICS)
     if (type(subscriptions) is not dict
             or set(subscriptions) != set(expected)
             or len(set(map(id, subscriptions.values()))) != len(expected)):

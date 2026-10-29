@@ -25,6 +25,8 @@ from rclpy.qos import (
     QoSProfile,QoSDurabilityPolicy,QoSReliabilityPolicy)
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, OccupancyGrid
+from nav2_msgs.action import NavigateToPose
+from lifecycle_msgs.srv import GetState
 from rosgraph_msgs.msg import Clock as ClockMessage
 from tf2_ros import Buffer, TransformListener, TransformException
 from sensor_msgs.msg import BatteryState
@@ -59,6 +61,10 @@ class ExperimentalDockVelocityRelay(Node):
         self.declare_parameter("goal_journal_path","")
         self.declare_parameter("three_way",False)
         self._three_way=self.get_parameter("three_way").value is True
+        self.declare_parameter("managed_nav2",False)
+        self._managed_nav2=self.get_parameter("managed_nav2").value is True
+        if self._managed_nav2 and not self._three_way:
+            raise ValueError("managed_nav2 requires the three-way lab policy")
         if self.get_parameter("simulation_lab").value is not True:
             raise ValueError("command source relay requires isolated simulation_lab")
         output=str(self.get_parameter("output_topic").value)
@@ -105,6 +111,19 @@ class ExperimentalDockVelocityRelay(Node):
             self._prior_terminal=None
             self._dock_started=False
             self.tf_buffer=Buffer()
+            if self._managed_nav2:
+                self._motion_nav_uuid=None
+                self._nav_feedback=None
+                self._nav_backend_active=False
+                self._nav_backend_last=None
+                self._nav_backend_query=None
+                self._nav_backend_poll=0.
+                self._nav_single_dispatcher=False
+                self._nav_inventory_last=0.
+                self._nav_client_inventory=[]
+                self._nav_lifecycle=self.create_client(GetState,"/bt_navigator/get_state")
+                if self.resolve_service_name("/bt_navigator/get_state")!="/bt_navigator/get_state":
+                    raise LabTopicGuardError("managed Nav2 lifecycle service remapped")
         latched=QoSProfile(depth=1,reliability=QoSReliabilityPolicy.RELIABLE,
                            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.safe=self.create_publisher(Twist,output,10)
@@ -148,7 +167,12 @@ class ExperimentalDockVelocityRelay(Node):
                 self.tf_listener=TransformListener(self.tf_buffer,self)
                 inputs["/tf"]=self.tf_listener.tf_sub
                 inputs["/tf_static"]=self.tf_listener.tf_static_sub
-                require_lab_input_subscriptions(inputs,three_way=True)
+                if self._managed_nav2:
+                    inputs["/navigate_to_pose/_action/feedback"]=self.create_subscription(
+                        NavigateToPose.Impl.FeedbackMessage,
+                        "/navigate_to_pose/_action/feedback",self._on_motion_feedback,10)
+                require_lab_input_subscriptions(inputs,three_way=True,
+                                                managed_nav2=self._managed_nav2)
             else:
                 require_lab_input_subscriptions(inputs)
         except Exception:
@@ -243,7 +267,8 @@ class ExperimentalDockVelocityRelay(Node):
         try:
             v=msg.twist.twist
             speed=math.hypot(v.linear.x,v.linear.y)
-            self.mux.observe_odom(now=observed_at,
+            self.mux.observe_odom(now=(self._motion_now() if getattr(self,"_managed_nav2",False)
+                                      else observed_at),
                   linear_mps=speed,angular_rps=v.angular.z)
         except (DockHandoffError,ReactiveMuxError,ValueError,TypeError,OverflowError):
             self._odom_last=None
@@ -259,8 +284,8 @@ class ExperimentalDockVelocityRelay(Node):
         return then is not None and 0<=time.monotonic()-then<age
 
     def _nav_idle(self):
-        return (self._fresh(self._last_status,3.)
-            and nav_status_idle(self._nav_status))
+        return ((self._fresh(self._last_status,3.) and nav_status_idle(self._nav_status))
+                or (getattr(self,"_managed_nav2",False) and self._managed_idle()))
 
     def _nav_confirmed_terminal(self):
         # Revocable: never trust the terminal witness only from NAV phase.
@@ -294,7 +319,7 @@ class ExperimentalDockVelocityRelay(Node):
         if getattr(self,"_three_way",False):
             return self._execute_motion(body)
         name=body.get("operation")
-        now=time.monotonic()
+        now=self._motion_now()
         if name=="stop":
             self._reset("ROS2 explicit STOP")
             self._released_nav=False
@@ -364,6 +389,17 @@ class ExperimentalDockVelocityRelay(Node):
             "owner":self.mux.owner,"reason":self.mux.stop_reason,
             "policy":"three_way" if self._three_way else "two_way",
             "motion_health":(self._motion_health().__dict__ if self._three_way else None),
+            "motion_inputs":({role:{"zero":entry[1]==Velocity(),
+                "age":self._motion_now()-entry[0]} for role,entry in self._commands.items()}
+                if self._three_way else None),
+            "managed_nav2":self._managed_nav2,
+            "managed_backend":({"active":self._nav_backend_active,
+                "single_dispatcher":self._nav_single_dispatcher,
+                "send_goal_clients":self._nav_client_inventory,
+                "query_pending":self._nav_backend_query is not None,
+                "service_ready":self._nav_lifecycle.service_is_ready(),
+                "response_fresh":self._fresh(self._nav_backend_last,2.5)}
+                if self._managed_nav2 else None),
             "nav_status_fresh":self._fresh(self._last_status,3.),
             "nav_idle":self._nav_idle(),
             "odom_fresh":self._fresh(self._odom_last,.35),
@@ -447,6 +483,8 @@ class ExperimentalDockVelocityRelay(Node):
             self.mux.stop(reason)
             self._motion_token=None
             self._prior_terminal=None
+            if getattr(self,"_managed_nav2",False):
+                self._motion_nav_uuid=None
         else:
             self.mux.reset(reason)
         self._released_nav=False
@@ -487,14 +525,21 @@ class ExperimentalDockVelocityRelay(Node):
                 self.mux.SWEEP:"/valdi/sweep_cmd_vel",
                 self.mux.DOCK:"/valdi/dock_drive_cmd_vel"}
         observed={}
+        used=set()
         for role,topic in topics.items():
             publishers=self.get_publishers_info_by_topic(topic)
             if len(publishers)!=1:
                 return False
-            gid=bytes(publishers[0].endpoint_gid)
-            if not gid or not any(gid):
+            if getattr(self,"_managed_nav2",False) and role==self.mux.NAV and any(
+                    p.node_name!="controller_server"
+                    or p.node_namespace!="/" or p.topic_type!="geometry_msgs/msg/Twist"
+                    for p in publishers):
                 return False
-            observed[role]=gid
+            gids={bytes(p.endpoint_gid) for p in publishers}
+            if any(not gid or not any(gid) for gid in gids) or used & gids:
+                return False
+            used.update(gids)
+            observed[role]=next(iter(gids))
         output=self.get_publishers_info_by_topic("/valdi/lab_safe_cmd_vel_output")
         if (len(set(observed.values()))!=3 or len(output)!=1
             or output[0].node_name!=self.get_name()
@@ -519,8 +564,11 @@ class ExperimentalDockVelocityRelay(Node):
         idle=self._nav_idle()
         # A cached ACTIVE UUID must not be refreshed by the relay timer.
         # Preserve the existing one-second nonzero-NAV status budget.
-        active=(None if not self._fresh(self._last_status,1.) or self._nav_status is None else
-                next((uuid for uuid,code in self._nav_status if code in _ACTIVE),None))
+        candidate=(None if self._nav_status is None else
+                   next((uuid for uuid,code in self._nav_status if code in _ACTIVE),None))
+        live=(self._fresh(self._last_status,1.) or
+              (getattr(self,"_managed_nav2",False) and self._feedback_live(candidate)))
+        active=candidate if live and not idle else None
         # These fields are derived observations in this disposable simulation.
         # Meter health is not an electrical/MCU safety attestation.
         return MotionHealth(
@@ -533,18 +581,21 @@ class ExperimentalDockVelocityRelay(Node):
             map_current=self._map_hash is not None and not self._map_fault,
             safety_loop_ok=(not self._clock_fault and self._fresh(self._clock_advanced,.35)
                 and self._unstable is False and self._fresh(self._unstable_last,2.5)
-                and self._sweep_state in ("IDLE","TRANSIT","SWEEP","ESCAPE")
+                and self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV","SWEEP","ESCAPE")
                 and self._fresh(self._sweep_last,1.)
+                and (not getattr(self,"_managed_nav2",False)
+                     or (self._nav_single_dispatcher and self._nav_backend_active
+                         and self._fresh(self._nav_backend_last,2.5)))
                 and self._dock_state in ("IDLE","SEARCH","GOTO","TURN","BACK","REGROUP","DONE")
                 and self._fresh(self._dock_last,3.)),
             isolated_sources=self._motion_graph(),
             nav2_idle=idle,nav2_active_goal=active,
             dock_inactive=self._dock_state=="IDLE" and self._fresh(self._dock_last,3.),
-            sweep_inactive=self._sweep_state in ("IDLE","TRANSIT")
+            sweep_inactive=self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV")
                 and self._fresh(self._sweep_last,1.))
 
     def _on_motion_cmd(self,source,msg,info):
-        now=time.monotonic()
+        now=self._motion_now()
         velocity=Velocity(float(msg.linear.x),float(msg.angular.z))
         # Raw Twist has no lease token. Jazzy's MessageInfo supplies sequence
         # and DDS wall timestamp, but no per-packet publisher GID. Associate
@@ -584,11 +635,12 @@ class ExperimentalDockVelocityRelay(Node):
 
     def _motion_zero(self,source):
         entry=self._commands.get(source)
-        return entry is not None and self._fresh(entry[0],.30) and entry[1]==Velocity()
+        return (entry is not None and 0<=self._motion_now()-entry[0]<=.30
+                and entry[1]==Velocity())
 
     def _execute_motion(self,body):
         name=body.get("operation")
-        now=time.monotonic()
+        now=self._motion_now()
         if name=="stop":
             self._reset("ROS2 explicit STOP")
             return {"ok":True,"state":self.mux.owner}
@@ -603,9 +655,16 @@ class ExperimentalDockVelocityRelay(Node):
                 raise ReactiveMuxError("pending Nav2 UUID/map journal mismatch")
             token=self.mux.claim_transit(now=now,nav_goal_uuid=record["uuid"])
             self._goal_witness.reset()
-            self._nav_lease_started=now
+            self._nav_lease_started=time.monotonic()
+            if getattr(self,"_managed_nav2",False):
+                self._motion_nav_uuid=record["uuid"]
         elif name in ("release_nav","release_for_dock"):
-            if not self._nav_confirmed_terminal() or not self._motion_zero(self.mux.NAV):
+            stopped=self._motion_zero(self.mux.NAV)
+            if getattr(self,"_managed_nav2",False):
+                entry=self._commands.get(self.mux.NAV)
+                stopped=(entry is not None and entry[1]==Velocity()
+                         and self._latest_output==Velocity())
+            if not self._nav_confirmed_terminal() or not stopped:
                 raise ReactiveMuxError("fresh exact Nav2 terminal/zero not observed")
             uuid=self._goal_witness.uuid
             self.mux.release_transit(now=now,terminal_uuid=uuid,
@@ -643,10 +702,126 @@ class ExperimentalDockVelocityRelay(Node):
         self._source_gids=dict(self._observed_gids)
         return {"ok":True,"state":self.mux.owner}
 
+    def _motion_now(self):
+        if getattr(self,"_managed_nav2",False):
+            return self.get_clock().now().nanoseconds*1e-9
+        return time.monotonic()
+
+    def _on_motion_feedback(self,msg):
+        uuid=bytes(msg.goal_id.uuid).hex()
+        stamp=msg.feedback.current_pose.header.stamp
+        stamp_ns=stamp.sec*1_000_000_000+stamp.nanosec
+        if self.mux.owner==self.mux.NAV and uuid!=self._motion_nav_uuid:
+            self._reset("foreign Nav2 feedback UUID")
+            return
+        self._nav_feedback=(uuid,time.monotonic(),stamp_ns)
+
+    def _feedback_live(self,uuid):
+        value=self._nav_feedback
+        return (value is not None and uuid==value[0]==self._motion_nav_uuid
+                and self._fresh(value[1],1.) and value[2]>0
+                and 0<=self.get_clock().now().nanoseconds-value[2]<=500_000_000
+                and self._goal_witness is not None
+                and self._goal_witness.current_active_matches())
+
+    def _poll_nav_backend(self):
+        now=time.monotonic()
+        if (self._nav_backend_query is not None and not self._nav_backend_query.done()
+                and now-self._nav_backend_poll>=1.5):
+            # A request discovered while the lifecycle server is starting can
+            # be lost. Bound that future too; never let it suppress all later
+            # actual state queries. Cancellation removes it from rclpy's map.
+            self._nav_backend_query.cancel()
+            self._nav_backend_query=None
+            self._nav_backend_active=False
+        if self._nav_backend_query is not None and self._nav_backend_query.done():
+            try:
+                reply=self._nav_backend_query.result()
+                self._nav_backend_active=reply is not None and reply.current_state.id==3
+                self._nav_backend_last=now
+            except Exception:
+                self._nav_backend_active=False
+            self._nav_backend_query=None
+        if (self._nav_backend_query is None and now-self._nav_backend_poll>=.5
+                and self._nav_lifecycle.service_is_ready()):
+            self._nav_backend_poll=now
+            self._nav_backend_query=self._nav_lifecycle.call_async(GetState.Request())
+        if now-self._nav_inventory_last>=1.:
+            self._nav_inventory_last=now
+            owners=[]
+            for name,namespace in self.get_node_names_and_namespaces():
+                # Action graph discovery can classify passive feedback readers.
+                # Count actual SendGoal service clients, not those observers.
+                try:clients=self.get_client_names_and_types_by_node(name,namespace)
+                except Exception:
+                    self._nav_single_dispatcher=False
+                    return
+                for service,types in clients:
+                    if service=="/navigate_to_pose/_action/send_goal":
+                        owners.append((name,namespace))
+            self._nav_client_inventory=owners
+            phase=self.get_publishers_info_by_topic("/coverage_planner/motion_state")
+            # Jazzy's navigator also owns a self-client which forwards the
+            # RViz goal_pose subscription. Admit it only with that alternative
+            # ingress quarantined and without any publishers on either topic.
+            quarantine="/valdi/disabled_nav2_goal_pose"
+            receivers=self.get_subscriptions_info_by_topic(quarantine)
+            self._nav_single_dispatcher=(sorted(owners)==[
+                    ("bt_navigator","/"),("coverage_planner","/")]
+                and len(phase)==1 and phase[0].node_name=="coverage_planner"
+                and phase[0].node_namespace=="/"
+                and len(receivers)==1 and receivers[0].node_name=="bt_navigator"
+                and receivers[0].node_namespace=="/"
+                and receivers[0].topic_type=="geometry_msgs/msg/PoseStamped"
+                and not self.get_subscriptions_info_by_topic("/goal_pose")
+                and self.count_publishers(quarantine)==0
+                and self.count_publishers("/goal_pose")==0)
+
+    def _managed_idle(self):
+        # Nav2 status is event-driven. Do not fabricate periodic status:
+        # require a live sole dispatcher, fresh actual lifecycle response,
+        # its current phase and durable journal, plus no contradictory goal.
+        if (not self._nav_single_dispatcher or not self._nav_backend_active
+                or not self._fresh(self._nav_backend_last,2.5)
+                or not self._fresh(self._sweep_last,1.) or self._goal_witness is None):
+            return False
+        try:record=self._goal_witness.journal.read()
+        except GoalJournalError:return False
+        active=(() if self._nav_status is None else
+                tuple(uuid for uuid,code in self._nav_status if code in _ACTIVE))
+        if active:
+            return (self.mux.owner==self.mux.NAV and record is not None
+                and record["state"]=="terminal" and record["uuid"]==self._motion_nav_uuid
+                and set(active)=={self._motion_nav_uuid})
+        if self._nav_status is not None and not nav_status_idle(self._nav_status):
+            return False
+        if record is None:
+            return self._sweep_state in ("IDLE","SWEEP","PREPARE_NAV")
+        if record["state"]=="terminal":
+            return self._goal_witness.can_release_for_dock()
+        if record["state"]=="submitting" and self._sweep_state=="PREPARE_NAV":
+            return True
+        return (self.mux.owner==self.mux.NAV and not self._goal_witness.saw_active
+                and record["uuid"]==self._motion_nav_uuid
+                and self._nav_lease_started is not None
+                and time.monotonic()-self._nav_lease_started<2.)
+
     def _tick_motion(self):
         try:
-            self.mux.observe_health(now=time.monotonic(),proof=self._motion_health())
-            velocity=self.mux.output(now=time.monotonic())
+            if getattr(self,"_managed_nav2",False):
+                self._poll_nav_backend()
+                # The one terminal DDS event can precede the dispatcher's
+                # durable result callback. Reconcile those already received
+                # bytes while still fresh, without refreshing their receipt.
+                if (self.mux.owner==self.mux.NAV and self._goal_witness is not None
+                        and self._goal_witness.saw_active and not self._goal_witness.saw_terminal
+                        and self._fresh(self._last_status,1.)
+                        and nav_status_idle(self._nav_status)):
+                    self._goal_witness.observe(self._nav_status)
+                    if self._goal_witness.fault is not None:
+                        self._reset(self._goal_witness.fault)
+            self.mux.observe_health(now=self._motion_now(),proof=self._motion_health())
+            velocity=self.mux.output(now=self._motion_now())
             if self.mux.owner==self.mux.NAV:
                 witnessed=(self._goal_witness is not None
                     and self._goal_witness.current_active_matches())
@@ -654,6 +829,7 @@ class ExperimentalDockVelocityRelay(Node):
                     velocity=Velocity()
                     if (self._nav_lease_started is not None
                         and time.monotonic()-self._nav_lease_started>2.
+                        and (self._goal_witness is None or not self._goal_witness.saw_active)
                         and not self._nav_confirmed_terminal()):
                         self._reset("Nav2 UUID never became active/verified")
         except (ReactiveMuxError,GoalJournalError) as exc:

@@ -1,7 +1,8 @@
 import pathlib
 import unittest
 from oomwoo_cleaning_jobs.lab_topic_guard import (
-    LabTopicGuardError,LAB_INPUT_TOPICS,LAB_THREE_WAY_INPUT_TOPICS,require_lab_input_subscriptions)
+    LabTopicGuardError,LAB_INPUT_TOPICS,LAB_THREE_WAY_INPUT_TOPICS,
+    LAB_MANAGED_NAV_INPUT_TOPICS,require_lab_input_subscriptions)
 
 class Fake:
     def __init__(self,topic): self.topic_name=topic
@@ -65,4 +66,14 @@ class TestInputIsolation(unittest.TestCase):
         with self.assertRaises(LabTopicGuardError):require_lab_input_subscriptions(x)
         with self.assertRaises(LabTopicGuardError):
             require_lab_input_subscriptions(correct(),three_way=True)
+    def test_13_managed_nav_requires_its_resolved_feedback_handle(self):
+        x={name:Fake(name) for name in LAB_MANAGED_NAV_INPUT_TOPICS}
+        self.assertEqual(len(x),15)
+        self.assertIsNone(require_lab_input_subscriptions(x,three_way=True,managed_nav2=True))
+        x["/navigate_to_pose/_action/feedback"]=Fake("/foreign_feedback")
+        with self.assertRaises(LabTopicGuardError):
+            require_lab_input_subscriptions(x,three_way=True,managed_nav2=True)
+        del x["/navigate_to_pose/_action/feedback"]
+        with self.assertRaises(LabTopicGuardError):
+            require_lab_input_subscriptions(x,three_way=True,managed_nav2=True)
 if __name__=="__main__":unittest.main()
