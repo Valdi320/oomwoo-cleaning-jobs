@@ -1,0 +1,50 @@
+{
+  "base_commit": "3f3cd7025ab242564d9a940f15009b2edaabca63",
+  "branch": "contrib/reactive-three-way-mux-lab-20261029-1018",
+  "created_utc": "2026-10-29T09:36:48.165033+00:00",
+  "file_sha256": {
+    "docs/REACTIVE_THREE_WAY_MUX_WIP_20261029.md": "84d8a80fec1828e453d86beb7d0824e41f4c445a8613d59eeedac7d796bc54ee",
+    "src/oomwoo_cleaning_jobs/reactive_velocity.py": "5d5dfc251c709b455a377eddc7f15c7e3c722bee022f187dc396951f2b7d537f",
+    "tests/test_reactive_velocity_20261029.py": "43012cdc116075855be170aa0b1a86cbc2c2c8675e2dd332ab48285a2e39e483"
+  },
+  "host": {
+    "architecture": "x86_64",
+    "implementation": "CPython",
+    "python": "3.14.3",
+    "system": "Linux"
+  },
+  "not_tested": [
+    "ROS2 middleware",
+    "Gazebo",
+    "real /cmd_vel publisher",
+    "MCU physical interlock",
+    "real robot",
+    "ARM SBC",
+    "energy"
+  ],
+  "notes": "Inputs are caller-reported synthetic witness flags, NOT authenticated sensor proof.",
+  "publication": "LOCAL_ONLY_NOT_PUSHED",
+  "runs": {
+    "focused": {
+      "command": "PYTHONPATH=src python3 -m unittest discover -s tests -p test_reactive_velocity_20261029.py -q",
+      "elapsed_wall_s": 0.0961,
+      "status": "PASS",
+      "tests_run": 33
+    },
+    "full": {
+      "command": "PYTHONPATH=src python3 -m unittest discover -s tests -p test_*.py -q",
+      "elapsed_wall_s": 5.8091,
+      "status": "PASS",
+      "tests_run": 724
+    },
+    "full_optimized": {
+      "command": "PYTHONPATH=src python3 -O -m unittest discover -s tests -p test_*.py -q",
+      "elapsed_wall_s": 5.9928,
+      "status": "PASS",
+      "tests_run": 724
+    }
+  },
+  "schema": 1,
+  "scope": "exclusive STOP/NAV/SWEEP/DOCK ownership and health/odom/command leases",
+  "validation_level": "synthetic_python_linux"
+}
