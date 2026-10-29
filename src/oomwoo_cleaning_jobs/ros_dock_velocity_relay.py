@@ -29,6 +29,7 @@ from oomwoo_cleaning_jobs_lab_interfaces.srv import (
 
 from .dock_handoff import ExclusiveVelocityMux,Velocity,DockHandoffError
 from .lab_topic_guard import LabTopicGuardError, require_lab_output_publisher
+from .ros_odom_stamp_gate import OdomStampGate
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .goal_journal import GoalJournal,GoalJournalError
 from .nav_lease_witness import NavLeaseWitness,ACTIVE,nav_status_idle
@@ -53,6 +54,7 @@ class ExperimentalDockVelocityRelay(Node):
         if output!="/valdi/lab_safe_cmd_vel_output":
             raise ValueError("unsupported lab output topic")
         self.mux=ExclusiveVelocityMux(max_age_s=.30,quiet_required_s=.75)
+        self._odom_stamp_gate=OdomStampGate()
         self._requests=RequestDedupe(128)
         journal_path=str(self.get_parameter("goal_journal_path").value)
         self._goal_witness=(NavLeaseWitness(GoalJournal(journal_path))
@@ -130,12 +132,30 @@ class ExperimentalDockVelocityRelay(Node):
             except DockHandoffError as exc:self.mux.reset(str(exc))
 
     def _on_odom(self,msg):
-        self._odom_last=time.monotonic()
-        v=msg.twist.twist
-        speed=math.hypot(v.linear.x,v.linear.y)
-        try:self.mux.observe_odom(now=self._odom_last,
-              linear_mps=speed,angular_rps=v.angular.z)
-        except DockHandoffError:self.mux.reset("invalid observed odometry")
+        # Receipt time alone is NOT a freshness proof: a delayed/replayed
+        # Odometry packet can arrive now with a stale original header stamp.
+        # Compare header to the node's own ROS clock (supports sim /clock),
+        # never to monotonic wall time. Missing /clock, rewind or replay STOP.
+        observed_at=time.monotonic()
+        try:
+            stamp=msg.header.stamp
+            self._odom_stamp_gate.accept(
+                ros_now_ns=self.get_clock().now().nanoseconds,
+                stamp_sec=stamp.sec,stamp_nanosec=stamp.nanosec)
+        except Exception:
+            self._odom_last=None
+            self.mux.reset("ROS odometry header stale/replayed/invalid")
+            return
+        try:
+            v=msg.twist.twist
+            speed=math.hypot(v.linear.x,v.linear.y)
+            self.mux.observe_odom(now=observed_at,
+                  linear_mps=speed,angular_rps=v.angular.z)
+        except (DockHandoffError,ValueError,TypeError,OverflowError):
+            self._odom_last=None
+            self.mux.reset("invalid observed odometry")
+            return
+        self._odom_last=observed_at
 
     def _battery(self,msg):
         self._battery_fraction=float(msg.percentage)
