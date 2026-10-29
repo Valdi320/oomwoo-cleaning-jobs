@@ -1,0 +1,54 @@
+{
+  "diff_check_pass": true,
+  "jobs": {
+    "focal": {
+      "elapsed_s": 0.133,
+      "pass": true,
+      "return_code": 0,
+      "summary": "----------------------------------------------------------------------\nRan 8 tests in 0.003s\n\nOK\n",
+      "test_count": 8
+    },
+    "full": {
+      "elapsed_s": 10.844,
+      "pass": true,
+      "return_code": 0,
+      "summary": "----------------------------------------------------------------------\nRan 649 tests in 10.460s\n\nOK\n",
+      "test_count": 649
+    },
+    "optimized": {
+      "elapsed_s": 11.001,
+      "pass": true,
+      "return_code": 0,
+      "summary": "----------------------------------------------------------------------\nRan 649 tests in 9.991s\n\nOK\n",
+      "test_count": 649
+    },
+    "restart": {
+      "elapsed_s": 0.139,
+      "pass": true,
+      "return_code": 0,
+      "summary": "----------------------------------------------------------------------\nRan 20 tests in 0.002s\n\nOK\n",
+      "test_count": 20
+    },
+    "syntax": {
+      "elapsed_s": 0.063,
+      "pass": true,
+      "return_code": 0,
+      "summary": "",
+      "test_count": null
+    }
+  },
+  "platform": {
+    "machine": "x86_64",
+    "os": "Linux",
+    "python": "3.14.3"
+  },
+  "pre_fix_counterexamples": [
+    "empty current status",
+    "foreign UNKNOWN status",
+    "duplicate contradictory UUID status",
+    "foreign terminal only"
+  ],
+  "schema": 1,
+  "source_base": "69b01e3d09fae953aefca031c4f58a337f259da7",
+  "test_mode": "synthetic Python/Linux; ROS2 adapter AST-only, no ROS2/Gazebo/hardware"
+}

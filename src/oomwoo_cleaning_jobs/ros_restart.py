@@ -31,7 +31,7 @@ class AsyncOrphanRecovery:
         self._last_clock_received=None
         self._last_odom_received=None
         self._last_status_received=None
-        self._status=None
+        self._last_status_snapshot=None
         self._pending_cancel=None
         self.phase="observing_old_uuid"
         self.error=None
@@ -52,10 +52,14 @@ class AsyncOrphanRecovery:
         self._last_clock_received=time.monotonic()
 
     def _on_status(self,msg):
-        self._status=msg
         self._last_status_received=time.monotonic()
-        for x in msg.status_list:
-            self.witness.see_status(bytes(x.goal_info.goal_id.uuid).hex(),x.status)
+        try:
+            snapshot=tuple((bytes(x.goal_info.goal_id.uuid).hex(),x.status)
+                           for x in msg.status_list)
+        except (AttributeError,TypeError,ValueError,OverflowError):
+            snapshot=None
+        self._last_status_snapshot=snapshot
+        self.witness.see_snapshot(snapshot)
 
     def _on_odom(self,msg):
         self._last_odom_received=time.monotonic()
@@ -118,13 +122,10 @@ class AsyncOrphanRecovery:
                 or self._last_status_received is None
                 or now-self._last_status_received>3.0):
                 return False
-            if self._status is None:return False
-            others=[g for g in self._status.status_list
-                    if g.status in (1,2,3) and
-                    bytes(g.goal_info.goal_id.uuid).hex()!=self.witness.expected]
-            if others:
-                self.error="other active Nav2 action discovered"
-                self.phase="failed"
+            # The last status packet must still explicitly contain our
+            # CANCELED UUID: absence, stale terminal history for another
+            # goal or UNKNOWN/duplicate statuses cannot unlock Nav2.
+            if not self.witness.final_snapshot_safe(self._last_status_snapshot):
                 return False
             self._proof=self.witness.require_ready()
             self.phase="verified"

@@ -62,10 +62,60 @@ class OrphanNav2Witness:
         self._quiet_span=0.0
         self._fault=None
 
+    def _snapshot_valid(self, statuses) -> bool:
+        """Entire GoalStatusArray must be unambiguous and foreign-goal idle.
+
+        Empty arrays are allowed while observing, but NEVER prove the
+        expected canceled UUID at the final rearm boundary.
+        """
+        if type(statuses) is not tuple:
+            return False
+        seen=set()
+        for entry in statuses:
+            if type(entry) is not tuple or len(entry)!=2:
+                return False
+            uuid, code=entry
+            if (type(uuid) is not str or len(uuid)!=32
+                or any(c not in "0123456789abcdef" for c in uuid)
+                or type(code) is not int or code not in (1,2,3,4,5,6)
+                or uuid in seen
+                or (uuid!=self.expected and code in self.ACTIVE)):
+                return False
+            seen.add(uuid)
+        return True
+
+    def see_snapshot(self,statuses) -> None:
+        """Latch a fault on malformed/UNKNOWN/duplicate or foreign ACTIVE.
+
+        An orphaned controller cannot safely arbitrate a foreign active
+        owner, even if the foreign goal later disappears from a snapshot.
+        """
+        if self._fault:
+            return
+        if not self._snapshot_valid(statuses):
+            self._fault="ambiguous ROS2 status snapshot or foreign active goal"
+            return
+        for uuid, status in statuses:
+            if uuid==self.expected:
+                self.see_status(uuid,status)
+
+    def final_snapshot_safe(self,statuses) -> bool:
+        """Current fresh status must STILL show the exact old UUID CANCELED.
+
+        The caller must independently enforce a monotonic receive deadline,
+        advancing sim clock, fresh odometry and matching cancel response.
+        """
+        return bool(self.ready and self._snapshot_valid(statuses)
+                    and any(uuid==self.expected and code==self.CANCELED
+                            for uuid,code in statuses))
+
     def see_status(self,goal_hex:str,status:int) -> None:
         if goal_hex!=self.expected or self._fault:
             return
-        if status in self.ACTIVE and not self.terminal_canceled:
+        if status in self.ACTIVE:
+            if self.terminal_canceled or self._canceled_seen_pre_ack:
+                self._fault="old Nav2 UUID became active after terminal cancel"
+                return
             self.active_seen=True
         elif status==self.CANCELED:
             if not self.active_seen:
@@ -80,7 +130,7 @@ class OrphanNav2Witness:
             self.terminal_canceled=True
         elif status in (4,6):
             self._fault="old goal did not terminate CANCELED"
-        elif status not in (0,1,2,3,4,5,6):
+        elif status not in (1,2,3,4,5,6):
             self._fault="invalid ROS2 goal status"
 
     def cancel_response(self,return_code:int,canceled_goal_hexes:tuple[str,...]) -> None:
