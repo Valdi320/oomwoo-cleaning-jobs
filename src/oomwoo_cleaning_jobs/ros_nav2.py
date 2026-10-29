@@ -47,6 +47,7 @@ class AsyncNav2Transport:
         on_accepted: Callable[[str], None] | None = None,
         journal: GoalJournal | None = None,
         pre_send: Callable[[], None] | None = None,
+        transit_only: bool = False,
     ):
         if not callable(goal_builder) or not callable(on_terminal) or not callable(on_fault):
             raise ValueError("goal_builder, on_terminal and on_fault required")
@@ -59,6 +60,9 @@ class AsyncNav2Transport:
         if pre_send is not None and not callable(pre_send):
             raise ValueError("pre_send must be callable")
         self.pre_send = pre_send
+        if type(transit_only) is not bool:
+            raise ValueError('transit_only must be bool')
+        self.transit_only = transit_only
         self._journal_uuids: dict[str,str] = {}
         self._pending: dict[str, _Pending] = {}
 
@@ -70,6 +74,7 @@ class AsyncNav2Transport:
         on_accepted: Callable[[str], None] | None = None,
         journal: GoalJournal | None = None,
         pre_send: Callable[[], None] | None = None,
+        transit_only: bool = False,
         action_name: str = "/navigate_to_pose",
     ) -> "AsyncNav2Transport":
         """Construct actual ROS2 Jazzy NavigateToPose ActionClient."""
@@ -79,13 +84,17 @@ class AsyncNav2Transport:
             ActionClient(node, NavigateToPose, action_name),
             goal_builder, on_terminal=on_terminal, on_fault=on_fault,
             on_accepted=on_accepted,
-            journal=journal, pre_send=pre_send,
+            journal=journal, pre_send=pre_send, transit_only=transit_only,
         )
 
     def wait_for_server(self, timeout_sec: float = 10.0) -> bool:
         return bool(self.client.wait_for_server(timeout_sec=timeout_sec))
 
     def send_goal(self, goal: Goal) -> None:
+        # Opt-in: reject sweep/unknown intents before any backend or journal side effect.
+        if self.transit_only and (type(goal.purpose) is not str
+                                  or goal.purpose not in ('transit', 'dock')):
+            raise ValueError('Nav2 goal intent denied: only transit/dock')
         if goal.token in self._pending:
             raise ValueError("duplicate goal token")
         # Require a fresh exclusive-status preflight at the actual send

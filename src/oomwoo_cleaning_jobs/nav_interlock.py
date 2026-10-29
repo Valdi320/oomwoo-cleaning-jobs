@@ -22,6 +22,7 @@ class Goal:
     target_cell: int
     candidate_cells: tuple[int, ...]
     map_digest: str
+    purpose: str = 'coverage'  # Legacy simulation goal by default.
 
 
 class GoalTransport(Protocol):
