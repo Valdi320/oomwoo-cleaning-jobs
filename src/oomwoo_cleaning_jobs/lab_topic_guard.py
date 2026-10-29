@@ -30,3 +30,31 @@ def require_lab_output_publisher(publisher: object) -> str:
         raise LabTopicGuardError(
             "resolved ROS2 velocity output is not the isolated lab topic")
     return resolved
+
+
+# Names are isolation constraints, not publisher authentication.
+LAB_INPUT_TOPICS = (
+    "/valdi/nav2_cmd_vel",
+    "/valdi/dock_drive_cmd_vel",
+    "/odom",
+    "/battery_state",
+    "/navigate_to_pose/_action/status",
+    "/dock_drive/state",
+    "/dock_drive/docked",
+)
+
+
+def require_lab_input_subscriptions(subscriptions: object) -> None:
+    """Deny ROS2 subscriber remaps or source collisions before timers."""
+    if (type(subscriptions) is not dict
+            or set(subscriptions) != set(LAB_INPUT_TOPICS)
+            or len(set(map(id, subscriptions.values()))) != len(LAB_INPUT_TOPICS)):
+        raise LabTopicGuardError("lab relay requires seven distinct input handles")
+    for nominal in LAB_INPUT_TOPICS:
+        try:
+            resolved = subscriptions[nominal].topic_name
+        except Exception as exc:
+            raise LabTopicGuardError("unable to inspect resolved input topic") from exc
+        if type(resolved) is not str or resolved != nominal:
+            raise LabTopicGuardError(
+                "ROS2 lab input remapped away from its isolated topic")

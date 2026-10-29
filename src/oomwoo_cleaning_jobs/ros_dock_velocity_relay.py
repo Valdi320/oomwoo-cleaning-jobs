@@ -28,7 +28,9 @@ from oomwoo_cleaning_jobs_lab_interfaces.srv import (
     ControlCleaning,GetCleaningStatus)
 
 from .dock_handoff import ExclusiveVelocityMux,Velocity,DockHandoffError
-from .lab_topic_guard import LabTopicGuardError, require_lab_output_publisher
+from .lab_topic_guard import (
+    LabTopicGuardError,require_lab_output_publisher,
+    require_lab_input_subscriptions)
 from .ros_odom_stamp_gate import OdomStampGate
 from .ros_odom_frame_gate import OdomFrameError, require_odom_frames
 from .request_dedupe import RequestDedupe,CommandReplayError
@@ -82,16 +84,32 @@ class ExperimentalDockVelocityRelay(Node):
         except LabTopicGuardError:
             self.destroy_publisher(self.safe)
             raise
-        self.create_subscription(Twist,"/valdi/nav2_cmd_vel",self._nav_twist,10)
-        self.create_subscription(Twist,"/valdi/dock_drive_cmd_vel",self._dock_twist,10)
-        self.create_subscription(Odometry,"/odom",self._on_odom,10)
-        self.create_subscription(BatteryState,"/battery_state",self._battery,10)
-        self.create_subscription(GoalStatusArray,
-              "/navigate_to_pose/_action/status",self._on_nav_status,latched)
-        self.create_subscription(String,
-              "/dock_drive/state",self._on_dock_state,10)
-        self.create_subscription(Bool,
-              "/dock_drive/docked",self._on_docked,latched)
+        # Actual ROS2 input resolution must retain source isolation.
+        # Verify all subscribed input topics before services/output timer.
+        inputs={}
+        try:
+            inputs["/valdi/nav2_cmd_vel"]=self.create_subscription(
+                Twist,"/valdi/nav2_cmd_vel",self._nav_twist,10)
+            inputs["/valdi/dock_drive_cmd_vel"]=self.create_subscription(
+                Twist,"/valdi/dock_drive_cmd_vel",self._dock_twist,10)
+            inputs["/odom"]=self.create_subscription(
+                Odometry,"/odom",self._on_odom,10)
+            inputs["/battery_state"]=self.create_subscription(
+                BatteryState,"/battery_state",self._battery,10)
+            inputs["/navigate_to_pose/_action/status"]=self.create_subscription(
+                GoalStatusArray,"/navigate_to_pose/_action/status",
+                self._on_nav_status,latched)
+            inputs["/dock_drive/state"]=self.create_subscription(
+                String,"/dock_drive/state",self._on_dock_state,10)
+            inputs["/dock_drive/docked"]=self.create_subscription(
+                Bool,"/dock_drive/docked",self._on_docked,latched)
+            require_lab_input_subscriptions(inputs)
+        except Exception:
+            for sub in inputs.values():
+                try:self.destroy_subscription(sub)
+                except Exception:pass
+            self.destroy_publisher(self.safe)
+            raise
         self.create_service(ControlCleaning,
               "/valdi/relay/control",self._control)
         self.create_service(GetCleaningStatus,

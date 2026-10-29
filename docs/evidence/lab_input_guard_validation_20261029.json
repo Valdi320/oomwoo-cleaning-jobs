@@ -1,0 +1,60 @@
+{
+  "all_pass": true,
+  "gazebo": false,
+  "hardware": false,
+  "host_arch": "x86_64",
+  "python": "3.14.3",
+  "real_ros2": true,
+  "source": "Valdi320/oomwoo-cleaning-jobs independent lab",
+  "tests": [
+    {
+      "name": "focused",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 0.092,
+      "tail": "",
+      "tests": 10
+    },
+    {
+      "name": "regression",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.811,
+      "tail": "",
+      "tests": 817
+    },
+    {
+      "name": "regression_optimized",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 6.046,
+      "tail": "",
+      "tests": 817
+    },
+    {
+      "name": "ros2_jazzy",
+      "ok": true,
+      "report": {
+        "error": "",
+        "evidence": "/var/home/Valdi/Documentos/Contribuciones_OOMWOO/oomwoo_lab_input_remap_guard_20261029_1739/docs/evidence/ros2_lab_input_remap_guard_20261029.json",
+        "pass": true,
+        "passed": 9,
+        "seconds": 15.76,
+        "total": 9
+      },
+      "returncode": 0,
+      "seconds": 15.79,
+      "tail": "",
+      "tests": null
+    },
+    {
+      "name": "diff_check",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 0.007,
+      "tail": "",
+      "tests": null
+    }
+  ],
+  "timestamp_utc": "2026-10-29T16:47:43.085391+00:00"
+}
