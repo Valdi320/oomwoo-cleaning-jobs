@@ -140,8 +140,14 @@ class OrphanNav2Witness:
             raise RestartNotSafe("duplicate cancel acknowledgment")
         if not self.active_seen:
             raise RestartNotSafe("old goal was never observed active")
-        if return_code!=0 or self.expected not in canceled_goal_hexes:
-            self._fault="cancel-all response did not name old goal"
+        # CancelGoal's nonzero UUID / zero timestamp request targets ONLY
+        # this old goal. ERROR_NONE with extra, duplicate, malformed UUIDs,
+        # or a non-integer code is contradictory evidence, not proof.
+        # This explicitly refuses a cancel-all/wrong-goal service reply.
+        if (type(return_code) is not int or return_code!=0
+            or type(canceled_goal_hexes) is not tuple
+            or canceled_goal_hexes!=(self.expected,)):
+            self._fault="cancel acknowledgment not exclusive to known old UUID"
             raise RestartNotSafe(self._fault)
         self.cancel_acknowledged=True
         if self._canceled_seen_pre_ack:

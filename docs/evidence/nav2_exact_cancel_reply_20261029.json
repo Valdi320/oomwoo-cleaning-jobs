@@ -1,0 +1,49 @@
+{
+  "scope": "owner-only experimental Nav2 restart witness, synthetic Linux Python, no ROS2/Gazebo/hardware",
+  "source_baseline_sha": "e5f4ccbc9b4eae2571563e95adef99854c050349",
+  "date_utc": "2026-10-29T01:51:08.050553+00:00",
+  "problem": "successful exact-UUID ROS2 CancelGoal reply could list extra/duplicate goal UUIDs or boolean return_code and was accepted",
+  "negative_controls": {
+    "focal": 6,
+    "pre_fix_failures": 5,
+    "positive_pass": 1,
+    "command": "PYTHONPATH=src python3 -m unittest discover -s tests -p test_orphan_cancel_reply_exclusive_20261029.py -q",
+    "pre_fix_observed": "FAILED (failures=5); all five are assertion failures, not import failures"
+  },
+  "verification": {
+    "focal": {
+      "pass": true,
+      "tests": 6
+    },
+    "prior_restart": {
+      "pass": true,
+      "tests": 20
+    },
+    "prior_orphan": {
+      "pass": true,
+      "tests": 8
+    },
+    "full": {
+      "pass": true,
+      "tests": 655
+    },
+    "optimized": {
+      "pass": true,
+      "tests": 655
+    }
+  },
+  "platform": {
+    "python": "3.14.3",
+    "system": "Linux-6.17.7-ba29.fc43.x86_64-x86_64-with-glibc2.42",
+    "architecture": "x86_64"
+  },
+  "contract": "action_msgs/srv/CancelGoal.srv nonzero goal ID, zero timestamp cancels exactly that goal",
+  "ros2_spec": "https://github.com/ros2/rcl_interfaces/blob/rolling/action_msgs/srv/CancelGoal.srv",
+  "limits": [
+    "unit tests only",
+    "adapter AST coverage inherited; no live DDS/ROS2",
+    "no Global Nav2 arbitration",
+    "no MCU hardware stop",
+    "no SBC benchmark"
+  ]
+}
