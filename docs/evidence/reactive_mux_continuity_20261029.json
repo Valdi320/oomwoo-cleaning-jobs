@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-29",
+  "component": "ThreeWayVelocityMux",
+  "branch": "contrib/reactive-three-way-mux-lab-20261029-1018",
+  "parent_sha": "5a8dabc74b2a89a116c36fcccebfb2d1db267da5",
+  "baseline": {
+    "new_tests": 4,
+    "passed": 1,
+    "failed": 3,
+    "conditions": [
+      "two quiet odometry samples with unobserved 0.85 s gap",
+      "midstream quiet witness dropout",
+      "Nav2 ACTIVE IDLE ACTIVE resurrecting cached Twist"
+    ]
+  },
+  "after": {
+    "focused": {
+      "pass": 4,
+      "total": 4
+    },
+    "existing_mux": {
+      "pass": 33,
+      "total": 33
+    },
+    "full": {
+      "pass": 728,
+      "total": 728
+    },
+    "python_optimized": {
+      "pass": 728,
+      "total": 728
+    },
+    "diff_check": "PASS"
+  },
+  "testing_level": "synthetic pure Python x86 Linux",
+  "ci": "NOT RUN on this local-only change",
+  "ros2_gazebo": "NOT RUN",
+  "physical_hardware": "NOT RUN",
+  "bottlenecks": [
+    "trusted ROS2 health adapter",
+    "single actual /cmd_vel output",
+    "independent MCU watchdog",
+    "ARM resource characterization"
+  ],
+  "upstream_pr79": "unchanged deliberately pending maintainer review"
+}

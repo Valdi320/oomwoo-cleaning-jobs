@@ -62,6 +62,7 @@ class ThreeWayVelocityMux:
         self.token = None
         self._expected_nav_uuid = None
         self._nav_seen_active = False
+        self._nav_left_active = False
         self._last_verified_terminal = None
         self._last_odom = None
         self._quiet_since = None
@@ -77,6 +78,7 @@ class ThreeWayVelocityMux:
         self.token = None
         self._expected_nav_uuid = None
         self._nav_seen_active = False
+        self._nav_left_active = False
         self._last_verified_terminal = None
         self._last_odom = None
         self._quiet_since = None
@@ -131,6 +133,8 @@ class ThreeWayVelocityMux:
             not math.isfinite(linear_mps) or not math.isfinite(angular_rps)):
             self.stop("invalid odometry")
             raise ReactiveMuxError("invalid odometry")
+        if self._last_odom is not None and now - self._last_odom > self.max_age:
+            self._quiet_since = None
         if abs(linear_mps) <= .025 and abs(angular_rps) <= .04:
             if self._quiet_since is None:
                 self._quiet_since = float(now)
@@ -145,9 +149,16 @@ class ThreeWayVelocityMux:
             raise ReactiveMuxError("invalid health witness")
         self._health = proof
         self._health_time = float(now)
-        if (self.owner == self.NAV and not proof.nav2_idle
-            and proof.nav2_active_goal == self._expected_nav_uuid):
-            self._nav_seen_active = True
+        if self.owner == self.NAV:
+            if proof.nav2_idle and self._nav_seen_active:
+                self._nav_left_active = True
+                self._command = None
+            elif (not proof.nav2_idle
+                  and proof.nav2_active_goal == self._expected_nav_uuid):
+                if self._nav_left_active:
+                    self.stop("Nav2 resumed after idle/terminal boundary")
+                    raise ReactiveMuxError("Nav2 resumed after idle/terminal boundary")
+                self._nav_seen_active = True
         if self.owner != self.STOP and not self._safe(self.owner, proof):
             self.stop("health contradicts active owner")
             raise ReactiveMuxError("health contradicts active owner")
@@ -185,6 +196,7 @@ class ThreeWayVelocityMux:
             raise ReactiveMuxError("Nav2 backend is not idle")
         self._expected_nav_uuid = nav_goal_uuid
         self._nav_seen_active = False
+        self._nav_left_active = False
         try:
             return self._arm(self.NAV, now=now)
         except ReactiveMuxError:
@@ -271,7 +283,7 @@ class ThreeWayVelocityMux:
             or not self._safe(self.owner, self._health)):
             self.stop("health/odometry lease expired")
             return Velocity()
-        if self.owner == self.NAV and (not self._nav_seen_active or self._health.nav2_idle):
+        if self.owner == self.NAV and (not self._nav_seen_active or self._nav_left_active or self._health.nav2_idle):
             # No Nav2 motion before exact goal is observed ACTIVE or after it
             # leaves ACTIVE, even if stale Twist packets keep arriving.
             return Velocity()
