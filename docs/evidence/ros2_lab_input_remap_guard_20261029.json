@@ -1,0 +1,158 @@
+{
+  "cpu_limit": 3,
+  "elapsed_s": 15.76,
+  "error_tail": "",
+  "host_arch": "x86_64",
+  "image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "isolation": "network none, caps all dropped, read-only, no image pull",
+  "memory_limit": "2g",
+  "pass": true,
+  "results": {
+    "cases": [
+      {
+        "case": "nominal",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "nominal",
+          "expected": "/valdi/nav2_cmd_vel",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/valdi/nav2_cmd_vel",
+          "resolved": "/valdi/nav2_cmd_vel",
+          "result": "allowed"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "nav_to_dock",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "nav_to_dock",
+          "expected": "/valdi/dock_drive_cmd_vel",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/valdi/nav2_cmd_vel",
+          "resolved": "/valdi/dock_drive_cmd_vel",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "dock_to_nav",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "dock_to_nav",
+          "expected": "/valdi/nav2_cmd_vel",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/valdi/dock_drive_cmd_vel",
+          "resolved": "/valdi/nav2_cmd_vel",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "nav_to_cmd_vel",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "nav_to_cmd_vel",
+          "expected": "/cmd_vel",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/valdi/nav2_cmd_vel",
+          "resolved": "/cmd_vel",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "odom_to_other",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "odom_to_other",
+          "expected": "/another_odom",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/odom",
+          "resolved": "/another_odom",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "battery_to_other",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "battery_to_other",
+          "expected": "/another_battery",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/battery_state",
+          "resolved": "/another_battery",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "status_to_other",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "status_to_other",
+          "expected": "/another_status",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/navigate_to_pose/_action/status",
+          "resolved": "/another_status",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "dock_state_to_other",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "dock_state_to_other",
+          "expected": "/another_state",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/dock_drive/state",
+          "resolved": "/another_state",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      },
+      {
+        "case": "docked_to_other",
+        "error_tail": "",
+        "pass": true,
+        "result": {
+          "case": "docked_to_other",
+          "expected": "/another_docked",
+          "motor_hardware": false,
+          "no_twists_published": true,
+          "nominal": "/dock_drive/docked",
+          "resolved": "/another_docked",
+          "result": "denied_before_timer"
+        },
+        "returncode": 0
+      }
+    ],
+    "gazebo": false,
+    "hardware": false,
+    "pass": 9,
+    "real_ros2": true,
+    "total": 9,
+    "velocity_published": false
+  },
+  "returncode": 0,
+  "scope": "real ROS2 Jazzy remap resolution, full relay ctor, no Twist, no motors",
+  "timestamp_utc": "2026-10-29T16:47:43.073898+00:00"
+}

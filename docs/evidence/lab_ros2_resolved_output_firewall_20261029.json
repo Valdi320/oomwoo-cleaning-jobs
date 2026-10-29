@@ -1,0 +1,88 @@
+{
+  "run_at_utc": "2026-10-29T12:55:12.735653+00:00",
+  "branch": "contrib/lab-ros2-output-remap-firewall-20261029-1346",
+  "base_commit": "8b04cf14dda603d8a80d3eeec826b3ab359604d6",
+  "host_arch": "x86_64",
+  "host_python": "3.14.3",
+  "ros2_container_image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "network": "none",
+  "caps": "none",
+  "motor_topics_published": false,
+  "robot_batteries_motors_firmware_used": false,
+  "scope": "Real ROS2 Jazzy topic remap and guard with publisher creation only; not relay full bringup, Gazebo, motor or MCU test",
+  "results": [
+    {
+      "case": "focal_synthetic",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 10 tests in 0.000s\n\nOK",
+      "ran": 10
+    },
+    {
+      "case": "full_regression",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 776 tests in 5.704s\n\nOK",
+      "ran": 776
+    },
+    {
+      "case": "optimized_regression",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "----------------------------------------------------------------------\nRan 776 tests in 5.646s\n\nOK",
+      "ran": 776
+    },
+    {
+      "case": "git_diff_check",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "ran": null
+    },
+    {
+      "case": "ros2_nominal",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "{\"actual_resolved_topic\": \"/valdi/lab_safe_cmd_vel_output\", \"guard_result\": \"allowed\", \"no_messages_sent\": true, \"nominal\": \"/valdi/lab_safe_cmd_vel_output\"}",
+      "stderr_tail": "",
+      "ran": null
+    },
+    {
+      "case": "ros2_motor_cmdvel_remap",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "{\"actual_resolved_topic\": \"/cmd_vel\", \"guard_result\": \"rejected\", \"no_messages_sent\": true, \"nominal\": \"/valdi/lab_safe_cmd_vel_output\"}",
+      "stderr_tail": "",
+      "ran": null
+    },
+    {
+      "case": "ros2_motor_controller_remap",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "{\"actual_resolved_topic\": \"/diff_drive_controller/cmd_vel_unstamped\", \"guard_result\": \"rejected\", \"no_messages_sent\": true, \"nominal\": \"/valdi/lab_safe_cmd_vel_output\"}",
+      "stderr_tail": "",
+      "ran": null
+    },
+    {
+      "case": "ros2_other_output_remap",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "{\"actual_resolved_topic\": \"/valdi/other_velocity\", \"guard_result\": \"rejected\", \"no_messages_sent\": true, \"nominal\": \"/valdi/lab_safe_cmd_vel_output\"}",
+      "stderr_tail": "",
+      "ran": null
+    },
+    {
+      "case": "ros2_namespace_only",
+      "pass": true,
+      "returncode": 0,
+      "stdout_tail": "{\"actual_resolved_topic\": \"/valdi/lab_safe_cmd_vel_output\", \"guard_result\": \"allowed\", \"no_messages_sent\": true, \"nominal\": \"/valdi/lab_safe_cmd_vel_output\"}",
+      "stderr_tail": "",
+      "ran": null
+    }
+  ],
+  "pass": true
+}

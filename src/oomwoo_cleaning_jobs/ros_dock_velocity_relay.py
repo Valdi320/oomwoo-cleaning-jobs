@@ -28,6 +28,11 @@ from oomwoo_cleaning_jobs_lab_interfaces.srv import (
     ControlCleaning,GetCleaningStatus)
 
 from .dock_handoff import ExclusiveVelocityMux,Velocity,DockHandoffError
+from .lab_topic_guard import (
+    LabTopicGuardError,require_lab_output_publisher,
+    require_lab_input_subscriptions)
+from .ros_odom_stamp_gate import OdomStampGate
+from .ros_odom_frame_gate import OdomFrameError, require_odom_frames
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .goal_journal import GoalJournal,GoalJournalError
 from .nav_lease_witness import NavLeaseWitness,ACTIVE,nav_status_idle
@@ -52,6 +57,7 @@ class ExperimentalDockVelocityRelay(Node):
         if output!="/valdi/lab_safe_cmd_vel_output":
             raise ValueError("unsupported lab output topic")
         self.mux=ExclusiveVelocityMux(max_age_s=.30,quiet_required_s=.75)
+        self._odom_stamp_gate=OdomStampGate()
         self._requests=RequestDedupe(128)
         journal_path=str(self.get_parameter("goal_journal_path").value)
         self._goal_witness=(NavLeaseWitness(GoalJournal(journal_path))
@@ -71,16 +77,39 @@ class ExperimentalDockVelocityRelay(Node):
         latched=QoSProfile(depth=1,reliability=QoSReliabilityPolicy.RELIABLE,
                            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.safe=self.create_publisher(Twist,output,10)
-        self.create_subscription(Twist,"/valdi/nav2_cmd_vel",self._nav_twist,10)
-        self.create_subscription(Twist,"/valdi/dock_drive_cmd_vel",self._dock_twist,10)
-        self.create_subscription(Odometry,"/odom",self._on_odom,10)
-        self.create_subscription(BatteryState,"/battery_state",self._battery,10)
-        self.create_subscription(GoalStatusArray,
-              "/navigate_to_pose/_action/status",self._on_nav_status,latched)
-        self.create_subscription(String,
-              "/dock_drive/state",self._on_dock_state,10)
-        self.create_subscription(Bool,
-              "/dock_drive/docked",self._on_docked,latched)
+        # ROS2 CLI/launch remapping can redirect the *nominally safe* topic.
+        # Reject the REAL resolved publisher name before any output timer.
+        try:
+            require_lab_output_publisher(self.safe)
+        except LabTopicGuardError:
+            self.destroy_publisher(self.safe)
+            raise
+        # Actual ROS2 input resolution must retain source isolation.
+        # Verify all subscribed input topics before services/output timer.
+        inputs={}
+        try:
+            inputs["/valdi/nav2_cmd_vel"]=self.create_subscription(
+                Twist,"/valdi/nav2_cmd_vel",self._nav_twist,10)
+            inputs["/valdi/dock_drive_cmd_vel"]=self.create_subscription(
+                Twist,"/valdi/dock_drive_cmd_vel",self._dock_twist,10)
+            inputs["/odom"]=self.create_subscription(
+                Odometry,"/odom",self._on_odom,10)
+            inputs["/battery_state"]=self.create_subscription(
+                BatteryState,"/battery_state",self._battery,10)
+            inputs["/navigate_to_pose/_action/status"]=self.create_subscription(
+                GoalStatusArray,"/navigate_to_pose/_action/status",
+                self._on_nav_status,latched)
+            inputs["/dock_drive/state"]=self.create_subscription(
+                String,"/dock_drive/state",self._on_dock_state,10)
+            inputs["/dock_drive/docked"]=self.create_subscription(
+                Bool,"/dock_drive/docked",self._on_docked,latched)
+            require_lab_input_subscriptions(inputs)
+        except Exception:
+            for sub in inputs.values():
+                try:self.destroy_subscription(sub)
+                except Exception:pass
+            self.destroy_publisher(self.safe)
+            raise
         self.create_service(ControlCleaning,
               "/valdi/relay/control",self._control)
         self.create_service(GetCleaningStatus,
@@ -122,12 +151,38 @@ class ExperimentalDockVelocityRelay(Node):
             except DockHandoffError as exc:self.mux.reset(str(exc))
 
     def _on_odom(self,msg):
-        self._odom_last=time.monotonic()
-        v=msg.twist.twist
-        speed=math.hypot(v.linear.x,v.linear.y)
-        try:self.mux.observe_odom(now=self._odom_last,
-              linear_mps=speed,angular_rps=v.angular.z)
-        except DockHandoffError:self.mux.reset("invalid observed odometry")
+        # Receipt time alone is NOT a freshness proof: a delayed/replayed
+        # Odometry packet can arrive now with a stale original header stamp.
+        # Compare header to the node's own ROS clock (supports sim /clock),
+        # never to monotonic wall time. Missing /clock, rewind or replay STOP.
+        observed_at=time.monotonic()
+        # Fresh timestamps in an unrelated reference frame are NOT
+        # evidence of a stationary robot. Check OOMWOO's TF contract first.
+        try:
+            require_odom_frames(msg.header.frame_id,msg.child_frame_id)
+        except (OdomFrameError,TypeError,AttributeError):
+            self._odom_last=None
+            self.mux.reset("ROS odometry frame mismatch or missing")
+            return
+        try:
+            stamp=msg.header.stamp
+            self._odom_stamp_gate.accept(
+                ros_now_ns=self.get_clock().now().nanoseconds,
+                stamp_sec=stamp.sec,stamp_nanosec=stamp.nanosec)
+        except Exception:
+            self._odom_last=None
+            self.mux.reset("ROS odometry header stale/replayed/invalid")
+            return
+        try:
+            v=msg.twist.twist
+            speed=math.hypot(v.linear.x,v.linear.y)
+            self.mux.observe_odom(now=observed_at,
+                  linear_mps=speed,angular_rps=v.angular.z)
+        except (DockHandoffError,ValueError,TypeError,OverflowError):
+            self._odom_last=None
+            self.mux.reset("invalid observed odometry")
+            return
+        self._odom_last=observed_at
 
     def _battery(self,msg):
         self._battery_fraction=float(msg.percentage)

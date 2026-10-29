@@ -72,6 +72,11 @@ def main():
         if shared["publish_nav"]:nav.publish(twist(shared["nav"]))
         if shared["publish_dock"]:dock.publish(twist(shared["dock"]))
         msg=Odometry()
+        msg.header.frame_id="odom"
+        msg.child_frame_id="base_footprint"
+        stamp_ns=relay.get_clock().now().nanoseconds
+        msg.header.stamp.sec=stamp_ns//1_000_000_000
+        msg.header.stamp.nanosec=stamp_ns%1_000_000_000
         msg.twist.twist.linear.x=0.
         msg.twist.twist.angular.z=0.
         odom.publish(msg)

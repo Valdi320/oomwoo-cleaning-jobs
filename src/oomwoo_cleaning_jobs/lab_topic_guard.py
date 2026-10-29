@@ -1,0 +1,60 @@
+"""Fail closed when an experimental ROS2 publisher resolves outside the lab.
+
+ROS2 launch/CLI remapping applies *after* validating a node parameter. Check
+the actual rclpy Publisher.topic_name immediately after create_publisher and
+before installing any timer capable of producing Twist. This is a *lab only*
+containment check, not a guarantee of physical motor safety or exclusivity.
+"""
+from __future__ import annotations
+
+LAB_OUTPUT_TOPIC = "/valdi/lab_safe_cmd_vel_output"
+
+
+class LabTopicGuardError(ValueError):
+    """A lab publisher resolved to an unexpected ROS2 topic."""
+
+
+def require_lab_output_publisher(publisher: object) -> str:
+    """Check the rclpy-resolved topic, not the nominal publisher argument.
+
+    Any missing/malformed/erroring topic_name is unsafe, including relative
+    names, namespaces, aliases and ROS2 remappings to /cmd_vel. Only the one
+    absolute lab name is permitted. No messages should be sent before this.
+    """
+    try:
+        resolved = publisher.topic_name
+    except Exception as exc:
+        raise LabTopicGuardError(
+            "unable to verify resolved ROS2 lab output topic") from exc
+    if type(resolved) is not str or resolved != LAB_OUTPUT_TOPIC:
+        raise LabTopicGuardError(
+            "resolved ROS2 velocity output is not the isolated lab topic")
+    return resolved
+
+
+# Names are isolation constraints, not publisher authentication.
+LAB_INPUT_TOPICS = (
+    "/valdi/nav2_cmd_vel",
+    "/valdi/dock_drive_cmd_vel",
+    "/odom",
+    "/battery_state",
+    "/navigate_to_pose/_action/status",
+    "/dock_drive/state",
+    "/dock_drive/docked",
+)
+
+
+def require_lab_input_subscriptions(subscriptions: object) -> None:
+    """Deny ROS2 subscriber remaps or source collisions before timers."""
+    if (type(subscriptions) is not dict
+            or set(subscriptions) != set(LAB_INPUT_TOPICS)
+            or len(set(map(id, subscriptions.values()))) != len(LAB_INPUT_TOPICS)):
+        raise LabTopicGuardError("lab relay requires seven distinct input handles")
+    for nominal in LAB_INPUT_TOPICS:
+        try:
+            resolved = subscriptions[nominal].topic_name
+        except Exception as exc:
+            raise LabTopicGuardError("unable to inspect resolved input topic") from exc
+        if type(resolved) is not str or resolved != nominal:
+            raise LabTopicGuardError(
+                "ROS2 lab input remapped away from its isolated topic")

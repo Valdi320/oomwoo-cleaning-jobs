@@ -1,0 +1,102 @@
+{
+  "cgroup_cpu_limit": 3,
+  "cgroup_memory_limit": "2g",
+  "container_exit_code": 0,
+  "elapsed_s": 11.25,
+  "error_tail": "",
+  "host_arch": "x86_64",
+  "image": "docker.io/makerspet/oomwoo:jazzy-dev",
+  "pass": true,
+  "results": {
+    "cases": [
+      {
+        "accepted": true,
+        "case": "fresh",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "duplicate",
+        "pass": true
+      },
+      {
+        "accepted": true,
+        "case": "recovered_fresh",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "old_2s",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "future_2s",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "zero_stamp",
+        "pass": true
+      },
+      {
+        "accepted": true,
+        "case": "new_valid",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "reordered",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "missing_parent",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "missing_child",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "map_parent",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "base_link_child",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "slash_parent",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "slash_child",
+        "pass": true
+      },
+      {
+        "accepted": false,
+        "case": "whitespace_child",
+        "pass": true
+      },
+      {
+        "accepted": true,
+        "case": "recovered_correct_frame",
+        "pass": true
+      }
+    ],
+    "motor_topics_published": 0,
+    "nonzero_velocity_published": 0,
+    "pass": 16,
+    "physical_hardware_connected": false,
+    "ros2_dds_odometry": true,
+    "total": 16
+  },
+  "scope": "real ROS2 Jazzy Odometry DDS frame binding; synthetic zero input; no motors",
+  "timestamp_utc": "2026-10-29T15:48:11.838119+00:00"
+}
