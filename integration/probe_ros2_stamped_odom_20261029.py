@@ -15,6 +15,8 @@ from oomwoo_cleaning_jobs.ros_dock_velocity_relay import ExperimentalDockVelocit
 
 def odom(stamp_ns):
     msg = Odometry()
+    msg.header.frame_id = "odom"
+    msg.child_frame_id = "base_footprint"
     msg.header.stamp.sec = stamp_ns // 1_000_000_000
     msg.header.stamp.nanosec = stamp_ns % 1_000_000_000
     msg.twist.twist.linear.x = 0.0

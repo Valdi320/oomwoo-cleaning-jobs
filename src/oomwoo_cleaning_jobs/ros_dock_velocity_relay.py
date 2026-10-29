@@ -30,6 +30,7 @@ from oomwoo_cleaning_jobs_lab_interfaces.srv import (
 from .dock_handoff import ExclusiveVelocityMux,Velocity,DockHandoffError
 from .lab_topic_guard import LabTopicGuardError, require_lab_output_publisher
 from .ros_odom_stamp_gate import OdomStampGate
+from .ros_odom_frame_gate import OdomFrameError, require_odom_frames
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .goal_journal import GoalJournal,GoalJournalError
 from .nav_lease_witness import NavLeaseWitness,ACTIVE,nav_status_idle
@@ -137,6 +138,14 @@ class ExperimentalDockVelocityRelay(Node):
         # Compare header to the node's own ROS clock (supports sim /clock),
         # never to monotonic wall time. Missing /clock, rewind or replay STOP.
         observed_at=time.monotonic()
+        # Fresh timestamps in an unrelated reference frame are NOT
+        # evidence of a stationary robot. Check OOMWOO's TF contract first.
+        try:
+            require_odom_frames(msg.header.frame_id,msg.child_frame_id)
+        except (OdomFrameError,TypeError,AttributeError):
+            self._odom_last=None
+            self.mux.reset("ROS odometry frame mismatch or missing")
+            return
         try:
             stamp=msg.header.stamp
             self._odom_stamp_gate.accept(
