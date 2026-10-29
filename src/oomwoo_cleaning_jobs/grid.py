@@ -90,8 +90,21 @@ class Grid:
 
     @property
     def traversable(self) -> frozenset[int]:
+        # A small immutable occupancy map is queried repeatedly by sweep
+        # candidates. Retain a bounded per-instance safe-cell snapshot,
+        # never globally cache or pin a multi-million-cell map in RAM.
+        cache_allowed = self.width * self.height <= 65_536
+        if cache_allowed:
+            cached = self.__dict__.get('_traversable_cache')
+            if cached is not None:
+                return cached
         bad = self.blocked
-        return frozenset(i for i in range(len(self.occupancy)) if i not in bad)
+        safe = frozenset(i for i in range(len(self.occupancy)) if i not in bad)
+        if cache_allowed:
+            # Inputs were deeply snapshotted in __post_init__. A concurrent
+            # duplicate computation is semantically identical and safe.
+            object.__setattr__(self, '_traversable_cache', safe)
+        return safe
 
     def neighbors(self, index: int) -> tuple[int, ...]:
         x, y = self.xy(index)

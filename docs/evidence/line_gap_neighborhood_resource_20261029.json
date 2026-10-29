@@ -1,0 +1,84 @@
+{
+  "admit_callback_count_identical": true,
+  "after": {
+    "affinity": [
+      0
+    ],
+    "machine": "x86_64",
+    "max_rss_kib": 22312,
+    "median_cpu_s": 0.029714,
+    "median_wall_s": 0.029842,
+    "python": "3.14.3",
+    "runs": [
+      {
+        "admissions": 10,
+        "cpu_s": 0.03213,
+        "route_len": 42,
+        "route_sha256": "65037a5b74e8105fbbf8f5612ea5dadb09248f19319dcd486ff9253ae1f4de83",
+        "wall_s": 0.032341
+      },
+      {
+        "admissions": 10,
+        "cpu_s": 0.028872,
+        "route_len": 42,
+        "route_sha256": "65037a5b74e8105fbbf8f5612ea5dadb09248f19319dcd486ff9253ae1f4de83",
+        "wall_s": 0.029019
+      },
+      {
+        "admissions": 10,
+        "cpu_s": 0.029714,
+        "route_len": 42,
+        "route_sha256": "65037a5b74e8105fbbf8f5612ea5dadb09248f19319dcd486ff9253ae1f4de83",
+        "wall_s": 0.029842
+      }
+    ],
+    "scope": "single Python x86 synthetic 120x90 grid; 630 missing cells; NOT ROS2, ARM, power or hardware"
+  },
+  "base_commit": "e843df534205684f0b9b498d0fd1fc331e997e2a",
+  "before": {
+    "affinity": [
+      0
+    ],
+    "machine": "x86_64",
+    "max_rss_kib": 22576,
+    "median_cpu_s": 1.220287,
+    "median_wall_s": 1.228272,
+    "python": "3.14.3",
+    "runs": [
+      {
+        "admissions": 10,
+        "cpu_s": 1.220287,
+        "route_len": 42,
+        "route_sha256": "65037a5b74e8105fbbf8f5612ea5dadb09248f19319dcd486ff9253ae1f4de83",
+        "wall_s": 1.228272
+      },
+      {
+        "admissions": 10,
+        "cpu_s": 1.223112,
+        "route_len": 42,
+        "route_sha256": "65037a5b74e8105fbbf8f5612ea5dadb09248f19319dcd486ff9253ae1f4de83",
+        "wall_s": 1.233723
+      },
+      {
+        "admissions": 10,
+        "cpu_s": 1.194038,
+        "route_len": 42,
+        "route_sha256": "65037a5b74e8105fbbf8f5612ea5dadb09248f19319dcd486ff9253ae1f4de83",
+        "wall_s": 1.20375
+      }
+    ],
+    "scope": "single Python x86 synthetic 120x90 grid; 630 missing cells; NOT ROS2, ARM, power or hardware"
+  },
+  "compileall": "PASS",
+  "date_utc": "2026-10-29T03:55:22.261772+00:00",
+  "focal_tests": "5/5 PASS: 525 seeded distance parity, 300 route Manhattan parity, map boundary and cache cap, baseline route hash",
+  "full_regression": "664/664 PASS, Python 3.14.3",
+  "git_diff_check": "PASS",
+  "limitations": "peak RSS is noisy whole-process high water, no RAM savings claimed; no full OOMWOO stack, hardware or real cleaning tests",
+  "median_process_cpu_reduction_percent": 97.56,
+  "optimization": "bounded local missing-cell samples and route Manhattan check; per-Grid traversable snapshot capped at 65536 map cells",
+  "optimized_regression": "664/664 PASS, Python -O",
+  "previous_line_gap_tests": "6/6 PASS",
+  "route_identical": true,
+  "scope": "ONLY local pure-Python synthetic line-gap sweep selector, NO ROS2/Nav2/Gazebo execution, ARM, Watts or robot"
+}

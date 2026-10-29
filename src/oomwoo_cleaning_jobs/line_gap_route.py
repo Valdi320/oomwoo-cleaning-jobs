@@ -15,15 +15,71 @@ from .grid import Grid
 from .sweep_target import NoSafeSweep
 
 
+# Exact Manhattan-radius-three admission, bounded independently of dirty-set size.
+_ROUTE_OFFSETS = tuple(
+    (dx, dy) for dy in range(-3, 4) for dx in range(-3, 4)
+    if abs(dx) + abs(dy) <= 3
+)
+
+
+def _sample_dirty_cells(
+    x: float, y: float, missing: frozenset[int], *,
+    width: int, height: int, resolution_m: float, sweep_radius_m: float,
+) -> set[int]:
+    """Same inclusive distance test as full scan; index only nearby cells.
+
+    At exceptionally fine resolutions, avoid enumerating a huge window:
+    retain the old full-set exact scan when radius exceeds 32 cells.
+    """
+    radius_cells = sweep_radius_m / resolution_m
+    if not math.isfinite(radius_cells) or radius_cells > 32:
+        return {
+            i for i in missing
+            if math.hypot((i % width - x) * resolution_m,
+                          (i // width - y) * resolution_m) <= sweep_radius_m
+        }
+    # Small rounding guard on the bounds; the exact hypot check below
+    # retains final membership and never widens the swept disk.
+    epsilon = 1e-10
+    xlo = max(0, math.ceil(x - radius_cells - epsilon))
+    xhi = min(width - 1, math.floor(x + radius_cells + epsilon))
+    ylo = max(0, math.ceil(y - radius_cells - epsilon))
+    yhi = min(height - 1, math.floor(y + radius_cells + epsilon))
+    nearby: set[int] = set()
+    for yy in range(ylo, yhi + 1):
+        for xx in range(xlo, xhi + 1):
+            i = yy * width + xx
+            if i in missing and math.hypot(
+                (xx - x) * resolution_m, (yy - y) * resolution_m
+            ) <= sweep_radius_m:
+                nearby.add(i)
+    return nearby
+
+
+def _route_near_missing(
+    route: tuple[int, ...], missing: frozenset[int], width: int, height: int
+) -> bool:
+    """Equivalent to any Manhattan distance <=3; avoids route x missing."""
+    for index in route:
+        row, col = divmod(index, width)
+        for dx, dy in _ROUTE_OFFSETS:
+            xx, yy = col + dx, row + dy
+            if 0 <= xx < width and 0 <= yy < height and yy * width + xx in missing:
+                return True
+    return False
+
+
+
 def select_line_through_route(
     grid:Grid,pose_cell:int,missing:frozenset[int],*,
     admit,previously_tried:frozenset[int]=frozenset(),
     overshoot_m:float=.43,sweep_radius_m:float=.10,
     max_missing:int=32
 )->tuple[int,...]:
-    if (pose_cell not in grid.traversable or
+    safe = grid.traversable
+    if (pose_cell not in safe or
         not isinstance(missing,frozenset) or not missing
-        or not missing<=grid.traversable or not callable(admit)
+        or not missing <= safe or not callable(admit)
         or not .2<=overshoot_m<=.6 or not .05<=sweep_radius_m<=.18
         or not 1<=max_missing<=100):
         raise NoSafeSweep("inadmissible line-through sweep request")
@@ -52,7 +108,7 @@ def select_line_through_route(
                     continue
                 endpoint=row*width+col
                 if (endpoint==pose_cell or endpoint in previously_tried
-                    or endpoint not in grid.traversable):
+                    or endpoint not in safe):
                     continue
                 # Sample the STRAIGHT ideal Nav2 approach. A 4-connected
                 # shortest path may instead bend around obstacles; never
@@ -71,10 +127,10 @@ def select_line_through_route(
                     i=py*width+px
                     if i not in grid.traversable:
                         valid=False;break
-                    for miss in missing:
-                        d=math.hypot((miss%width-x)*resolution,
-                                     (miss//width-y)*resolution)
-                        if d<=sweep_radius_m:encountered.add(miss)
+                    encountered.update(_sample_dirty_cells(
+                        x, y, missing, width=width, height=grid.height,
+                        resolution_m=resolution, sweep_radius_m=sweep_radius_m
+                    ))
                 if valid and encountered:
                     results.append((endpoint,len(encountered),length,over))
         return results
@@ -89,8 +145,7 @@ def select_line_through_route(
                 # admitted corridor to pass within three 4-neighbour
                 # cells of a missing target. A visually ideal straight
                 # segment is not enough: obstacle routing may detour.
-                if not any(abs(i%width-j%width)+abs(i//width-j//width)<=3
-                           for i in route for j in missing):
+                if not _route_near_missing(route, missing, width, grid.height):
                     continue
             except Exception:continue
             score=(-count,len(route),round(abs(over-overshoot_m),4),candidate)
