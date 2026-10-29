@@ -1,6 +1,6 @@
 {
   "cpu_limit": 3,
-  "elapsed_s": 15.76,
+  "elapsed_s": 15.82,
   "error_tail": "",
   "host_arch": "x86_64",
   "image": "docker.io/makerspet/oomwoo:jazzy-dev",
@@ -154,5 +154,5 @@
   },
   "returncode": 0,
   "scope": "real ROS2 Jazzy remap resolution, full relay ctor, no Twist, no motors",
-  "timestamp_utc": "2026-10-29T16:47:43.073898+00:00"
+  "timestamp_utc": "2026-10-29T17:03:10.081184+00:00"
 }

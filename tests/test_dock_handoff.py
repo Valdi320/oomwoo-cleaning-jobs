@@ -130,5 +130,66 @@ class DockHandoffTests(unittest.TestCase):
             self.m.observe_dock(now=2.,drive_state="DONE",docked=True)
         self.assertEqual(self.m.owner,self.m.DOCK)
 
+    def test_nav_rejects_two_distant_zero_odom_samples(self):
+        for now in (1.,1.85):
+            self.m.observe_odom(now=now,linear_mps=0.,angular_rps=0.)
+        with self.assertRaises(DockHandoffError):
+            self.m.claim_nav(now=1.9,nav2_idle=True,pose_fresh=True,
+                 dock_process_inactive=True,resources_verified=True)
+        self.assertEqual(self.m.owner,self.m.STOP)
+        self.assertEqual(self.m.output(now=1.91),Velocity())
+
+    def test_dock_rejects_sparse_zero_odom_after_nav_release(self):
+        self.nav()
+        self.m.release_for_dock(now=2.,nav2_terminal=True,
+             action_uuid_reconciled=True,nav2_input_stopped=True)
+        for now in (2.1,2.95):
+            self.m.observe_odom(now=now,linear_mps=0.,angular_rps=0.)
+        with self.assertRaises(DockHandoffError):
+            self.m.claim_dock(now=3.,nav2_relinquished=True,
+                              dock_drive_input_isolated=True)
+        self.assertEqual(self.m.owner,self.m.STOP)
+
+    def test_finish_dock_rejects_quiet_window_spanning_sensor_gap(self):
+        self.quiet()
+        self.m.claim_dock(now=1.9,nav2_relinquished=True,
+                          dock_drive_input_isolated=True)
+        self.m.observe_dock(now=2.,drive_state="SEARCH",docked=False)
+        self.m.observe_dock(now=2.1,drive_state="DONE",docked=True)
+        for now in (2.2,3.05):
+            self.m.observe_odom(now=now,linear_mps=0.,angular_rps=0.)
+        with self.assertRaises(DockHandoffError):
+            self.m.finish_dock(now=3.1,dock_drive_terminated=True)
+        self.assertEqual(self.m.owner,self.m.DOCK)
+
+    def test_quiet_recovers_only_after_new_continuous_window(self):
+        self.quiet()
+        for now in (2.5,2.62,2.74,2.86,2.98,3.1,3.22):
+            self.m.observe_odom(now=now,linear_mps=0.,angular_rps=0.)
+        with self.assertRaises(DockHandoffError):
+            self.m.claim_nav(now=3.24,nav2_idle=True,pose_fresh=True,
+                 dock_process_inactive=True,resources_verified=True)
+        self.m.observe_odom(now=3.34,linear_mps=0.,angular_rps=0.)
+        self.m.claim_nav(now=3.35,nav2_idle=True,pose_fresh=True,
+             dock_process_inactive=True,resources_verified=True)
+        self.assertEqual(self.m.owner,self.m.NAV)
+
+    def test_quiet_gap_uses_configured_freshness_budget(self):
+        m=ExclusiveVelocityMux(max_age_s=.1)
+        for now in (1.,1.2,1.4,1.6,1.8):
+            m.observe_odom(now=now,linear_mps=0.,angular_rps=0.)
+        with self.assertRaises(DockHandoffError):
+            m.claim_nav(now=1.85,nav2_idle=True,pose_fresh=True,
+                 dock_process_inactive=True,resources_verified=True)
+        self.assertEqual(m.owner,m.STOP)
+
+    def test_quiet_accepts_exact_freshness_boundary(self):
+        m=ExclusiveVelocityMux(max_age_s=.25)
+        for now in (1.,1.25,1.5,1.75):
+            m.observe_odom(now=now,linear_mps=0.,angular_rps=0.)
+        m.claim_nav(now=1.75,nav2_idle=True,pose_fresh=True,
+             dock_process_inactive=True,resources_verified=True)
+        self.assertEqual(m.owner,m.NAV)
+
 if __name__=="__main__":
     unittest.main()

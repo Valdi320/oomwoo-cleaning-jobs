@@ -138,6 +138,33 @@ class TestSequencedEvidenceIngress(unittest.TestCase):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 SequencedMotionMux(**args)
 
+    def test_rejected_transit_claim_preserves_sequenced_original_owner(self):
+        for index in range(8):
+            self.odom(round(1. + index * .12, 5))
+        self.health(1.85, proof=good_health())
+        token = self.m.claim_transit(now=1.90, nav_goal_uuid="a" * 32)
+        with self.assertRaises(ReactiveMuxError):
+            self.m.claim_transit(now=1.91, nav_goal_uuid="b" * 32)
+        self.odom(1.92)
+        self.health(1.93, proof=good_health(
+            nav2_idle=False, nav2_active_goal="a" * 32))
+        self.m.accept_twist(source="navigation", token=token, now=1.94,
+                            velocity=Velocity(.10, 0.))
+        self.assertEqual(self.m.owner, "navigation")
+        self.assertEqual(self.m.token, token)
+        self.assertEqual(self.m.output(now=1.95), Velocity(.10, 0.))
+
+    def test_fresh_forward_sequences_cannot_revive_expired_motion_lease(self):
+        token = self.running()
+        self.odom(2.30)
+        self.health(2.31)
+        with self.assertRaises(ReactiveMuxError):
+            self.m.accept_twist(source="reactive_sweep", token=token, now=2.32,
+                                velocity=Velocity(.10, .02))
+        self.assertEqual(self.m.output(now=2.33), Velocity())
+        self.assertEqual(self.m.owner, "stopped")
+        self.assertIsNone(self.m.token)
+
 
 if __name__ == "__main__":
     unittest.main()

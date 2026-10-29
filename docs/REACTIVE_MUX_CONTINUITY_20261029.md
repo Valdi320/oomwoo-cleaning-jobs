@@ -25,3 +25,60 @@ git diff --check
 ## Integration and safety limits
 
 The policy trusts its caller's claimed `MotionHealth`, timestamps, Nav2 UUID and source-isolation flags; these are **not authenticated ROS2 proofs**. External adapter must validate topic graph exclusivity, clock/time correspondence, action status and real motor interlock. Rejected Twist or returned zero cannot physically stop another ROS2 publisher. Next substantive milestone: isolated ROS2/Gazebo test-topic adapter with confirmed single-writer topology, fault injection and runtime measurements, before any upstream PR for the new architecture. No ARM minimum or hardware savings may be inferred.
+
+## Callback ordering follow-up (2026-10-29)
+
+An expired lease could survive if fresh odometry, health and command
+callbacks ran before the next `output()` call. They replaced the expired
+timestamps before the existing watchdog checked them. With a last command
+at 1.94 s, callbacks at 2.30/2.31/2.32 s could reuse the same token despite
+the 300 ms budget. The red regression reproduces this for NAV, SWEEP and
+DOCK independently.
+
+The existing expiry checks now run in the common monotonic-clock path,
+before any callback can replace old evidence. Their duplicate code was
+removed from `output()`. A missed health, odometry or command deadline
+revokes the owner and token at the next public timed operation. Fresh
+callbacks alone cannot restore ownership: the caller must reconcile the
+backend, provide a new continuously observed quiet interval and claim a
+new token. Timely callbacks retain their current token and motion.
+
+No watchdog, node or timer was added. This policy does not execute while
+its process is suspended and cannot certify a physical stop during a gap.
+The two-way `ExclusiveVelocityMux` and ROS2 adapter are unchanged by this
+follow-up; these results apply to `ThreeWayVelocityMux` and its existing
+sequenced facade.
+
+Focused host Python 3.14 checks pass, each as a separate module:
+
+```bash
+PYTHONPATH=src:tests python3 -m unittest test_reactive_velocity_20261029 -v
+PYTHONPATH=src:tests python3 -m unittest test_sequenced_motion_ingress_20261029 -v
+PYTHONPATH=src:tests python3 -m unittest test_reactive_mux_handoff_continuity_20261029 -v
+PYTHONPATH=src:tests python3 -m unittest test_reactive_keepout_envelope_20261029 -v
+```
+
+Results: 42 + 18 + 4 + 22 PASS (86 focused tests, not a full suite).
+Seven new test methods cover three owners, separate expired channels,
+timely renewal, explicit recovery, and valid forward-sequenced callbacks.
+The machine lock was LIBRE before each invocation; processes were scoped
+to 4 GiB memory, 512 MiB swap and 50% CPU. Full reproduction output is in
+`evidence/reactive_lease_refresh_codex_20261029.json`. No ROS2/DDS, Gazebo,
+hardware, CI or physical stopping-distance validation was performed here.
+
+
+## Local handoff consolidation — 29 October 2026
+
+After the owner stopped the former contributor thread, this private validation
+copy becomes the clean combined lab baseline. Its parent remains the colleague's
+`b7a0154` resolved-input guard. The already-applied quiet-odometry, battery,
+transit-reservation and pre-refresh lease fixes are consolidated locally with
+the battery DDS probe and their existing evidence. Seven policy/test/probe
+files match the current contributor branch `d455625` byte-for-byte; the relay
+also retains b7a0154's input guard. No new runtime behavior is added by this
+consolidation. Earlier results remain 121 focused Python passes, 9 resolved
+input cases, 7 startup cases and the active battery/UUID DDS probe; these were
+not rerun just to create a commit. Provenance is recorded in the guarded
+handoff and the existing dated evidence. The original colleague repository,
+remote branches and public PRs remain untouched. Three-way runtime integration
+is still unfinished, and the owner confirms design/simulation only, no hardware.

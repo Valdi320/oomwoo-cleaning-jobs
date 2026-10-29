@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-29",
+  "parent_commit": "c515be0d282d6abfde63db497e50846532e15e62",
+  "companion_base": "05b1d51575a598e0406777421610a56e506c297a",
+  "scope": "ExperimentalDockVelocityRelay, contributor-owned isolated lab adapter",
+  "problem": "The relay required only finite battery >=0.20 at Nav2 admission and >=0.15 while active. Values above 1.0, including percent-style 100.0, satisfied these predicates despite the project's resource contract being a fraction in [0,1].",
+  "correction": "Extend the two existing predicates with their missing inclusive upper bound of 1.0. Preserve the admission lower threshold of 0.20 and active lower threshold of 0.15. Add no helper, gate, timer, service or hardware dependency.",
+  "contract_evidence": [
+    {
+      "path": "src/oomwoo_cleaning_jobs/engine.py",
+      "symbol": "Resources.needed",
+      "requirement": "battery_fraction must be finite and in [0,1]"
+    },
+    {
+      "path": "src/oomwoo_cleaning_jobs/ros_experimental_node.py",
+      "symbol": "_on_battery",
+      "requirement": "Reject nonfinite or out-of-range percentage before creating Resources."
+    }
+  ],
+  "web_source_attempt": {
+    "url": "https://docs.ros.org/en/jazzy/p/sensor_msgs/msg/BatteryState.html",
+    "result": "Access Denied by website. Stopped this lookup; no retry or alternate download. Range justified independently by existing local project contracts, not the denied page."
+  },
+  "baseline": {
+    "chunk_id": "834b09",
+    "wall_time_seconds": 0.097795229,
+    "exit_code": 1,
+    "original_token_count": 263,
+    "output": "Running as unit: run-p2270702-i2270703.scope; invocation ID: fb339743cf3e48eabb27de21c3718914\ntest_percent_style_100_does_not_arm_navigation (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_percent_style_100_does_not_arm_navigation) ... FAIL\n\n======================================================================\nFAIL: test_percent_style_100_does_not_arm_navigation (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_percent_style_100_does_not_arm_navigation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/work/cleaning-jobs/tests/test_ros_relay_battery_bounds_20261029.py\", line 91, in test_percent_style_100_does_not_arm_navigation\n    with self.assertRaises(DockHandoffError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: DockHandoffError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n",
+    "tests": 1,
+    "expected_failure": true,
+    "demonstrates": "Invalid 100.0 admitted as navigation owner; no physical movement."
+  },
+  "after": {
+    "chunk_id": "50d145",
+    "wall_time_seconds": 0.286099336,
+    "exit_code": 0,
+    "original_token_count": 315,
+    "output": "Running as unit: run-p2270933-i2270934.scope; invocation ID: fefe238fa72f424ea4e93c64ed4be17b\ntest_above_one_cannot_arm_even_with_other_proofs_healthy (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_above_one_cannot_arm_even_with_other_proofs_healthy) ... ok\ntest_invalid_high_battery_revokes_both_active_owners (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_invalid_high_battery_revokes_both_active_owners) ... ok\ntest_low_and_nonfinite_values_remain_denied (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_low_and_nonfinite_values_remain_denied) ... ok\ntest_percent_style_100_does_not_arm_navigation (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_percent_style_100_does_not_arm_navigation) ... ok\ntest_valid_active_range_keeps_existing_stop_threshold (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_valid_active_range_keeps_existing_stop_threshold) ... ok\ntest_valid_admission_range_keeps_existing_boundaries (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_valid_admission_range_keeps_existing_boundaries) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.213s\n\nOK\n",
+    "tests": 6
+  },
+  "test_design": "Compile the existing _battery, _fresh, _execute and _tick methods unchanged from the adapter AST. Use real ExclusiveVelocityMux, with fake monotonic clock, message-like objects, publisher and unrelated Nav2 witnesses. No production code copied into the test or ROS node started.",
+  "cases": [
+    "100.0 cannot claim Nav2 ownership.",
+    "1.00001 cannot claim with otherwise healthy witnesses.",
+    "Active NAV and DOCK output both revoke to STOP after 1.00001 or 100.0.",
+    "Existing valid admission limits 0.20, 0.60 and 1.0 still arm.",
+    "Negative, low and nonfinite battery inputs remain denied.",
+    "Existing active limits 0.15, 0.60 and 1.0 retain valid output for both owners."
+  ],
+  "validation_limits": [
+    "Pure Python behavior and fake transport; not real ROS2/DDS, ROS message serialization or discovery.",
+    "Constructor, cgroup container, Gazebo, actual motor watchdog and physical charging were not tested.",
+    "The STOP is observed on the existing _tick execution; no new immediate callback brake mechanism is claimed.",
+    "Other Nav2/status witnesses are intentionally stubbed as healthy; these tests do not prove their correctness."
+  ],
+  "reproduction": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:tests python3 -m unittest test_ros_relay_battery_bounds_20261029 -v",
+  "machine_checks": "LIBRE before baseline and fixed tests. MemoryMax=4G MemorySwapMax=512M CPUQuota=50% CPUWeight=10.",
+  "external_changes": {
+    "push": false,
+    "pr": false,
+    "merge": false,
+    "maintainer_message": false,
+    "companion_files_modified": false
+  }
+}

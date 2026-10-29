@@ -95,6 +95,17 @@ class ThreeWayVelocityMux:
             self.stop("clock moved backwards")
             raise ReactiveMuxError("clock moved backwards")
         self._last_time = float(now)
+        # Apply the existing lease expiry before any callback can replace
+        # its old timestamps. Otherwise callback-before-output ordering can
+        # revive a lease after the watchdog window without a new claim.
+        if self.owner != self.STOP:
+            if (self._health is None or not self._fresh(self._health_time, now)
+                    or not self._fresh(self._last_odom, now)
+                    or not self._safe(self.owner, self._health)):
+                self.stop("health/odometry lease expired")
+            elif (self._command is not None
+                  and not self._fresh(self._command[0], now)):
+                self.stop("cmd_vel lease expired")
 
     @staticmethod
     def _proof_valid(proof: MotionHealth) -> bool:
@@ -194,14 +205,14 @@ class ThreeWayVelocityMux:
         if (self._health is None or not self._health.nav2_idle
             or self._health.nav2_active_goal is not None):
             raise ReactiveMuxError("Nav2 backend is not idle")
+        # Admission can reject a duplicate request while another lease
+        # is still current. Do not replace that lease's UUID or witnesses
+        # unless _arm has actually accepted the new owner.
+        token = self._arm(self.NAV, now=now)
         self._expected_nav_uuid = nav_goal_uuid
         self._nav_seen_active = False
         self._nav_left_active = False
-        try:
-            return self._arm(self.NAV, now=now)
-        except ReactiveMuxError:
-            self._expected_nav_uuid = None
-            raise
+        return token
 
     def release_transit(self, *, now: float, terminal_uuid: str,
                         terminal_verified: bool, nav_input_isolated: bool) -> None:
@@ -278,19 +289,11 @@ class ThreeWayVelocityMux:
         self._clock(now)
         if self.owner == self.STOP:
             return Velocity()
-        if (self._health is None or not self._fresh(self._health_time, now)
-            or not self._fresh(self._last_odom, now)
-            or not self._safe(self.owner, self._health)):
-            self.stop("health/odometry lease expired")
-            return Velocity()
         if self.owner == self.NAV and (not self._nav_seen_active or self._nav_left_active or self._health.nav2_idle):
             # No Nav2 motion before exact goal is observed ACTIVE or after it
             # leaves ACTIVE, even if stale Twist packets keep arriving.
             return Velocity()
         if self._command is None:
             return Velocity()
-        sent_at, velocity = self._command
-        if not self._fresh(sent_at, now):
-            self.stop("cmd_vel lease expired")
-            return Velocity()
+        _, velocity = self._command
         return velocity

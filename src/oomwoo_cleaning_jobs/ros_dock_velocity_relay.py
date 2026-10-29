@@ -230,7 +230,7 @@ class ExperimentalDockVelocityRelay(Node):
                  resources_verified=(self._fresh(self._battery_last,10.)
                       and self._battery_fraction is not None
                       and math.isfinite(self._battery_fraction)
-                      and self._battery_fraction>=.20))
+                      and .20<=self._battery_fraction<=1.))
             self._goal_witness.reset()
             self._nav_lease_started=now
             self._released_nav=False
@@ -311,7 +311,7 @@ class ExperimentalDockVelocityRelay(Node):
                 self.mux.reset("battery telemetry lost during velocity lease")
             elif (self._battery_fraction is None or
                   not math.isfinite(self._battery_fraction) or
-                  self._battery_fraction<.15):
+                  not .15<=self._battery_fraction<=1.):
                 self.mux.reset("unsafe resource telemetry during velocity lease")
             elif not self._fresh(self._last_status,3.):
                 self.mux.reset("Nav2 status expired during velocity lease")

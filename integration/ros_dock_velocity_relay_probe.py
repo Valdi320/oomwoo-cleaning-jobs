@@ -33,12 +33,16 @@ def main():
     UUID2="c2"*16
     UUID3="c3"*16
     UUID4="c4"*16
+    UUID5="c5"*16
+    UUID6="c6"*16
     FOREIGN="df"*16
     tokens={
        UUID1:"a1"*16+"-1",
        UUID2:"a2"*16+"-2",
        UUID3:"a3"*16+"-3",
        UUID4:"a4"*16+"-4",
+       UUID5:"a5"*16+"-5",
+       UUID6:"a6"*16+"-6",
     }
     def begin(uuid):
         journal.begin(uuid_hex=uuid,token=tokens[uuid],
@@ -127,6 +131,18 @@ def main():
         unauthorized=call("claim_nav",id="unauthorized",isolated=False)
         assert not unauthorized.ok and relay.mux.owner=="stopped"
         stable(.91)
+        # The real BatteryState callback must preserve fraction semantics.
+        # Prove the other admission witnesses are ready before testing 100.
+        shared["battery"]=100.
+        assert until(lambda:relay._battery_fraction==100.,1.)
+        assert relay._nav_idle() and relay._dock_state=="IDLE"
+        assert relay._fresh(relay._odom_last,.35)
+        assert relay.mux._quiet(time.monotonic())
+        denied_battery=call("claim_nav")
+        assert not denied_battery.ok and relay.mux.owner=="stopped"
+        shared["battery"]=.92
+        assert until(lambda:math.isclose(relay._battery_fraction,.92,
+                                         abs_tol=1e-6),1.)
         assert call("claim_nav").ok
         begin(UUID1)
         shared["nav_status"]=((UUID1,2),)
@@ -209,6 +225,25 @@ def main():
         shared["nav"]=0.
         stable(.9)
 
+        # A percent-style value arriving over DDS during an accepted NAV
+        # lease must revoke it, even while odom/status/commands stay fresh.
+        assert call("claim_nav").ok
+        begin(UUID5)
+        shared["nav_status"]=((UUID5,2),)
+        shared["nav"]=.18
+        assert until(lambda:relay._goal_witness.current_active_matches(),.8)
+        assert observe(.18,.5)
+        shared["battery"]=100.
+        assert until(lambda:relay._battery_fraction==100.
+                     and relay.mux.owner=="stopped",.8)
+        assert relay.mux.stop_reason=="unsafe resource telemetry during velocity lease"
+        assert observe(0.,.5)
+        terminal(UUID5,"canceled")
+        shared["nav_status"]=((UUID5,5),)
+        shared["battery"]=.9
+        shared["nav"]=0.
+        stable(.9)
+
         assert call("claim_nav").ok
         begin(UUID4)
         shared["nav_status"]=((UUID4,2),)
@@ -221,11 +256,35 @@ def main():
         assert call("claim_dock").ok
         shared["dock"]= -.07
         assert observe(-.07,.5)
+        shared["battery"]=100.
+        assert until(lambda:relay._battery_fraction==100.
+                     and relay.mux.owner=="stopped",.8)
+        assert relay.mux.stop_reason=="unsafe resource telemetry during velocity lease"
+        assert observe(0.,.5)
+        shared["battery"]=.9
+        shared["nav"]=0.
+        shared["dock"]=0.
+        stable(.9)
+
+        # Reconcile a new Nav2 UUID and terminal handoff before checking
+        # the existing competing-action case on a fresh DOCK lease.
+        assert call("claim_nav").ok
+        begin(UUID6)
+        shared["nav_status"]=((UUID6,2),)
+        assert until(lambda:relay._goal_witness.current_active_matches(),.8)
+        terminal(UUID6,"succeeded")
+        shared["nav_status"]=((UUID6,4),)
+        stable(.20)
+        assert call("release_for_dock").ok
+        stable(.9)
+        assert call("claim_dock").ok
+        shared["dock"]= -.07
+        assert observe(-.07,.5)
         # A competing Nav2 action invalidates the DOCK lease too.
         shared["nav_status"]=((FOREIGN,2),)
         assert until(lambda:relay.mux.owner=="stopped",.85)
         assert observe(0.,.5)
-        shared["nav_status"]=((UUID4,4),)
+        shared["nav_status"]=((UUID6,4),)
         shared["dock"]=0.
         with_replay=call("stop",id="replay1")
         assert with_replay.ok
@@ -247,6 +306,10 @@ def main():
                 "old_terminal_uuid_cannot_release_current_lease":True,
                 "empty_status_revokes_nonzero_output":True,
                 "low_battery_revokes_lease":True,
+                "percent_style_battery_denies_admission":True,
+                "percent_style_battery_revokes_nav_lease":True,
+                "percent_style_battery_revokes_dock_lease":True,
+                "battery_stop_reason_verified_for_both_owners":True,
                 "competing_nav2_revokes_dock_lease":True,
                 "motor_hardware_connected":False,
                 "docking_mechanically_confirmed":False,

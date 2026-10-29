@@ -7,7 +7,7 @@
   "host_arch": "x86_64",
   "offline_no_motor_output": true,
   "pass": true,
-  "process_seconds": 14.48,
+  "process_seconds": 14.8,
   "ros2_results": {
     "gazebo": false,
     "motor_hardware": false,
@@ -17,7 +17,7 @@
     "tests": [
       {
         "case": "nominal",
-        "error_tail": "[WARN] [1793282034.085744933] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282034.085755563] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293433.238361114] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293433.238371294] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "all_observed_twists_zero": true,
@@ -35,7 +35,7 @@
       },
       {
         "case": "namespace",
-        "error_tail": "[WARN] [1793282034.786005757] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282034.786014487] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293433.952594205] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293433.952604285] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "all_observed_twists_zero": true,
@@ -53,7 +53,7 @@
       },
       {
         "case": "remap_motor",
-        "error_tail": "[WARN] [1793282035.463815513] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282035.463825353] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293434.635195271] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293434.635204821] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "case": "remap_motor",
@@ -70,7 +70,7 @@
       },
       {
         "case": "remap_controller",
-        "error_tail": "[WARN] [1793282035.986362550] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282035.986372370] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293435.149122926] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293435.149132906] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "case": "remap_controller",
@@ -87,7 +87,7 @@
       },
       {
         "case": "remap_other",
-        "error_tail": "[WARN] [1793282036.508245400] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282036.508255550] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293435.664784505] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293435.664794115] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "case": "remap_other",
@@ -104,7 +104,7 @@
       },
       {
         "case": "simulation_off",
-        "error_tail": "[WARN] [1793282037.031408024] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282037.031418134] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293436.184117551] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293436.184128041] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "case": "simulation_off",
@@ -121,7 +121,7 @@
       },
       {
         "case": "override_motor",
-        "error_tail": "[WARN] [1793282037.543173634] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793282037.543183254] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
+        "error_tail": "[WARN] [1793293436.700928226] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793293436.700938586] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n",
         "pass": true,
         "report": {
           "case": "override_motor",
@@ -140,5 +140,5 @@
     "total": 7
   },
   "stdout_tail": "",
-  "timestamp_utc": "2026-10-29T13:53:57.766109+00:00"
+  "timestamp_utc": "2026-10-29T17:03:56.918686+00:00"
 }

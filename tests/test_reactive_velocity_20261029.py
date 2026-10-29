@@ -314,6 +314,153 @@ class ThreeWayVelocityMuxTests(unittest.TestCase):
             self.m.claim_sweep(now=1.9, nav_released=False,
                                prior_terminal_uuid=None)
 
+    def test_34_rejected_transit_claim_preserves_reserved_uuid(self):
+        token = self.arm_nav()
+        with self.assertRaises(ReactiveMuxError):
+            self.m.claim_transit(now=1.91, nav_goal_uuid="b" * 32)
+        self.assertEqual(self.m.owner, self.m.NAV)
+        self.assertEqual(self.m.token, token)
+        self.m.observe_health(now=1.92, proof=self.proof(
+            nav2_idle=False, nav2_active_goal="a" * 32))
+        self.m.observe_odom(now=1.93, linear_mps=0., angular_rps=0.)
+        self.m.accept_twist(source=self.m.NAV, token=token, now=1.94,
+                            velocity=Velocity(.1, 0.))
+        self.assertEqual(self.m.output(now=1.95), Velocity(.1, 0.))
+
+    def test_35_rejected_transit_preserves_terminal_handoff_evidence(self):
+        self.nav_running()
+        self.m.observe_health(now=1.95, proof=self.proof())
+        with self.assertRaises(ReactiveMuxError):
+            self.m.claim_transit(now=1.96, nav_goal_uuid="b" * 32)
+        self.assertEqual(self.m.output(now=1.965), Velocity())
+        self.m.release_transit(now=1.97, terminal_uuid="a" * 32,
+                               terminal_verified=True, nav_input_isolated=True)
+        self.quiet(3.)
+        self.m.observe_health(now=3.85, proof=self.proof(sweep_inactive=False))
+        token = self.m.claim_sweep(now=3.9, nav_released=True,
+                                   prior_terminal_uuid="a" * 32)
+        self.assertEqual(self.m.owner, self.m.SWEEP)
+        self.assertEqual(len(token), 32)
+
+    def test_36_rejected_transit_does_not_authorize_its_foreign_uuid(self):
+        self.arm_nav()
+        with self.assertRaises(ReactiveMuxError):
+            self.m.claim_transit(now=1.91, nav_goal_uuid="b" * 32)
+        with self.assertRaises(ReactiveMuxError):
+            self.m.observe_health(now=1.92, proof=self.proof(
+                nav2_idle=False, nav2_active_goal="b" * 32))
+        self.assertEqual(self.m.owner, self.m.STOP)
+        self.assertEqual(self.m.output(now=1.93), Velocity())
+
+    def live_mode(self, mode):
+        if mode == self.m.NAV:
+            token = self.nav_running()
+            proof = self.proof(nav2_idle=False, nav2_active_goal="a" * 32)
+        elif mode == self.m.SWEEP:
+            token = self.live_sweep()
+            proof = self.proof(sweep_inactive=False)
+        else:
+            self.quiet()
+            proof = self.proof(dock_inactive=False)
+            self.m.observe_health(now=1.85, proof=proof)
+            token = self.m.claim_dock(now=1.90, nav_released=True,
+                                      prior_terminal_uuid=None)
+            self.m.observe_odom(now=1.92, linear_mps=0., angular_rps=0.)
+            self.m.observe_health(now=1.93, proof=proof)
+            self.m.accept_twist(source=mode, token=token, now=1.94,
+                                velocity=Velocity(.10, 0.))
+        self.assertNotEqual(self.m.output(now=1.95), Velocity())
+        return token, proof
+
+    def test_37_late_callbacks_cannot_renew_expired_lease_before_output(self):
+        for mode in (ThreeWayVelocityMux.NAV, ThreeWayVelocityMux.SWEEP,
+                     ThreeWayVelocityMux.DOCK):
+            with self.subTest(mode=mode):
+                self.m = ThreeWayVelocityMux()
+                token, proof = self.live_mode(mode)
+                # No output poll during the gap. Fresh callbacks arrive first.
+                self.m.observe_odom(now=2.30, linear_mps=0., angular_rps=0.)
+                self.m.observe_health(now=2.31, proof=proof)
+                with self.assertRaises(ReactiveMuxError):
+                    self.m.accept_twist(source=mode, token=token, now=2.32,
+                                        velocity=Velocity(.10, 0.))
+                self.assertEqual(self.m.output(now=2.33), Velocity())
+                self.assertEqual(self.m.owner, self.m.STOP)
+                self.assertIsNone(self.m.token)
+
+    def test_38_expired_odom_cannot_be_hidden_by_its_replacement(self):
+        for mode in (ThreeWayVelocityMux.NAV, ThreeWayVelocityMux.SWEEP,
+                     ThreeWayVelocityMux.DOCK):
+            with self.subTest(mode=mode):
+                self.m = ThreeWayVelocityMux()
+                token, proof = self.live_mode(mode)
+                self.m.observe_health(now=2.10, proof=proof)
+                self.m.accept_twist(source=mode, token=token, now=2.11,
+                                    velocity=Velocity(.10, 0.))
+                self.m.observe_odom(now=2.25, linear_mps=0., angular_rps=0.)
+                self.assertEqual(self.m.owner, self.m.STOP)
+                self.assertEqual(self.m.output(now=2.26), Velocity())
+
+    def test_39_expired_health_cannot_be_hidden_by_its_replacement(self):
+        for mode in (ThreeWayVelocityMux.NAV, ThreeWayVelocityMux.SWEEP,
+                     ThreeWayVelocityMux.DOCK):
+            with self.subTest(mode=mode):
+                self.m = ThreeWayVelocityMux()
+                token, proof = self.live_mode(mode)
+                self.m.observe_odom(now=2.10, linear_mps=0., angular_rps=0.)
+                self.m.accept_twist(source=mode, token=token, now=2.11,
+                                    velocity=Velocity(.10, 0.))
+                self.m.observe_health(now=2.25, proof=proof)
+                self.assertEqual(self.m.owner, self.m.STOP)
+                self.assertEqual(self.m.output(now=2.26), Velocity())
+
+    def test_40_expired_command_cannot_be_hidden_by_its_replacement(self):
+        for mode in (ThreeWayVelocityMux.NAV, ThreeWayVelocityMux.SWEEP,
+                     ThreeWayVelocityMux.DOCK):
+            with self.subTest(mode=mode):
+                self.m = ThreeWayVelocityMux()
+                token, proof = self.live_mode(mode)
+                self.m.observe_odom(now=2.10, linear_mps=0., angular_rps=0.)
+                self.m.observe_health(now=2.11, proof=proof)
+                with self.assertRaises(ReactiveMuxError):
+                    self.m.accept_twist(source=mode, token=token, now=2.25,
+                                        velocity=Velocity(.10, 0.))
+                self.assertEqual(self.m.output(now=2.26), Velocity())
+                self.assertEqual(self.m.owner, self.m.STOP)
+
+    def test_41_timely_callbacks_keep_current_lease(self):
+        for mode in (ThreeWayVelocityMux.NAV, ThreeWayVelocityMux.SWEEP,
+                     ThreeWayVelocityMux.DOCK):
+            with self.subTest(mode=mode):
+                self.m = ThreeWayVelocityMux()
+                token, proof = self.live_mode(mode)
+                self.m.observe_odom(now=2.20, linear_mps=0., angular_rps=0.)
+                self.m.observe_health(now=2.21, proof=proof)
+                self.m.accept_twist(source=mode, token=token, now=2.22,
+                                    velocity=Velocity(.10, 0.))
+                self.assertEqual(self.m.output(now=2.23), Velocity(.10, 0.))
+                self.assertEqual(self.m.owner, mode)
+                self.assertEqual(self.m.token, token)
+
+    def test_42_recovery_after_gap_requires_new_quiet_claim_and_token(self):
+        old_token = self.live_sweep()
+        self.m.observe_odom(now=2.30, linear_mps=0., angular_rps=0.)
+        self.m.observe_health(now=2.31, proof=self.proof(sweep_inactive=False))
+        with self.assertRaises(ReactiveMuxError):
+            self.m.accept_twist(source=self.m.SWEEP, token=old_token, now=2.32,
+                                velocity=Velocity(.10, 0.))
+        with self.assertRaises(ReactiveMuxError):
+            self.m.claim_sweep(now=2.33, nav_released=True,
+                               prior_terminal_uuid=None)
+        self.quiet(3.)
+        self.m.observe_health(now=3.85, proof=self.proof(sweep_inactive=False))
+        token = self.m.claim_sweep(now=3.90, nav_released=True,
+                                   prior_terminal_uuid=None)
+        self.assertNotEqual(token, old_token)
+        self.m.accept_twist(source=self.m.SWEEP, token=token, now=3.91,
+                            velocity=Velocity(.10, 0.))
+        self.assertEqual(self.m.output(now=3.92), Velocity(.10, 0.))
+
 
 if __name__ == "__main__":
     unittest.main()

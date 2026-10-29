@@ -23,7 +23,7 @@ class Velocity:
     angular:float=0.
 
 class ExclusiveVelocityMux:
-    """Ephemeral command owner; a process restart always begins STOPPED."""
+    """Ephemeral owner with bounded-gap quiet evidence; restart begins STOPPED."""
 
     STOP="stopped"
     NAV="navigation"
@@ -83,6 +83,11 @@ class ExclusiveVelocityMux:
             or type(angular_rps) not in (int,float) or not math.isfinite(angular_rps)):
             self.reset("untrusted odometry")
             raise DockHandoffError("invalid odometry")
+        # Two zero samples separated by missing telemetry do not prove
+        # continuous quiet. Use the same freshness budget as _quiet(),
+        # matching the existing three-way relay's odometry policy.
+        if self._last_odom is not None and now-self._last_odom>self.max_age:
+            self._quiet_since=None
         if abs(linear_mps)<=.025 and abs(angular_rps)<=.04:
             if self._quiet_since is None:self._quiet_since=now
         else:

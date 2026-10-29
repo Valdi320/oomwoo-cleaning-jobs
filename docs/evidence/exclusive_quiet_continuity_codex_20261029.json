@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-29",
+  "base_commit": "05b1d51575a598e0406777421610a56e506c297a",
+  "scope": "ExclusiveVelocityMux in contributor-owned isolated experimental ROS2 lab; source owner worktree untouched.",
+  "defect": "Two quiet odometry samples at t=1.00 and t=1.85 seconds were enough to claim navigation at t=1.90 even though no odometry arrived during the 0.85 second gap. Receipt freshness at claim time did not establish quiet continuity.",
+  "correction": "Invalidate accumulated quiet evidence when the interval between accepted odometry samples exceeds the existing max_age. Start a new quiet window at the next quiet sample. No new module, gate, timer or worker; align the existing check with ThreeWayVelocityMux.observe_odom.",
+  "baseline": {
+    "chunk_id": "5bcc2d",
+    "wall_time_seconds": 0.099600171,
+    "exit_code": 1,
+    "original_token_count": 243,
+    "output": "Running as unit: run-p2265820-i2265821.scope; invocation ID: 1868dd170d5349278d6b7923082166db\ntest_nav_rejects_two_distant_zero_odom_samples (test_dock_handoff.DockHandoffTests.test_nav_rejects_two_distant_zero_odom_samples) ... FAIL\n\n======================================================================\nFAIL: test_nav_rejects_two_distant_zero_odom_samples (test_dock_handoff.DockHandoffTests.test_nav_rejects_two_distant_zero_odom_samples)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/work/cleaning-jobs/tests/test_dock_handoff.py\", line 136, in test_nav_rejects_two_distant_zero_odom_samples\n    with self.assertRaises(DockHandoffError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: DockHandoffError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (failures=1)\n",
+    "expected_failure": true,
+    "tests": 1
+  },
+  "fixed": {
+    "chunk_id": "a52a30",
+    "wall_time_seconds": 0.076142235,
+    "exit_code": 0,
+    "original_token_count": 687,
+    "output": "Running as unit: run-p2266155-i2266156.scope; invocation ID: 7ac9a6a4ea9a47bab3641d881723dea9\ntest_backwards_monotonic_clock_fails_closed (test_dock_handoff.DockHandoffTests.test_backwards_monotonic_clock_fails_closed) ... ok\ntest_complete_dock_handoff_and_no_false_charging_proof (test_dock_handoff.DockHandoffTests.test_complete_dock_handoff_and_no_false_charging_proof) ... ok\ntest_dock_drive_cannot_claim_without_mux_input_isolation (test_dock_handoff.DockHandoffTests.test_dock_drive_cannot_claim_without_mux_input_isolation) ... ok\ntest_dock_rejects_sparse_zero_odom_after_nav_release (test_dock_handoff.DockHandoffTests.test_dock_rejects_sparse_zero_odom_after_nav_release) ... ok\ntest_dock_state_not_new_search_done_sequence_rejected (test_dock_handoff.DockHandoffTests.test_dock_state_not_new_search_done_sequence_rejected) ... ok\ntest_expired_owner_command_goes_zero (test_dock_handoff.DockHandoffTests.test_expired_owner_command_goes_zero) ... ok\ntest_fake_latched_docked_bool_unproven (test_dock_handoff.DockHandoffTests.test_fake_latched_docked_bool_unproven) ... ok\ntest_finish_dock_rejects_quiet_window_spanning_sensor_gap (test_dock_handoff.DockHandoffTests.test_finish_dock_rejects_quiet_window_spanning_sensor_gap) ... ok\ntest_initial_state_is_stop (test_dock_handoff.DockHandoffTests.test_initial_state_is_stop) ... ok\ntest_invalid_sensor_and_unbounded_twist_fail_closed (test_dock_handoff.DockHandoffTests.test_invalid_sensor_and_unbounded_twist_fail_closed) ... ok\ntest_nav2_solo_owner_blocks_dock_stream (test_dock_handoff.DockHandoffTests.test_nav2_solo_owner_blocks_dock_stream) ... ok\ntest_nav_rejects_two_distant_zero_odom_samples (test_dock_handoff.DockHandoffTests.test_nav_rejects_two_distant_zero_odom_samples) ... ok\ntest_nav_start_requires_zero_motion (test_dock_handoff.DockHandoffTests.test_nav_start_requires_zero_motion) ... ok\ntest_odom_motion_resets_quiet_timer (test_dock_handoff.DockHandoffTests.test_odom_motion_resets_quiet_timer) ... ok\ntest_process_restart_resets_to_stop (test_dock_handoff.DockHandoffTests.test_process_restart_resets_to_stop) ... ok\ntest_quiet_accepts_exact_freshness_boundary (test_dock_handoff.DockHandoffTests.test_quiet_accepts_exact_freshness_boundary) ... ok\ntest_quiet_gap_uses_configured_freshness_budget (test_dock_handoff.DockHandoffTests.test_quiet_gap_uses_configured_freshness_budget) ... ok\ntest_quiet_recovers_only_after_new_continuous_window (test_dock_handoff.DockHandoffTests.test_quiet_recovers_only_after_new_continuous_window) ... ok\ntest_reject_claim_dock_before_nav_terminal (test_dock_handoff.DockHandoffTests.test_reject_claim_dock_before_nav_terminal) ... ok\n\n----------------------------------------------------------------------\nRan 19 tests in 0.001s\n\nOK\n",
+    "tests": 19,
+    "new_regression_tests": 6
+  },
+  "new_cases": [
+    "Navigation admission rejects sparse quiet samples.",
+    "Dock admission after Nav2 release rejects sparse quiet samples.",
+    "Dock completion rejects a quiet interval spanning a sensor gap.",
+    "Rearming succeeds only after a new continuously observed quiet interval.",
+    "The gap cutoff uses the configured freshness budget.",
+    "An exact representable freshness boundary remains admissible."
+  ],
+  "validation_limits": [
+    "Pure Python focused module only; not full test suite.",
+    "No ROS2 middleware, Gazebo, motors, physical braking, docking or charging tested in this increment.",
+    "The existing quiet velocity thresholds and lease policies remain unchanged.",
+    "No integration into the companion worktree or upstream asserted."
+  ],
+  "source_reference": {
+    "matching_existing_policy": "src/oomwoo_cleaning_jobs/reactive_velocity.py:136",
+    "affected_adapter": "src/oomwoo_cleaning_jobs/ros_dock_velocity_relay.py:58"
+  },
+  "reproduction": {
+    "baseline": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:tests python3 -m unittest test_dock_handoff.DockHandoffTests.test_nav_rejects_two_distant_zero_odom_samples -v",
+    "fixed": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:tests python3 -m unittest test_dock_handoff -v",
+    "machine_guard": "python3 ~/.local/bin/vanster-cerrojo-de-maquina.py libre returned LIBRE before each test",
+    "resource_scope": "systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=512M -p CPUQuota=50% -p CPUWeight=10"
+  },
+  "delivery": {
+    "push": false,
+    "pull_request": false,
+    "merge": false,
+    "external_maintainer_message": false,
+    "companion_source_modified": false
+  }
+}
