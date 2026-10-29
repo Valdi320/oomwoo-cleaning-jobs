@@ -6,6 +6,7 @@ are four-connected, unknown cells are blocked and corner-cutting is disallowed.
 from __future__ import annotations
 
 from collections import deque
+from array import array
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -71,22 +72,67 @@ class Grid:
 
     @property
     def blocked(self) -> frozenset[int]:
-        blocked = self._base_blocked()
+        """Conservatively inflate obstacles in Chebyshev distance.
+
+        Sparse maps use small per-obstacle spans; dense maps use an exact
+        2D rectangular difference field. Never weaken clearance or keepouts.
+        The temporary dense field costs 4*(width+1)*(height+1) bytes on
+        normal 32-bit signed-int array platforms, and is per-call only.
+        """
+        base = self._base_blocked()
         r = self.clearance_cells
-        if r:
-            enlarged = set(blocked)
-            for idx in blocked:
-                x, y = idx % self.width, idx // self.width
-                for yy in range(max(0, y-r), min(self.height, y+r+1)):
-                    for xx in range(max(0, x-r), min(self.width, x+r+1)):
-                        enlarged.add(yy*self.width + xx)
-            blocked = enlarged
-            # A physical robot also needs clearance from the *outer* map boundary.
-            for y in range(self.height):
-                for x in range(self.width):
-                    if x < r or y < r or x >= self.width-r or y >= self.height-r:
-                        blocked.add(y*self.width + x)
-        return frozenset(blocked)
+        if not r:
+            return frozenset(base)
+        w, h = self.width, self.height
+        size = w * h
+        # The original conservative outer-map margin alone covers all cells.
+        if 2 * r >= w or 2 * r >= h:
+            return frozenset(range(size))
+        result = set(base)
+        # Avoid a dense temporary buffer for a nearly empty or huge map.
+        nominal = len(base) * min(w, 2 * r + 1) * min(h, 2 * r + 1)
+        if nominal <= size * 3:
+            for idx in base:
+                x, y = idx % w, idx // w
+                left, right = max(0, x - r), min(w, x + r + 1)
+                for yy in range(max(0, y - r), min(h, y + r + 1)):
+                    result.update(range(yy * w + left, yy * w + right))
+        else:
+            # Each occupied/unknown/keepout cell contributes one rectangle.
+            # A signed-int count cannot overflow: <= 4,000,000 rectangles.
+            stride = w + 1
+            diff = array("i", [0]) * (stride * (h + 1))
+            for idx in base:
+                x, y = idx % w, idx // w
+                left, right = max(0, x - r), min(w, x + r + 1)
+                top, bottom = max(0, y - r), min(h, y + r + 1)
+                a, b = top * stride, bottom * stride
+                diff[a + left] += 1
+                diff[a + right] -= 1
+                diff[b + left] -= 1
+                diff[b + right] += 1
+            # In-place 2D prefix. Never approximate or threshold occupancy.
+            for y in range(h):
+                row = y * stride
+                horizontal = 0
+                for x in range(w):
+                    pos = row + x
+                    horizontal += diff[pos]
+                    count = horizontal + (diff[pos - stride] if y else 0)
+                    diff[pos] = count
+                    if count > 0:
+                        result.add(y * w + x)
+        # Exact original outer-boundary clearance, without scanning the
+        # entire interior just to add a perimeter.
+        for y in range(r):
+            result.update(range(y * w, (y + 1) * w))
+        for y in range(h - r, h):
+            result.update(range(y * w, (y + 1) * w))
+        for y in range(r, h - r):
+            row = y * w
+            result.update(range(row, row + r))
+            result.update(range(row + w - r, row + w))
+        return frozenset(result)
 
     @property
     def traversable(self) -> frozenset[int]:

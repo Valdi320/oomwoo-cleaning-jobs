@@ -1,0 +1,97 @@
+{
+  "arch": "x86_64",
+  "cases": [
+    {
+      "digest": {
+        "blocked_count": 14562,
+        "blocked_sha256": "856d5063eb543b5b788e17c2ec7dc5962aeb6da5dc1812d92e4c9865105d6ffe"
+      },
+      "identical_membership": true,
+      "label": "synthetic_room_furniture",
+      "map": {
+        "h": 192,
+        "obstacle_cells": 3894,
+        "radius_cells": 7,
+        "w": 256
+      },
+      "times": {
+        "bounded_hybrid": {
+          "cpu_s": [
+            0.01088968999999998,
+            0.011443099999999984,
+            0.01029099
+          ],
+          "median_cpu_s": 0.01088968999999998,
+          "median_wall_s": 0.011037879972718656,
+          "wall_s": [
+            0.011037879972718656,
+            0.011579077981878072,
+            0.0104133709683083
+          ]
+        },
+        "reference_original": {
+          "cpu_s": [
+            0.06045088000000001,
+            0.061148639999999976,
+            0.05653635000000001
+          ],
+          "median_cpu_s": 0.06045088000000001,
+          "median_wall_s": 0.06118274200707674,
+          "wall_s": [
+            0.06118274200707674,
+            0.06189163000090048,
+            0.05714498198358342
+          ]
+        }
+      }
+    },
+    {
+      "digest": {
+        "blocked_count": 49152,
+        "blocked_sha256": "af2f5fc80edc464fd4bca9201a8f5e17f29a24913c02597b5c0cf8f2f954ae1a"
+      },
+      "identical_membership": true,
+      "label": "adversarial_dense_unknown_cost",
+      "map": {
+        "h": 192,
+        "obstacle_cells": 13405,
+        "radius_cells": 10,
+        "w": 256
+      },
+      "times": {
+        "bounded_hybrid": {
+          "cpu_s": [
+            0.02055825,
+            0.020866420000000163,
+            0.01720622000000005
+          ],
+          "median_cpu_s": 0.02055825,
+          "median_wall_s": 0.020963533024769276,
+          "wall_s": [
+            0.020963533024769276,
+            0.02099607203854248,
+            0.017457362031564116
+          ]
+        },
+        "reference_original": {
+          "cpu_s": [
+            0.35339424999999997,
+            0.3687068400000001,
+            0.34062762
+          ],
+          "median_cpu_s": 0.35339424999999997,
+          "median_wall_s": 0.3568939969991334,
+          "wall_s": [
+            0.3568939969991334,
+            0.3717927260440774,
+            0.3444682109984569
+          ]
+        }
+      }
+    }
+  ],
+  "platform": "Linux-6.17.7-ba29.fc43.x86_64-x86_64-with-glibc2.42",
+  "process_peak_rss_kib_not_comparable": 43680,
+  "python": "3.14.3",
+  "scope": "pure Python x86 per-Grid inflation; not full ROS2/Nav2 or hardware"
+}
