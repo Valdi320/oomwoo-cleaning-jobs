@@ -22,6 +22,52 @@ class NoSafeSweep(RuntimeError):
     """No admissible approach past an uncleaned cell was found."""
 
 
+def _count_nearby_dirty(
+    route: tuple[int, ...], remaining: frozenset[int], grid: Grid,
+) -> int:
+    """Count distinct dirty cells near route, without dirty x route scans.
+
+    Radius and inclusive threshold match the original 0.11m criterion.
+    Only a bounded disk (<=32 grid cells of radius) is enumerated; at very
+    fine map resolution the exact prior scan is retained to avoid huge
+    intermediate allocations. No measured clean credit is minted here.
+    """
+    if not route and remaining:
+        raise ValueError("empty route")
+    radius_cells = 0.11 / grid.resolution_m
+    radius_squared = radius_cells ** 2
+    if not math.isfinite(radius_cells) or radius_cells > 32:
+        route_xy = tuple(grid.xy(i) for i in route)
+        return sum(
+            1 for target in remaining
+            if min(
+                (target % grid.width - x) ** 2
+                + (target // grid.width - y) ** 2
+                for x, y in route_xy
+            ) <= radius_squared
+        )
+
+    limit = math.ceil(radius_cells)
+    offsets = tuple(
+        (dx, dy)
+        for dy in range(-limit, limit + 1)
+        for dx in range(-limit, limit + 1)
+        if dx * dx + dy * dy <= radius_squared
+    )
+    close: set[int] = set()
+    for index in route:
+        row, col = divmod(index, grid.width)
+        for dx, dy in offsets:
+            x, y = col + dx, row + dy
+            if 0 <= x < grid.width and 0 <= y < grid.height:
+                cell = y * grid.width + x
+                if cell in remaining:
+                    close.add(cell)
+        if len(close) == len(remaining):
+            break
+    return len(close)
+
+
 def select_sweep_route(
     grid: Grid,
     pose_cell: int,
@@ -92,12 +138,7 @@ def select_sweep_route(
                     # At least one uncovered cell must lie close to the
                     # traversed corridor. Avoid claiming this is cleaned;
                     # the measured meter is the only acknowledgement.
-                    route_xy=tuple(grid.xy(i) for i in route)
-                    close=sum(1 for target_i in remaining
-                              if min((target_i%grid.width-x)**2+
-                                     (target_i//grid.width-y)**2
-                                     for x,y in route_xy)
-                              <=(0.11/grid.resolution_m)**2)
+                    close=_count_nearby_dirty(route,remaining,grid)
                     if close==0:
                         continue
                     # Prioritize likely new swept cells with modest travel.

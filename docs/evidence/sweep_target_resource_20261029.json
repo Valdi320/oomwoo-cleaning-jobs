@@ -1,0 +1,75 @@
+{
+  "baseline": {
+    "affinity": [
+      0
+    ],
+    "architecture": "x86_64",
+    "max_rss_kib": 23184,
+    "median_process_cpu_seconds": 0.354458,
+    "median_wall_seconds": 0.356756,
+    "python": "3.14.3",
+    "runs": [
+      {
+        "candidate_admissions": 10,
+        "path_length": 92,
+        "process_cpu_seconds": 0.359275,
+        "route_sha256": "7cd6403e5112d92f176013767892be660da8dc5d8ab684e4c299a41066f93184",
+        "wall_seconds": 0.362418
+      },
+      {
+        "candidate_admissions": 10,
+        "path_length": 92,
+        "process_cpu_seconds": 0.354458,
+        "route_sha256": "7cd6403e5112d92f176013767892be660da8dc5d8ab684e4c299a41066f93184",
+        "wall_seconds": 0.356756
+      },
+      {
+        "candidate_admissions": 10,
+        "path_length": 92,
+        "process_cpu_seconds": 0.343872,
+        "route_sha256": "7cd6403e5112d92f176013767892be660da8dc5d8ab684e4c299a41066f93184",
+        "wall_seconds": 0.352846
+      }
+    ],
+    "scope": "synthetic Python 120x68 5cm grid, 2132 dirty cells; NO full ROS2, ARM, power or hardware"
+  },
+  "code_base_sha": "7c783d884c60940fb8a734b709b0dca93395f7a8",
+  "correctness": "240 seeded reference comparisons, unchanged deterministic selected route SHA and callback count, full unit regressions normal/-O.",
+  "cpu_improvement_factor": 4.955,
+  "cpu_reduction_percent": 79.82,
+  "limits": "Repeated pure-Python x86_64 synthetic scoring on one pinned desktop core, NOT ROS2, Nav2, Gazebo, ARM, joules or a robot.",
+  "optimized": {
+    "affinity": [
+      0
+    ],
+    "architecture": "x86_64",
+    "max_rss_kib": 22444,
+    "median_process_cpu_seconds": 0.071538,
+    "median_wall_seconds": 0.075373,
+    "python": "3.14.3",
+    "runs": [
+      {
+        "candidate_admissions": 10,
+        "path_length": 92,
+        "process_cpu_seconds": 0.070639,
+        "route_sha256": "7cd6403e5112d92f176013767892be660da8dc5d8ab684e4c299a41066f93184",
+        "wall_seconds": 0.075373
+      },
+      {
+        "candidate_admissions": 10,
+        "path_length": 92,
+        "process_cpu_seconds": 0.079558,
+        "route_sha256": "7cd6403e5112d92f176013767892be660da8dc5d8ab684e4c299a41066f93184",
+        "wall_seconds": 0.087727
+      },
+      {
+        "candidate_admissions": 10,
+        "path_length": 92,
+        "process_cpu_seconds": 0.071538,
+        "route_sha256": "7cd6403e5112d92f176013767892be660da8dc5d8ab684e4c299a41066f93184",
+        "wall_seconds": 0.073504
+      }
+    ],
+    "scope": "synthetic Python 120x68 5cm grid, 2132 dirty cells; NO full ROS2, ARM, power or hardware"
+  }
+}
