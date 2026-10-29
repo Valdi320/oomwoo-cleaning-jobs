@@ -28,6 +28,7 @@ from oomwoo_cleaning_jobs_lab_interfaces.srv import (
     ControlCleaning,GetCleaningStatus)
 
 from .dock_handoff import ExclusiveVelocityMux,Velocity,DockHandoffError
+from .lab_topic_guard import LabTopicGuardError, require_lab_output_publisher
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .goal_journal import GoalJournal,GoalJournalError
 from .nav_lease_witness import NavLeaseWitness,ACTIVE,nav_status_idle
@@ -71,6 +72,13 @@ class ExperimentalDockVelocityRelay(Node):
         latched=QoSProfile(depth=1,reliability=QoSReliabilityPolicy.RELIABLE,
                            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.safe=self.create_publisher(Twist,output,10)
+        # ROS2 CLI/launch remapping can redirect the *nominally safe* topic.
+        # Reject the REAL resolved publisher name before any output timer.
+        try:
+            require_lab_output_publisher(self.safe)
+        except LabTopicGuardError:
+            self.destroy_publisher(self.safe)
+            raise
         self.create_subscription(Twist,"/valdi/nav2_cmd_vel",self._nav_twist,10)
         self.create_subscription(Twist,"/valdi/dock_drive_cmd_vel",self._dock_twist,10)
         self.create_subscription(Odometry,"/odom",self._on_odom,10)
