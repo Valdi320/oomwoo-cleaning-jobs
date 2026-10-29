@@ -14,7 +14,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import fcntl
+from contextlib import contextmanager
+from functools import wraps
 import os
+import stat
 from pathlib import Path
 import re
 import tempfile
@@ -30,6 +34,15 @@ class CoverageLedgerError(RuntimeError):
 
 def _hash_cells(cells):
     return hashlib.sha256(json.dumps(sorted(cells),separators=(",",":")).encode()).hexdigest()
+
+
+def _serialized_writer(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        with self._writer_lock():
+            self._require_fresh()
+            return method(self, *args, **kwargs)
+    return guarded
 
 
 class CoverageWAL:
@@ -51,10 +64,16 @@ class CoverageWAL:
                        "scope_digest":_hash_cells(scope),
                        "producer":producer,"job_id":job_id}
         self._state=None
-        if self.path.exists():
-            self._state=self._read()
-        else:
-            self._write({**self.identity,"revision":1,"events":{}})
+        # Lock initialization too: two processes may start one WAL together.
+        with self._writer_lock():
+            try:
+                os.lstat(self.path)
+            except FileNotFoundError:
+                self._write({**self.identity,"revision":1,"events":{}})
+            except OSError as exc:
+                raise CoverageLedgerError("WAL path not safe for initialization") from exc
+            else:
+                self._state=self._read()
 
     def _validate(self,v):
         if (not isinstance(v,dict)
@@ -76,8 +95,58 @@ class CoverageWAL:
                 or not set(entry["cells"])<=self.scope):
                 raise CoverageLedgerError("WAL event corrupted or outside job scope")
 
+    @contextmanager
+    def _writer_lock(self):
+        """Stable private Linux flock; never lock replaceable WAL JSON.
+
+        Cooperative writers on this exact path only. Not a ROS2/MCU lock,
+        and cannot defeat hostile same-UID pathname replacement after checks.
+        """
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path=self.path.with_name(self.path.name+".lock")
+        flags=(os.O_RDWR | os.O_CREAT | os.O_NONBLOCK
+               | getattr(os,"O_NOFOLLOW",0) | getattr(os,"O_CLOEXEC",0))
+        try:
+            fd=os.open(lock_path,flags,0o600)
+        except OSError as exc:
+            raise CoverageLedgerError("WAL writer lock unavailable") from exc
+        try:
+            info=os.fstat(fd)
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink!=1
+                or stat.S_IMODE(info.st_mode)&0o077):
+                raise CoverageLedgerError("WAL writer lock inode/permissions unsafe")
+            try:
+                fcntl.flock(fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
+                named=os.stat(lock_path,follow_symlinks=False)
+            except OSError as exc:
+                raise CoverageLedgerError("WAL writer lock busy/replaced") from exc
+            if (named.st_dev,named.st_ino)!=(info.st_dev,info.st_ino):
+                raise CoverageLedgerError("WAL writer lock replaced after acquisition")
+            yield
+        finally:
+            os.close(fd)
+
+    def _require_fresh(self):
+        if self._state is None or self._read()!=self._state:
+            raise CoverageLedgerError("WAL changed since this writer loaded it")
+
     def _read(self):
-        try:v=json.loads(self.path.read_text(encoding="utf-8"))
+        # O_NONBLOCK prevents FIFO reads from hanging a controller.
+        try:
+            fd=os.open(self.path,os.O_RDONLY | os.O_NONBLOCK
+                       | getattr(os,"O_NOFOLLOW",0) | getattr(os,"O_CLOEXEC",0))
+        except OSError as exc:
+            raise CoverageLedgerError("WAL unavailable or linked") from exc
+        try:
+            with os.fdopen(fd,"rb") as source:
+                info=os.fstat(source.fileno())
+                if (not stat.S_ISREG(info.st_mode) or info.st_nlink!=1
+                    or stat.S_IMODE(info.st_mode)&0o077):
+                    raise CoverageLedgerError("WAL inode/permissions unsafe")
+                raw=source.read(64*1024*1024+1)
+            if len(raw)>64*1024*1024:
+                raise CoverageLedgerError("WAL exceeds bounded read budget")
+            v=json.loads(raw)
         except (OSError,ValueError) as exc:
             raise CoverageLedgerError("WAL unreadable; refuse to acknowledge") from exc
         self._validate(v)
@@ -86,9 +155,10 @@ class CoverageWAL:
     def _write(self,v):
         self._validate(v)
         if self._state is not None:
-            disk=self._read()
-            if disk["revision"]!=self._state["revision"]:
+            if self._read()!=self._state:
                 raise CoverageLedgerError("WAL modified by other writer")
+        elif os.path.lexists(self.path):
+            raise CoverageLedgerError("WAL appeared during initialization")
         self.path.parent.mkdir(parents=True,exist_ok=True)
         fd,tmp=tempfile.mkstemp(prefix=".coverage-wal-",dir=self.path.parent)
         try:
@@ -107,6 +177,7 @@ class CoverageWAL:
     def _change(self,**fields):
         self._write({**self._state,**fields,"revision":self._state["revision"]+1})
 
+    @_serialized_writer
     def stage(self,event_id:str,cells:tuple[int,...],*,
               externally_validated:bool):
         """WAL fsync BEFORE acknowledging in either consumer checkpoint."""
@@ -129,9 +200,12 @@ class CoverageWAL:
         self._change(events=events)
 
     def pending(self):
-        return tuple(k for k,e in self._state["events"].items()
-                     if e["status"]=="pending")
+        with self._writer_lock():
+            self._require_fresh()
+            return tuple(k for k,e in self._state["events"].items()
+                         if e["status"]=="pending")
 
+    @_serialized_writer
     def project(self,event_id:str,job:CleaningJobs,campaign:SweepCampaign,
                 *,simulate_crash_after_job:bool=False,
                 simulate_crash_after_campaign:bool=False):
