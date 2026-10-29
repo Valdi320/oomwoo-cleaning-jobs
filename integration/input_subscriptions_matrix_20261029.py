@@ -12,10 +12,14 @@ CASES={
  "dock_state_to_other":"/dock_drive/state:=/another_state",
  "docked_to_other":"/dock_drive/docked:=/another_docked",
 }
+THREE_WAY_CASES={'three_nominal': None, 'sweep_to_nav': '/valdi/sweep_cmd_vel:=/valdi/nav2_cmd_vel', 'sweep_state_to_other': '/coverage_planner/motion_state:=/another_phase', 'map_to_other': '/map:=/another_map', 'clock_to_other': '/clock:=/another_clock', 'unstable_to_other': '/coverage_meter/sim_unstable:=/another_stability', 'tf_to_other': '/tf:=/another_tf', 'tf_static_to_other': '/tf_static:=/another_static_tf', 'three_output_to_motor': '/valdi/lab_safe_cmd_vel_output:=/cmd_vel'}
 def main():
     rows=[]
-    for name,rule in CASES.items():
+    three_way="--three-way" in sys.argv
+    cases=THREE_WAY_CASES if three_way else CASES
+    for name,rule in cases.items():
         args=[sys.executable,PROBE,"--case",name]
+        if three_way:args.append("--three-way")
         if rule:args+=["--ros-args","-r",rule]
         p=subprocess.run(args,capture_output=True,text=True,timeout=17)
         lines=[s.partition("LAB_INPUT_REMAP ")[2] for s in p.stdout.splitlines()
@@ -25,7 +29,8 @@ def main():
         passed=(p.returncode==0 and isinstance(obj,dict)
                 and obj.get("resolved")==obj.get("expected")
                 and obj.get("result")==("allowed" if rule is None else "denied_before_timer")
-                and obj.get("no_twists_published") is True)
+                and obj.get("no_twists_published") is True
+                and obj.get("three_way") is three_way)
         rows.append({"case":name,"pass":passed,"result":obj,
                      "returncode":p.returncode,"error_tail":"" if passed else
                      (p.stderr[-800:]+p.stdout[-300:])})

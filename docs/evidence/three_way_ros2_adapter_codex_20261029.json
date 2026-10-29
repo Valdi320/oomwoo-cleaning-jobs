@@ -1,0 +1,751 @@
+{
+  "date_utc": "2026-10-29T19:48:49.098659+00:00",
+  "base_commit": "3f0bf6dae840db460744c20aecdf79a0f3860754",
+  "scope": "Opt-in ThreeWayVelocityMux inside the existing ExperimentalDockVelocityRelay; same lab output, one selected policy and one existing timer. Real DDS/TF-cache/services, synthetic producers. No actual Nav2 action server, Gazebo or hardware.",
+  "source_sha256": {
+    "integration/input_subscriptions_matrix_20261029.py": "055bbbdcfa4dc4da0bfc39906804194993961bec0589d04b113f08c6788fb51e",
+    "integration/probe_ros2_input_topics_20261029.py": "a5cac7720a8ec7da78ea53956f4d25965ea7c5e1b89d076a7ade8610d4c1a8a1",
+    "integration/ros_dock_velocity_relay_probe.py": "cb2bbc244fc8c566ffbe1c2c59545883a73a6914abab1599db0073573106f742",
+    "src/oomwoo_cleaning_jobs/lab_topic_guard.py": "d78601568a158ddde71a94514e9f1de9d7d21c7639b9098b6e587d9ed80219c6",
+    "src/oomwoo_cleaning_jobs/ros_dock_velocity_relay.py": "b5f158da8f8962782deccad1dd58b4684c525d3967bbfa154383bc007b7c1464",
+    "tests/test_lab_input_topic_guard_20261029.py": "81c6a8c26a70388a823cb5685ed24c8472161b4acbd7613e6d2edc8b79911bbf",
+    "tests/test_ros_relay_battery_bounds_20261029.py": "a6c9171fa37f2fd85f2c122689eff57e740948dd98b14b8878706d93803969ef",
+    "tests/test_sequenced_motion_ingress_20261029.py": "55f2f8c29e0d5d6b332c6497dddcdcaecdbf327be6ce6b6ffcd4a48dd05efbb8"
+  },
+  "validation": {
+    "native_three_way": {
+      "actual_nav2_action_server": false,
+      "calls": [
+        {
+          "error": "new owner lacks fresh quiet/health/idle proofs",
+          "ok": false,
+          "op": "claim_sweep",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "new owner lacks fresh quiet/health/idle proofs",
+          "ok": false,
+          "op": "claim_sweep",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "release_motion",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "fresh exact Nav2 terminal/zero not observed",
+          "ok": false,
+          "op": "release_nav",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "release_nav",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_dock",
+          "state": "dock_drive"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "release_motion",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_sweep",
+          "state": "reactive_sweep"
+        },
+        {
+          "error": "new owner lacks fresh quiet/health/idle proofs",
+          "ok": false,
+          "op": "claim_sweep",
+          "state": "stopped"
+        }
+      ],
+      "checks": [
+        "missing_tf_denies_sweep",
+        "sweep_nonzero_through_real_dds",
+        "foreign_nav_command_revokes_sweep",
+        "percent_battery_revokes_and_denies_sweep",
+        "sweep_to_exact_uuid_nav_handoff",
+        "missing_nav_status_revokes_active_navigation",
+        "exact_uuid_nav_to_dock_handoff",
+        "software_dock_phase_release_not_physical_contact",
+        "tf_dropout_revokes_sweep",
+        "command_lease_expiry_is_stop",
+        "overspeed_rejected_without_raising_limits",
+        "second_writer_revokes_ownership",
+        "paused_ros_clock_does_not_suspend_output_watchdog",
+        "changed_map_latches_reconciliation_required"
+      ],
+      "elapsed_s": 20.19,
+      "final_owner": "stopped",
+      "limits": {
+        "max_angular": 0.8,
+        "max_linear": 0.25
+      },
+      "metadata": [
+        {
+          "keys": [
+            "publication_sequence_number",
+            "received_timestamp",
+            "reception_sequence_number",
+            "source_timestamp"
+          ],
+          "publication_sequence_number": 1,
+          "publisher_gid_bytes": 0,
+          "source_timestamp_positive": true,
+          "type": "dict"
+        }
+      ],
+      "ok": true,
+      "output_messages": 404,
+      "physical_contact_or_charging": false,
+      "scope": "actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot"
+    },
+    "native_resolved_constructor_remaps": {
+      "cases": [
+        {
+          "case": "three_nominal",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "three_nominal",
+            "expected": "/valdi/sweep_cmd_vel",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/valdi/sweep_cmd_vel",
+            "resolved": "/valdi/sweep_cmd_vel",
+            "result": "allowed",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "sweep_to_nav",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "sweep_to_nav",
+            "expected": "/valdi/nav2_cmd_vel",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/valdi/sweep_cmd_vel",
+            "resolved": "/valdi/nav2_cmd_vel",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "sweep_state_to_other",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "sweep_state_to_other",
+            "expected": "/another_phase",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/coverage_planner/motion_state",
+            "resolved": "/another_phase",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "map_to_other",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "map_to_other",
+            "expected": "/another_map",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/map",
+            "resolved": "/another_map",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "clock_to_other",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "clock_to_other",
+            "expected": "/another_clock",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/clock",
+            "resolved": "/another_clock",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "unstable_to_other",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "unstable_to_other",
+            "expected": "/another_stability",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/coverage_meter/sim_unstable",
+            "resolved": "/another_stability",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "tf_to_other",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "tf_to_other",
+            "expected": "/another_tf",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/tf",
+            "resolved": "/another_tf",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "tf_static_to_other",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "tf_static_to_other",
+            "expected": "/another_static_tf",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/tf_static",
+            "resolved": "/another_static_tf",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        },
+        {
+          "case": "three_output_to_motor",
+          "error_tail": "",
+          "pass": true,
+          "result": {
+            "case": "three_output_to_motor",
+            "expected": "/cmd_vel",
+            "motor_hardware": false,
+            "no_twists_published": true,
+            "nominal": "/valdi/lab_safe_cmd_vel_output",
+            "resolved": "/cmd_vel",
+            "result": "denied_before_timer",
+            "three_way": true
+          },
+          "returncode": 0
+        }
+      ],
+      "gazebo": false,
+      "hardware": false,
+      "pass": 9,
+      "real_ros2": true,
+      "total": 9,
+      "velocity_published": false
+    },
+    "legacy_two_way_dds": {
+      "battery_stop_reason_verified_for_both_owners": true,
+      "charging_bin_mop_verified": false,
+      "competing_nav2_revokes_dock_lease": true,
+      "docking_mechanically_confirmed": false,
+      "empty_status_revokes_nonzero_output": true,
+      "final_owner": "stopped",
+      "low_battery_revokes_lease": true,
+      "mode": "actual ROS2 middleware, SYNTHETIC Nav2/dock/odom and no physical motors",
+      "motor_hardware_connected": false,
+      "ok": true,
+      "old_terminal_uuid_cannot_release_current_lease": true,
+      "output_messages": 234,
+      "percent_style_battery_denies_admission": true,
+      "percent_style_battery_revokes_dock_lease": true,
+      "percent_style_battery_revokes_nav_lease": true,
+      "phases": [
+        {
+          "error": "isolated disposable simulator must be explicitly selected",
+          "ok": false,
+          "op": "claim_nav",
+          "state": "stopped"
+        },
+        {
+          "error": "nav owner cannot arm without idle motor and dock proof",
+          "ok": false,
+          "op": "claim_nav",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "release_for_dock",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_dock",
+          "state": "dock_drive"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "finish_dock",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "release_for_dock",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_dock",
+          "state": "dock_drive"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_nav",
+          "state": "navigation"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "release_for_dock",
+          "state": "stopped"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "claim_dock",
+          "state": "dock_drive"
+        },
+        {
+          "error": "",
+          "ok": true,
+          "op": "stop",
+          "state": "stopped"
+        },
+        {
+          "error": "request ID replayed with different command",
+          "ok": false,
+          "op": "claim_nav",
+          "state": "stopped"
+        }
+      ],
+      "ros2_typed_service": true,
+      "test_output_negative_dock": -0.08,
+      "test_output_positive_nav2": 0.23,
+      "unknown_nav2_active_uuid_revokes_lease": true,
+      "zero_on_each_stale_owner": true
+    },
+    "focused_modules": {
+      "input_guard": 12,
+      "battery_legacy_callback": 6,
+      "sequenced_and_metadata": 24,
+      "output_guard": 10
+    },
+    "new_full_suite_run": false,
+    "nonfunctional_after_final_dds": "Expanded two callback conditional expressions into equivalent if/else and removed one blank line; no behavior change."
+  },
+  "confirmed_failure_and_fix": {
+    "first": "Native Jazzy MessageInfo has no publisher_gid; initial attempt rejected every command. Read actual subscription callback contract and used observed unique graph endpoints plus native publication sequence and DDS wall timestamp. No fabricated packet identity.",
+    "second": "A cached ACTIVE UUID survived missing Nav2 status because the local health refresh kept supplying it; native dropout case red. Active UUID now omitted after the existing 1s nonzero-NAV status budget, revoking ownership. Enlarged native scenario14/14 PASS."
+  },
+  "observation_contracts": {
+    "pose": "Common map->base_link TF positive timestamp/ageROS0..500ms; finite position in a free static map cell, not a swept-footprint proof.",
+    "resources": "Observed finite BatteryState fraction [.20,1] at admission / [.15,1] while active; simulation battery proxy only, not water/bin/charging telemetry.",
+    "map": "Validated Raster and stable digest; invalid/replaced map latches fault pending restart/reconciliation.",
+    "sim_health": "Clock must advance within350ms monotonic; stability=False observed within2.5s; known sweep/dock software phases fresh1s/3s. Not a physical MCU loop.",
+    "graph": "One graph endpoint per command topic, three distinct endpoint GIDs, one self-named lab output and zero /cmd_vel publishers. Endpoint changes/duplicates stop as observed; discovery is not atomic authentication.",
+    "command_ingress": "Native DDS publication sequence/timestamp strict, replay history survives STOP, source timestamp must follow the current claim and be <=300ms old in the same-host wall clock. Jazzy exposes no per-packet GID; graph association cannot authenticate packets.",
+    "nav": "Exact preallocated UUID and matching map digest in durable GoalJournal before claim; current ACTIVE evidence and exact terminal/status journal agreement before release.",
+    "handoffs": "Existing continuous quiet odometry after release; non-NAV release requires fresh zero and inactive software phase. DONE/Bool is no electrical or mechanical contact proof.",
+    "timer": "Only existing50ms output timer selected; three-way mode uses steady clock so paused /clock does not suspend checks."
+  },
+  "process_bounds": {
+    "host": "MemoryMax4G/MemorySwapMax512M CPUQuota100%; fresh LIBRE before each focal run",
+    "container": "read-only,networknone,2g memory,3CPU,180PIDs; cached Jazzy image,no pull",
+    "rosidl": "Only existing lab interface package built in container /tmp, no denied Keepout output-bind build retried"
+  },
+  "records": {
+    "native_first": {
+      "rc": 1,
+      "seconds": 13.51,
+      "lock": "LIBRE: carga 0.54, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "args": [
+        "podman",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--security-opt=label=disable",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,size=1024m,mode=1777",
+        "--memory=2g",
+        "--cpus=3",
+        "--pids-limit=180",
+        "-e",
+        "HOME=/tmp",
+        "-e",
+        "ROS_LOG_DIR=/tmp/roslogs",
+        "-e",
+        "ROS_DOMAIN_ID=88",
+        "-e",
+        "ROS_LOCALHOST_ONLY=1",
+        "-v",
+        "/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/validation/cleaning-jobs-b7a0154:/work:ro",
+        "--entrypoint",
+        "/bin/bash",
+        "docker.io/makerspet/oomwoo:jazzy-dev",
+        "-lc",
+        "set -eo pipefail; source /opt/ros/jazzy/setup.bash; mkdir -p /tmp/valdi_ros_ws/src; cp -r /work/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces; cd /tmp/valdi_ros_ws; colcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 2 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 70 /tmp/rosidl_build.log; exit 3; }; source /tmp/valdi_ros_ws/install/setup.bash; PYTHONPATH=/work/src:${PYTHONPATH:-} python3 /work/integration/ros_dock_velocity_relay_probe.py --three-way"
+      ],
+      "stdout": "",
+      "stderr": "[WARN] [1793302312.262511613] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793302312.262523143] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\nTraceback (most recent call last):\n  File \"/work/integration/ros_dock_velocity_relay_probe.py\", line 511, in <module>\n    main_three_way() if \"--three-way\" in sys.argv else main()\n    ^^^^^^^^^^^^^^^^\n  File \"/work/integration/ros_dock_velocity_relay_probe.py\", line 431, in main_three_way\n    shared[\"tf\"]=True;quiet();sweep()\n                              ^^^^^^^\n  File \"/work/integration/ros_dock_velocity_relay_probe.py\", line 422, in sweep\n    reply=call(\"claim_sweep\");assert reply.ok,(calls,relay._motion_health(),relay.mux.stop_reason,metadata)\n                                     ^^^^^^^^\nAssertionError: ([{'op': 'claim_sweep', 'ok': False, 'state': 'stopped', 'error': 'new owner lacks fresh quiet/health/idle proofs'}, {'op': 'claim_sweep', 'ok': False, 'state': 'stopped', 'error': 'new owner lacks fresh quiet/health/idle proofs'}], MotionHealth(pose_fresh=True, resources_ok=True, map_current=True, safety_loop_ok=True, isolated_sources=True, nav2_idle=True, nav2_active_goal=None, dock_inactive=True, sweep_inactive=True), \"'publisher_gid'\", [{'type': 'dict', 'keys': ['publication_sequence_number', 'received_timestamp', 'reception_sequence_number', 'source_timestamp'], 'source_timestamp_positive': True, 'publisher_gid_bytes': 0}])\n"
+    },
+    "native_13": {
+      "rc": 0,
+      "seconds": 29.23,
+      "lock": "LIBRE: carga 0.73, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "args": [
+        "podman",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--security-opt=label=disable",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,size=1024m,mode=1777",
+        "--memory=2g",
+        "--cpus=3",
+        "--pids-limit=180",
+        "-e",
+        "HOME=/tmp",
+        "-e",
+        "ROS_LOG_DIR=/tmp/roslogs",
+        "-e",
+        "ROS_DOMAIN_ID=88",
+        "-e",
+        "ROS_LOCALHOST_ONLY=1",
+        "-v",
+        "/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/validation/cleaning-jobs-b7a0154:/work:ro",
+        "--entrypoint",
+        "/bin/bash",
+        "docker.io/makerspet/oomwoo:jazzy-dev",
+        "-lc",
+        "set -eo pipefail; source /opt/ros/jazzy/setup.bash; mkdir -p /tmp/valdi_ros_ws/src; cp -r /work/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces; cd /tmp/valdi_ros_ws; colcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 2 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 70 /tmp/rosidl_build.log; exit 3; }; source /tmp/valdi_ros_ws/install/setup.bash; PYTHONPATH=/work/src:${PYTHONPATH:-} python3 /work/integration/ros_dock_velocity_relay_probe.py --three-way"
+      ],
+      "stdout": "ROS2_THREE_WAY_RELAY {\"actual_nav2_action_server\": false, \"calls\": [{\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_motion\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_nav\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_dock\", \"state\": \"dock_drive\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_motion\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}], \"checks\": [\"missing_tf_denies_sweep\", \"sweep_nonzero_through_real_dds\", \"foreign_nav_command_revokes_sweep\", \"percent_battery_revokes_and_denies_sweep\", \"sweep_to_exact_uuid_nav_handoff\", \"exact_uuid_nav_to_dock_handoff\", \"software_dock_phase_release_not_physical_contact\", \"tf_dropout_revokes_sweep\", \"command_lease_expiry_is_stop\", \"overspeed_rejected_without_raising_limits\", \"second_writer_revokes_ownership\", \"paused_ros_clock_does_not_suspend_output_watchdog\", \"changed_map_latches_reconciliation_required\"], \"elapsed_s\": 17.99, \"final_owner\": \"stopped\", \"limits\": {\"max_angular\": 0.8, \"max_linear\": 0.25}, \"metadata\": [{\"keys\": [\"publication_sequence_number\", \"received_timestamp\", \"reception_sequence_number\", \"source_timestamp\"], \"publication_sequence_number\": 1, \"publisher_gid_bytes\": 0, \"source_timestamp_positive\": true, \"type\": \"dict\"}], \"ok\": true, \"output_messages\": 360, \"physical_contact_or_charging\": false, \"scope\": \"actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot\"}\n",
+      "stderr": "[WARN] [1793302434.306485201] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793302434.306497351] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n"
+    },
+    "nav_status_red": {
+      "rc": 1,
+      "seconds": 19.66,
+      "lock": "LIBRE: carga 0.55, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "args": [
+        "podman",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--security-opt=label=disable",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,size=1024m,mode=1777",
+        "--memory=2g",
+        "--cpus=3",
+        "--pids-limit=180",
+        "-e",
+        "HOME=/tmp",
+        "-e",
+        "ROS_LOG_DIR=/tmp/roslogs",
+        "-e",
+        "ROS_DOMAIN_ID=88",
+        "-e",
+        "ROS_LOCALHOST_ONLY=1",
+        "-v",
+        "/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/validation/cleaning-jobs-b7a0154:/work:ro",
+        "--entrypoint",
+        "/bin/bash",
+        "docker.io/makerspet/oomwoo:jazzy-dev",
+        "-lc",
+        "set -eo pipefail; source /opt/ros/jazzy/setup.bash; mkdir -p /tmp/valdi_ros_ws/src; cp -r /work/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces; cd /tmp/valdi_ros_ws; colcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 2 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 70 /tmp/rosidl_build.log; exit 3; }; source /tmp/valdi_ros_ws/install/setup.bash; PYTHONPATH=/work/src:${PYTHONPATH:-} python3 /work/integration/ros_dock_velocity_relay_probe.py --three-way"
+      ],
+      "stdout": "",
+      "stderr": "[WARN] [1793302875.113957778] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793302875.113967708] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\nTraceback (most recent call last):\n  File \"/work/integration/ros_dock_velocity_relay_probe.py\", line 531, in <module>\n    main_three_way() if \"--three-way\" in sys.argv else main()\n    ^^^^^^^^^^^^^^^^\n  File \"/work/integration/ros_dock_velocity_relay_probe.py\", line 456, in main_three_way\n    assert until(lambda:relay.mux.owner==relay.mux.STOP,1.5), \\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: expired Nav2 status retained nonzero ownership\n"
+    },
+    "native_final": {
+      "rc": 0,
+      "seconds": 31.18,
+      "lock": "LIBRE: carga 0.44, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "args": [
+        "podman",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--security-opt=label=disable",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,size=1024m,mode=1777",
+        "--memory=2g",
+        "--cpus=3",
+        "--pids-limit=180",
+        "-e",
+        "HOME=/tmp",
+        "-e",
+        "ROS_LOG_DIR=/tmp/roslogs",
+        "-e",
+        "ROS_DOMAIN_ID=88",
+        "-e",
+        "ROS_LOCALHOST_ONLY=1",
+        "-v",
+        "/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/validation/cleaning-jobs-b7a0154:/work:ro",
+        "--entrypoint",
+        "/bin/bash",
+        "docker.io/makerspet/oomwoo:jazzy-dev",
+        "-lc",
+        "set -eo pipefail; source /opt/ros/jazzy/setup.bash; mkdir -p /tmp/valdi_ros_ws/src; cp -r /work/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces; cd /tmp/valdi_ros_ws; colcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 2 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 70 /tmp/rosidl_build.log; exit 3; }; source /tmp/valdi_ros_ws/install/setup.bash; PYTHONPATH=/work/src:${PYTHONPATH:-} python3 /work/integration/ros_dock_velocity_relay_probe.py --three-way"
+      ],
+      "stdout": "ROS2_THREE_WAY_RELAY {\"actual_nav2_action_server\": false, \"calls\": [{\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_motion\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"fresh exact Nav2 terminal/zero not observed\", \"ok\": false, \"op\": \"release_nav\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_nav\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_dock\", \"state\": \"dock_drive\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_motion\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}], \"checks\": [\"missing_tf_denies_sweep\", \"sweep_nonzero_through_real_dds\", \"foreign_nav_command_revokes_sweep\", \"percent_battery_revokes_and_denies_sweep\", \"sweep_to_exact_uuid_nav_handoff\", \"missing_nav_status_revokes_active_navigation\", \"exact_uuid_nav_to_dock_handoff\", \"software_dock_phase_release_not_physical_contact\", \"tf_dropout_revokes_sweep\", \"command_lease_expiry_is_stop\", \"overspeed_rejected_without_raising_limits\", \"second_writer_revokes_ownership\", \"paused_ros_clock_does_not_suspend_output_watchdog\", \"changed_map_latches_reconciliation_required\"], \"elapsed_s\": 20.19, \"final_owner\": \"stopped\", \"limits\": {\"max_angular\": 0.8, \"max_linear\": 0.25}, \"metadata\": [{\"keys\": [\"publication_sequence_number\", \"received_timestamp\", \"reception_sequence_number\", \"source_timestamp\"], \"publication_sequence_number\": 1, \"publisher_gid_bytes\": 0, \"source_timestamp_positive\": true, \"type\": \"dict\"}], \"ok\": true, \"output_messages\": 404, \"physical_contact_or_charging\": false, \"scope\": \"actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot\"}\n",
+      "stderr": "[WARN] [1793302932.044018111] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793302932.044028621] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n"
+    },
+    "legacy_dds": {
+      "rc": 0,
+      "seconds": 22.74,
+      "lock": "LIBRE: carga 0.47, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "args": [
+        "podman",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--security-opt=label=disable",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,size=1024m,mode=1777",
+        "--memory=2g",
+        "--cpus=3",
+        "--pids-limit=180",
+        "-e",
+        "HOME=/tmp",
+        "-e",
+        "ROS_LOG_DIR=/tmp/roslogs",
+        "-e",
+        "ROS_DOMAIN_ID=88",
+        "-e",
+        "ROS_LOCALHOST_ONLY=1",
+        "-v",
+        "/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/validation/cleaning-jobs-b7a0154:/work:ro",
+        "--entrypoint",
+        "/bin/bash",
+        "docker.io/makerspet/oomwoo:jazzy-dev",
+        "-lc",
+        "set -eo pipefail; source /opt/ros/jazzy/setup.bash; mkdir -p /tmp/valdi_ros_ws/src; cp -r /work/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces; cd /tmp/valdi_ros_ws; colcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 2 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 70 /tmp/rosidl_build.log; exit 3; }; source /tmp/valdi_ros_ws/install/setup.bash; PYTHONPATH=/work/src:${PYTHONPATH:-} python3 /work/integration/ros_dock_velocity_relay_probe.py"
+      ],
+      "stdout": "ROS2_DOCK_RELAY {\"battery_stop_reason_verified_for_both_owners\": true, \"charging_bin_mop_verified\": false, \"competing_nav2_revokes_dock_lease\": true, \"docking_mechanically_confirmed\": false, \"empty_status_revokes_nonzero_output\": true, \"final_owner\": \"stopped\", \"low_battery_revokes_lease\": true, \"mode\": \"actual ROS2 middleware, SYNTHETIC Nav2/dock/odom and no physical motors\", \"motor_hardware_connected\": false, \"ok\": true, \"old_terminal_uuid_cannot_release_current_lease\": true, \"output_messages\": 234, \"percent_style_battery_denies_admission\": true, \"percent_style_battery_revokes_dock_lease\": true, \"percent_style_battery_revokes_nav_lease\": true, \"phases\": [{\"error\": \"isolated disposable simulator must be explicitly selected\", \"ok\": false, \"op\": \"claim_nav\", \"state\": \"stopped\"}, {\"error\": \"nav owner cannot arm without idle motor and dock proof\", \"ok\": false, \"op\": \"claim_nav\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_for_dock\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_dock\", \"state\": \"dock_drive\"}, {\"error\": \"\", \"ok\": true, \"op\": \"finish_dock\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_for_dock\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_dock\", \"state\": \"dock_drive\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_for_dock\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_dock\", \"state\": \"dock_drive\"}, {\"error\": \"\", \"ok\": true, \"op\": \"stop\", \"state\": \"stopped\"}, {\"error\": \"request ID replayed with different command\", \"ok\": false, \"op\": \"claim_nav\", \"state\": \"stopped\"}], \"ros2_typed_service\": true, \"test_output_negative_dock\": -0.08, \"test_output_positive_nav2\": 0.23, \"unknown_nav2_active_uuid_revokes_lease\": true, \"zero_on_each_stale_owner\": true}\n",
+      "stderr": "[WARN] [1793302554.182322118] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793302554.182333778] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n"
+    },
+    "native_remaps": {
+      "rc": 0,
+      "seconds": 15.58,
+      "lock": "LIBRE: carga 0.41, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "args": [
+        "podman",
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network=none",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--security-opt=label=disable",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,size=1024m,mode=1777",
+        "--memory=2g",
+        "--cpus=3",
+        "--pids-limit=180",
+        "-e",
+        "HOME=/tmp",
+        "-e",
+        "ROS_LOG_DIR=/tmp/roslogs",
+        "-e",
+        "ROS_DOMAIN_ID=88",
+        "-e",
+        "ROS_LOCALHOST_ONLY=1",
+        "-v",
+        "/var/home/Valdi/Documents/Codex/2026-10-29/apoyo-oomwoo/validation/cleaning-jobs-b7a0154:/work:ro",
+        "--entrypoint",
+        "/bin/bash",
+        "docker.io/makerspet/oomwoo:jazzy-dev",
+        "-lc",
+        "set -eo pipefail; source /opt/ros/jazzy/setup.bash; mkdir -p /tmp/valdi_ros_ws/src; cp -r /work/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces; cd /tmp/valdi_ros_ws; colcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 2 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 70 /tmp/rosidl_build.log; exit 3; }; source /tmp/valdi_ros_ws/install/setup.bash; PYTHONPATH=/work/src:${PYTHONPATH:-} python3 /work/integration/input_subscriptions_matrix_20261029.py --three-way"
+      ],
+      "stdout": "LAB_INPUT_MATRIX {\"cases\": [{\"case\": \"three_nominal\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"three_nominal\", \"expected\": \"/valdi/sweep_cmd_vel\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/valdi/sweep_cmd_vel\", \"resolved\": \"/valdi/sweep_cmd_vel\", \"result\": \"allowed\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"sweep_to_nav\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"sweep_to_nav\", \"expected\": \"/valdi/nav2_cmd_vel\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/valdi/sweep_cmd_vel\", \"resolved\": \"/valdi/nav2_cmd_vel\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"sweep_state_to_other\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"sweep_state_to_other\", \"expected\": \"/another_phase\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/coverage_planner/motion_state\", \"resolved\": \"/another_phase\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"map_to_other\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"map_to_other\", \"expected\": \"/another_map\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/map\", \"resolved\": \"/another_map\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"clock_to_other\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"clock_to_other\", \"expected\": \"/another_clock\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/clock\", \"resolved\": \"/another_clock\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"unstable_to_other\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"unstable_to_other\", \"expected\": \"/another_stability\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/coverage_meter/sim_unstable\", \"resolved\": \"/another_stability\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"tf_to_other\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"tf_to_other\", \"expected\": \"/another_tf\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/tf\", \"resolved\": \"/another_tf\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"tf_static_to_other\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"tf_static_to_other\", \"expected\": \"/another_static_tf\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/tf_static\", \"resolved\": \"/another_static_tf\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}, {\"case\": \"three_output_to_motor\", \"error_tail\": \"\", \"pass\": true, \"result\": {\"case\": \"three_output_to_motor\", \"expected\": \"/cmd_vel\", \"motor_hardware\": false, \"no_twists_published\": true, \"nominal\": \"/valdi/lab_safe_cmd_vel_output\", \"resolved\": \"/cmd_vel\", \"result\": \"denied_before_timer\", \"three_way\": true}, \"returncode\": 0}], \"gazebo\": false, \"hardware\": false, \"pass\": 9, \"real_ros2\": true, \"total\": 9, \"velocity_published\": false}\n",
+      "stderr": ""
+    },
+    "input_units": {
+      "rc": 0,
+      "seconds": 0.09,
+      "lock": "LIBRE: carga 0.54, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "stdout": "",
+      "stderr": "test_01_nominal (test_lab_input_topic_guard_20261029.TestInputIsolation.test_01_nominal) ... ok\ntest_02_nav_dock_alias (test_lab_input_topic_guard_20261029.TestInputIsolation.test_02_nav_dock_alias) ... ok\ntest_03_dock_nav_alias (test_lab_input_topic_guard_20261029.TestInputIsolation.test_03_dock_nav_alias) ... ok\ntest_04_wrong_odom_source (test_lab_input_topic_guard_20261029.TestInputIsolation.test_04_wrong_odom_source) ... ok\ntest_05_wrong_nav_status (test_lab_input_topic_guard_20261029.TestInputIsolation.test_05_wrong_nav_status) ... ok\ntest_06_each_witness_rejected_when_remapped (test_lab_input_topic_guard_20261029.TestInputIsolation.test_06_each_witness_rejected_when_remapped) ... ok\ntest_07_missing_extra (test_lab_input_topic_guard_20261029.TestInputIsolation.test_07_missing_extra) ... ok\ntest_08_broken_nonstring_relative (test_lab_input_topic_guard_20261029.TestInputIsolation.test_08_broken_nonstring_relative) ... ok\ntest_09_distinct_handles (test_lab_input_topic_guard_20261029.TestInputIsolation.test_09_distinct_handles) ... ok\ntest_10_guard_before_timer (test_lab_input_topic_guard_20261029.TestInputIsolation.test_10_guard_before_timer) ... ok\ntest_11_three_way_requires_all_fourteen_resolved_handles (test_lab_input_topic_guard_20261029.TestInputIsolation.test_11_three_way_requires_all_fourteen_resolved_handles) ... ok\ntest_12_no_implicit_upgrade_or_missing_health (test_lab_input_topic_guard_20261029.TestInputIsolation.test_12_no_implicit_upgrade_or_missing_health) ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 0.001s\n\nOK\n"
+    },
+    "battery_units": {
+      "rc": 0,
+      "seconds": 0.25,
+      "lock": "LIBRE: carga 0.54, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "stdout": "",
+      "stderr": "test_above_one_cannot_arm_even_with_other_proofs_healthy (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_above_one_cannot_arm_even_with_other_proofs_healthy) ... ok\ntest_invalid_high_battery_revokes_both_active_owners (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_invalid_high_battery_revokes_both_active_owners) ... ok\ntest_low_and_nonfinite_values_remain_denied (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_low_and_nonfinite_values_remain_denied) ... ok\ntest_percent_style_100_does_not_arm_navigation (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_percent_style_100_does_not_arm_navigation) ... ok\ntest_valid_active_range_keeps_existing_stop_threshold (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_valid_active_range_keeps_existing_stop_threshold) ... ok\ntest_valid_admission_range_keeps_existing_boundaries (test_ros_relay_battery_bounds_20261029.ROSRelayBatteryBoundsTests.test_valid_admission_range_keeps_existing_boundaries) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.158s\n\nOK\n"
+    },
+    "metadata_units": {
+      "rc": 0,
+      "seconds": 0.19,
+      "lock": "LIBRE: carga 0.47, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "stdout": "",
+      "stderr": "test_history_survives_stop_and_fresh_claim (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_history_survives_stop_and_fresh_claim) ... ok\ntest_missing_unsupported_or_stale_metadata_cannot_move (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_missing_unsupported_or_stale_metadata_cannot_move) ... ok\ntest_preclaim_packet_does_not_acquire_new_token (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_preclaim_packet_does_not_acquire_new_token) ... ok\ntest_real_method_accepts_supported_sequence_and_epoch (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_real_method_accepts_supported_sequence_and_epoch) ... ok\ntest_replaced_endpoint_or_second_writer_cannot_inherit_lease (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_replaced_endpoint_or_second_writer_cannot_inherit_lease) ... ok\ntest_sequence_replay_and_reordered_timestamp_revoke (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_sequence_replay_and_reordered_timestamp_revoke) ... ok\ntest_bool_sequence_is_not_a_valid_uint (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_bool_sequence_is_not_a_valid_uint) ... ok\ntest_cold_start_stays_stopped (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_cold_start_stays_stopped) ... ok\ntest_foreign_source_odom_revokes_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_foreign_source_odom_revokes_lease) ... ok\ntest_foreign_supervisor_health_revokes_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_foreign_supervisor_health_revokes_lease) ... ok\ntest_fresh_forward_sequences_cannot_revive_expired_motion_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_fresh_forward_sequences_cannot_revive_expired_motion_lease) ... ok\ntest_future_odom_measurement_revokes_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_future_odom_measurement_revokes_lease) ... ok\ntest_good_sequenced_stream_allows_motion (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_good_sequenced_stream_allows_motion) ... ok\ntest_mismatched_backend_reconciliation_cannot_arm (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_mismatched_backend_reconciliation_cannot_arm) ... ok\ntest_new_health_can_confirm_foreign_nav_goal_and_stop (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_new_health_can_confirm_foreign_nav_goal_and_stop) ... ok\ntest_nonfinite_measurement_timestamp_revokes_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_nonfinite_measurement_timestamp_revokes_lease) ... ok\ntest_parameters_reject_evidence_window_wider_than_watchdog (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_parameters_reject_evidence_window_wider_than_watchdog) ... ok\ntest_rejected_transit_claim_preserves_sequenced_original_owner (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_rejected_transit_claim_preserves_sequenced_original_owner) ... ok\ntest_reordered_health_measurement_time_revokes_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_reordered_health_measurement_time_revokes_lease) ... ok\ntest_replayed_health_sequence_cannot_renew_health (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_replayed_health_sequence_cannot_renew_health) ... ok\ntest_replayed_odom_sequence_revokes_live_lease (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_replayed_odom_sequence_revokes_live_lease) ... ok\ntest_stale_event_with_forward_sequence_is_rejected (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_stale_event_with_forward_sequence_is_rejected) ... ok\ntest_stale_health_measurement_cannot_be_retimestamped (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_stale_health_measurement_cannot_be_retimestamped) ... ok\ntest_stop_does_not_reset_replay_guard (test_sequenced_motion_ingress_20261029.TestSequencedEvidenceIngress.test_stop_does_not_reset_replay_guard) ... ok\n\n----------------------------------------------------------------------\nRan 24 tests in 0.095s\n\nOK\n"
+    },
+    "output_units": {
+      "rc": 0,
+      "seconds": 0.09,
+      "lock": "LIBRE: carga 0.52, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: LIBRE AHORA (15052 MiB); usa igualmente el turno para impedir que la IA se recargue a mitad del trabajo. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+      "stdout": "",
+      "stderr": "test_01_exact_absolute_lab_topic_allowed (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_01_exact_absolute_lab_topic_allowed) ... ok\ntest_02_cmd_vel_remap_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_02_cmd_vel_remap_rejected) ... ok\ntest_03_diff_drive_motor_alias_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_03_diff_drive_motor_alias_rejected) ... ok\ntest_04_nearby_lab_prefix_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_04_nearby_lab_prefix_rejected) ... ok\ntest_05_other_namespace_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_05_other_namespace_rejected) ... ok\ntest_06_relative_name_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_06_relative_name_rejected) ... ok\ntest_07_non_string_or_missing_topic_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_07_non_string_or_missing_topic_rejected) ... ok\ntest_08_property_failure_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_08_property_failure_rejected) ... ok\ntest_09_whitespace_and_unicode_alias_rejected (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_09_whitespace_and_unicode_alias_rejected) ... ok\ntest_10_relay_calls_guard_before_creating_its_timer (test_lab_topic_guard_20261029.TestResolvedLabPublisher.test_10_relay_calls_guard_before_creating_its_timer) ... ok\n\n----------------------------------------------------------------------\nRan 10 tests in 0.000s\n\nOK\n"
+    }
+  },
+  "remaining": [
+    "Connect actual CoveragePlanner phase and command sources plus Nav2 pre-send UUID/lease handoff; this probe supplies synthetic phase/status streams.",
+    "Validate actual Nav2 status/feedback cadence and5Hz simulator source cadence against monotonic300ms command budget; do not widen limits to conceal expiry.",
+    "Remap real Nav2 and DockDrive outputs into private input channels and verify the Gazebo bridge has a single final writer.",
+    "Actual producer defaults0.35m/s/1.0rad/s exceed this mux0.25/0.8 and must be configured coherently, not raised by convenience.",
+    "Full three-way Gazebo trajectory/docking, direct-drive Keepout, independent actuator watchdog, ARM and physical material/electrical tests remain unfinished."
+  ],
+  "hardware": "Owner explicitly confirms no hardware: design and simulation only.",
+  "remote_write": false
+}

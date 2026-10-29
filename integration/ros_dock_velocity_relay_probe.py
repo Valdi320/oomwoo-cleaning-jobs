@@ -321,4 +321,211 @@ def main():
         scratch.cleanup()
 
 
-if __name__=="__main__":main()
+
+def main_three_way():
+    """Exercise the same relay's three-way mode with real DDS, synthetic inputs."""
+    from geometry_msgs.msg import TransformStamped
+    from nav_msgs.msg import OccupancyGrid
+    from rosgraph_msgs.msg import Clock as ClockMessage
+    from tf2_msgs.msg import TFMessage
+
+    rclpy.init(args=[])
+    scratch=tempfile.TemporaryDirectory(prefix="valdi-three-way-dds-")
+    journal_path=Path(scratch.name)/"uuid.json"
+    journal=GoalJournal(journal_path)
+    relay=ExperimentalDockVelocityRelay(parameter_overrides=[
+        Parameter("simulation_lab",value=True),Parameter("three_way",value=True),
+        Parameter("use_sim_time",value=True),
+        Parameter("goal_journal_path",value=str(journal_path))])
+    source=Node("oomwoo_three_way_sim_observations")
+    producers=[Node(name) for name in ("controller_server","coverage_planner","dock_drive")]
+    ex=SingleThreadedExecutor()
+    for node in [relay,source,*producers]:ex.add_node(node)
+    latched=QoSProfile(depth=1,reliability=QoSReliabilityPolicy.RELIABLE,
+                      durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
+    publishers={role:node.create_publisher(Twist,topic,10) for role,node,topic in zip(
+        ("nav","sweep","dock"),producers,
+        ("/valdi/nav2_cmd_vel","/valdi/sweep_cmd_vel","/valdi/dock_drive_cmd_vel"))}
+    odom=source.create_publisher(Odometry,"/odom",10)
+    battery=source.create_publisher(BatteryState,"/battery_state",10)
+    clock=source.create_publisher(ClockMessage,"/clock",10)
+    tf=source.create_publisher(TFMessage,"/tf",10)
+    map_pub=source.create_publisher(OccupancyGrid,"/map",latched)
+    unstable=source.create_publisher(Bool,"/coverage_meter/sim_unstable",10)
+    nav_status=source.create_publisher(GoalStatusArray,"/navigate_to_pose/_action/status",latched)
+    sweep_state=producers[1].create_publisher(String,"/coverage_planner/motion_state",10)
+    dock_state=producers[2].create_publisher(String,"/dock_drive/state",10)
+    docked=producers[2].create_publisher(Bool,"/dock_drive/docked",latched)
+    control=source.create_client(ControlCleaning,"/valdi/relay/control")
+    outputs=[];metadata=[];checks=[];calls=[]
+    source.create_subscription(Twist,"/valdi/lab_safe_cmd_vel_output",
+        lambda m:outputs.append((time.monotonic(),m.linear.x,m.angular.z)),10)
+    def tap(msg,info):
+        if not metadata:
+            metadata.append({"type":type(info).__name__,"keys":sorted(info),
+                "source_timestamp_positive":info.get("source_timestamp",0)>0,
+                "publisher_gid_bytes":len(info.get("publisher_gid",[])),
+                "publication_sequence_number":info.get("publication_sequence_number")})
+    source.create_subscription(Twist,"/valdi/sweep_cmd_vel",tap,10)
+    shared={"nav":0.,"sweep":0.,"dock":0.,"battery":.92,"tf":False,"clock":True,
+        "sweep_state":"IDLE","dock_state":"IDLE","docked":False,
+        "status":(),"changed_map":False,"publish_sweep":True,"publish_status":True}
+    grid=OccupancyGrid();grid.header.frame_id="map"
+    grid.info.width=grid.info.height=20;grid.info.resolution=.25
+    grid.info.origin.position.x=grid.info.origin.position.y=-2.5
+    grid.info.origin.orientation.w=1.;grid.data=[0]*400
+    def emit():
+        if shared["clock"]:
+            message=ClockMessage();message.clock=source.get_clock().now().to_msg();clock.publish(message)
+        stamp=relay.get_clock().now().to_msg()
+        for role,publisher in publishers.items():
+            if role=="sweep" and not shared["publish_sweep"]:continue
+            message=Twist();message.linear.x=shared[role];publisher.publish(message)
+        message=Odometry();message.header.frame_id="odom";message.child_frame_id="base_footprint"
+        message.header.stamp=stamp;odom.publish(message)
+        bat=BatteryState();bat.percentage=shared["battery"];battery.publish(bat)
+        if shared["tf"]:
+            transform=TransformStamped();transform.header.frame_id="map";transform.child_frame_id="base_link"
+            transform.header.stamp=stamp;transform.transform.rotation.w=1.
+            tf.publish(TFMessage(transforms=[transform]))
+        grid.data[1]=100 if shared["changed_map"] else 0
+        map_pub.publish(grid)
+        unstable.publish(Bool(data=False))
+        sweep_state.publish(String(data=shared["sweep_state"]))
+        dock_state.publish(String(data=shared["dock_state"]))
+        docked.publish(Bool(data=shared["docked"]))
+        arr=GoalStatusArray()
+        for uuid,code in shared["status"]:
+            row=GoalStatus();row.status=code;row.goal_info.goal_id.uuid=list(bytes.fromhex(uuid))
+            arr.status_list.append(row)
+        if shared["publish_status"]:nav_status.publish(arr)
+    source.create_timer(.05,emit)
+    def until(condition,seconds):
+        deadline=time.monotonic()+seconds
+        while time.monotonic()<deadline:
+            ex.spin_once(timeout_sec=.01)
+            if condition():return True
+        return False
+    def stable(seconds):until(lambda:False,seconds)
+    def output(value,seconds=.8):
+        return until(lambda:outputs and math.isclose(outputs[-1][1],value,abs_tol=.002),seconds)
+    def call(operation):
+        request=ControlCleaning.Request();request.request_id="three-"+str(len(calls))
+        request.operation=operation;request.isolated_disposable_sim=True
+        future=control.call_async(request)
+        assert until(future.done,3.),"typed service timed out"
+        reply=future.result();calls.append({"op":operation,"ok":reply.ok,"state":reply.state,"error":reply.error})
+        return reply
+    def quiet():
+        shared.update(nav=0.,sweep=0.,dock=0.,sweep_state="IDLE",dock_state="IDLE",docked=False)
+        stable(1.05)
+    def sweep():
+        reply=call("claim_sweep");assert reply.ok,(calls,relay._motion_health(),relay.mux.stop_reason,metadata)
+        shared.update(sweep=.18,sweep_state="SWEEP")
+        assert output(.18),(calls,relay._motion_health(),relay.mux.stop_reason,metadata)
+    started=time.monotonic()
+    try:
+        assert until(lambda:control.service_is_ready() and outputs,4.)
+        stable(1.1)
+        assert not call("claim_sweep").ok,"missing TF admitted motion"
+        checks.append("missing_tf_denies_sweep")
+        shared["tf"]=True;quiet();sweep()
+        checks.append("sweep_nonzero_through_real_dds")
+        shared["nav"]=.12
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.)
+        assert output(0.)
+        checks.append("foreign_nav_command_revokes_sweep")
+        quiet();sweep();shared["battery"]=100.
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.) and output(0.)
+        shared.update(nav=0.,sweep=0.,sweep_state="IDLE");stable(1.)
+        assert not call("claim_sweep").ok
+        shared["battery"]=.92;quiet();sweep()
+        checks.append("percent_battery_revokes_and_denies_sweep")
+        shared.update(sweep=0.,sweep_state="TRANSIT");stable(.16)
+        assert call("release_motion").ok and output(0.)
+        uuid="d7"*16;token="a8"*16+"-1"
+        journal.begin(uuid_hex=uuid,token=token,job_id="three_way_lab",
+            map_digest=relay._map_hash,target_cell=1)
+        stable(1.)
+        assert call("claim_nav").ok,calls
+        journal.accepted(token=token,uuid_hex=uuid)
+        shared["status"]=((uuid,2),);stable(.15);shared["nav"]=.23
+        assert output(.23),(calls,relay.mux.stop_reason)
+        checks.append("sweep_to_exact_uuid_nav_handoff")
+        shared["publish_status"]=False
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.5), \
+            "expired Nav2 status retained nonzero ownership"
+        assert output(0.)
+        checks.append("missing_nav_status_revokes_active_navigation")
+        # Losing the lease cannot release the old goal into docking. Reconcile
+        # its terminal result and obtain a new exact-UUID NAV claim first.
+        shared["nav"]=0.
+        journal.terminal(token=token,uuid_hex=uuid,outcome="succeeded")
+        shared.update(status=((uuid,4),),publish_status=True)
+        stable(1.)
+        assert not call("release_nav").ok
+        uuid="d8"*16;token="a9"*16+"-2"
+        journal.begin(uuid_hex=uuid,token=token,job_id="three_way_lab",
+            map_digest=relay._map_hash,target_cell=1)
+        assert call("claim_nav").ok,calls
+        journal.accepted(token=token,uuid_hex=uuid)
+        shared["status"]=((uuid,2),);stable(.15);shared["nav"]=.23
+        assert output(.23),(calls,relay.mux.stop_reason)
+        shared["nav"]=0.;stable(.12)
+        journal.terminal(token=token,uuid_hex=uuid,outcome="succeeded")
+        shared["status"]=((uuid,4),)
+        assert until(relay._nav_confirmed_terminal,1.)
+        assert call("release_nav").ok,calls
+        stable(1.)
+        assert call("claim_dock").ok,calls
+        shared.update(dock=-.08,dock_state="SEARCH")
+        assert output(-.08),(calls,relay.mux.stop_reason)
+        assert until(lambda:relay._dock_started,1.)
+        checks.append("exact_uuid_nav_to_dock_handoff")
+        shared.update(dock=0.,dock_state="DONE",docked=True);stable(.16)
+        assert call("release_motion").ok and output(0.)
+        checks.append("software_dock_phase_release_not_physical_contact")
+        quiet();sweep();shared["tf"]=False
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.3) and output(0.)
+        assert relay._motion_health().pose_fresh is False
+        checks.append("tf_dropout_revokes_sweep")
+        shared["tf"]=True;quiet();sweep()
+        shared["publish_sweep"]=False
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.) and output(0.)
+        checks.append("command_lease_expiry_is_stop")
+        shared["publish_sweep"]=True;quiet();sweep();shared["sweep"]=.35
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.) and output(0.)
+        checks.append("overspeed_rejected_without_raising_limits")
+        quiet();sweep()
+        duplicate=source.create_publisher(Twist,"/valdi/sweep_cmd_vel",10)
+        assert until(lambda:relay.mux.owner==relay.mux.STOP,1.) and output(0.)
+        source.destroy_publisher(duplicate)
+        checks.append("second_writer_revokes_ownership")
+        quiet();sweep();shared["clock"]=False
+        previous=len(outputs);stable(.7)
+        assert len(outputs)>previous+3,"paused ROS clock suspended relay timer"
+        assert relay.mux.owner==relay.mux.STOP and output(0.)
+        assert relay._motion_health().safety_loop_ok is False
+        checks.append("paused_ros_clock_does_not_suspend_output_watchdog")
+        shared["clock"]=True;quiet();sweep();shared["changed_map"]=True
+        assert until(lambda:relay._map_fault,1.) and output(0.)
+        shared["changed_map"]=False;quiet()
+        assert not call("claim_sweep").ok
+        checks.append("changed_map_latches_reconciliation_required")
+        assert source.count_publishers("/cmd_vel")==0
+        assert source.count_publishers("/valdi/lab_safe_cmd_vel_output")==1
+        print("ROS2_THREE_WAY_RELAY "+json.dumps({"ok":True,"checks":checks,"calls":calls,
+            "output_messages":len(outputs),"metadata":metadata,"elapsed_s":round(time.monotonic()-started,2),
+            "final_owner":relay.mux.owner,"limits":{"max_linear":relay.mux.max_linear,"max_angular":relay.mux.max_angular},
+            "scope":"actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot",
+            "actual_nav2_action_server":False,"physical_contact_or_charging":False},sort_keys=True),flush=True)
+    finally:
+        ex.shutdown()
+        for node in [*producers,source,relay]:node.destroy_node()
+        scratch.cleanup()
+        rclpy.shutdown()
+
+
+if __name__=="__main__":
+    import sys
+    main_three_way() if "--three-way" in sys.argv else main()

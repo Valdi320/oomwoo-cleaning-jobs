@@ -1,7 +1,7 @@
 import pathlib
 import unittest
 from oomwoo_cleaning_jobs.lab_topic_guard import (
-    LabTopicGuardError,LAB_INPUT_TOPICS,require_lab_input_subscriptions)
+    LabTopicGuardError,LAB_INPUT_TOPICS,LAB_THREE_WAY_INPUT_TOPICS,require_lab_input_subscriptions)
 
 class Fake:
     def __init__(self,topic): self.topic_name=topic
@@ -52,4 +52,17 @@ class TestInputIsolation(unittest.TestCase):
                         s.index("self.create_service(ControlCleaning,"))
         self.assertLess(s.index("require_lab_input_subscriptions(inputs)"),
                         s.index("self.create_timer(.05,self._tick)"))
+    def test_11_three_way_requires_all_fourteen_resolved_handles(self):
+        x={name:Fake(name) for name in LAB_THREE_WAY_INPUT_TOPICS}
+        self.assertEqual(len(x),14)
+        self.assertIsNone(require_lab_input_subscriptions(x,three_way=True))
+        for name in LAB_THREE_WAY_INPUT_TOPICS:
+            wrong=dict(x);wrong[name]=Fake(name+"_foreign")
+            with self.subTest(name=name),self.assertRaises(LabTopicGuardError):
+                require_lab_input_subscriptions(wrong,three_way=True)
+    def test_12_no_implicit_upgrade_or_missing_health(self):
+        x={name:Fake(name) for name in LAB_THREE_WAY_INPUT_TOPICS}
+        with self.assertRaises(LabTopicGuardError):require_lab_input_subscriptions(x)
+        with self.assertRaises(LabTopicGuardError):
+            require_lab_input_subscriptions(correct(),three_way=True)
 if __name__=="__main__":unittest.main()

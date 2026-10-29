@@ -26,7 +26,7 @@ def relay_methods(clock):
     source_class = next(node for node in tree.body
                         if isinstance(node, ast.ClassDef)
                         and node.name == "ExperimentalDockVelocityRelay")
-    names = {"_battery", "_fresh", "_execute", "_tick"}
+    names = {"_battery", "_fresh", "_execute", "_tick", "_reset"}
     methods = [copy.deepcopy(node) for node in source_class.body
                if isinstance(node, ast.FunctionDef) and node.name in names]
     if {node.name for node in methods} != names:

@@ -44,13 +44,20 @@ LAB_INPUT_TOPICS = (
 )
 
 
-def require_lab_input_subscriptions(subscriptions: object) -> None:
+LAB_THREE_WAY_INPUT_TOPICS = LAB_INPUT_TOPICS + (
+    "/valdi/sweep_cmd_vel", "/coverage_planner/motion_state", "/map",
+    "/clock", "/coverage_meter/sim_unstable", "/tf", "/tf_static",
+)
+
+
+def require_lab_input_subscriptions(subscriptions: object, *, three_way=False) -> None:
     """Deny ROS2 subscriber remaps or source collisions before timers."""
+    expected = LAB_THREE_WAY_INPUT_TOPICS if three_way else LAB_INPUT_TOPICS
     if (type(subscriptions) is not dict
-            or set(subscriptions) != set(LAB_INPUT_TOPICS)
-            or len(set(map(id, subscriptions.values()))) != len(LAB_INPUT_TOPICS)):
-        raise LabTopicGuardError("lab relay requires seven distinct input handles")
-    for nominal in LAB_INPUT_TOPICS:
+            or set(subscriptions) != set(expected)
+            or len(set(map(id, subscriptions.values()))) != len(expected)):
+        raise LabTopicGuardError("lab relay requires distinct expected input handles")
+    for nominal in expected:
         try:
             resolved = subscriptions[nominal].topic_name
         except Exception as exc:
