@@ -763,16 +763,19 @@ class ExperimentalDockVelocityRelay(Node):
 
     def _motion_health(self):
         pose=False;stamp=None;age=None
+        position=None;cell=None;cell_value=None;pose_error=None
         try:
             t=self._motion_transform(500_000_000)
             stamp=t.header.stamp.sec*1_000_000_000+t.header.stamp.nanosec
             age=self.get_clock().now().nanoseconds-stamp
+            position=(t.transform.translation.x,t.transform.translation.y)
             if stamp>0 and 0<=age<=500_000_000 and self._map_hash is not None:
                 cell=self._map_raster.cell_at(t.transform.translation.x,
                                                t.transform.translation.y)
+                cell_value=self._map_raster.data[cell]
                 pose=self._map_raster.data[cell]==0
-        except (TransformException,AdmissionError,ValueError,AttributeError):
-            pass
+        except (TransformException,AdmissionError,ValueError,AttributeError) as exc:
+            pose_error=(type(exc).__name__+": "+str(exc))[:256]
         idle=self._nav_idle()
         # A cached ACTIVE UUID must not be refreshed by the relay timer.
         # Preserve the existing one-second nonzero-NAV status budget.
@@ -785,6 +788,10 @@ class ExperimentalDockVelocityRelay(Node):
         # Meter health is not an electrical/MCU safety attestation.
         observed=getattr(self,"_motion_pose_observed",None)
         self._motion_health_detail={"pose_stamp_ns":stamp,"pose_age_ns":age,
+            "pose_xy_m":(position if position is not None
+                and all(math.isfinite(v) for v in position) else None),
+            "pose_map_cell":cell,"pose_map_cell_value":cell_value,
+            "pose_validation_error":pose_error,
             "pose_latest_stamp_ns":observed[0] if observed is not None else None,
             "pose_latest_age_ns":observed[1] if observed is not None else None,
             "postfilter_stamp_ns":getattr(self,"_keepout_costmap_stamp",None),
