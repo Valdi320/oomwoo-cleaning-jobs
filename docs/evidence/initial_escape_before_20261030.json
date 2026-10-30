@@ -1,0 +1,43 @@
+{
+  "completed_utc": "2026-10-30T15:16:31.713391+00:00",
+  "rc": 1,
+  "host_timeout": false,
+  "seconds": 5.798,
+  "stdout": "",
+  "stderr": "test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal) ... FAIL\n\n======================================================================\nFAIL: test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/contrib/tests/test_sequenced_motion_ingress_20261029.py\", line 370, in test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal\n    self.assertTrue(proof.nav2_idle)\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.120s\n\nFAILED (failures=1)\n",
+  "args": [
+    "podman",
+    "run",
+    "--rm",
+    "--name",
+    "oomwoo-initial-escape-before-20261030",
+    "--pull=never",
+    "--network=none",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges",
+    "--security-opt=label=disable",
+    "--read-only",
+    "--tmpfs",
+    "/tmp:rw,exec,size=128m,mode=1777",
+    "--memory=512m",
+    "--memory-swap=512m",
+    "--cpus=.25",
+    "--pids-limit=128",
+    "-v",
+    "/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-acoplamiento:/work:ro",
+    "-v",
+    "/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza:/contrib:ro",
+    "--entrypoint",
+    "/bin/bash",
+    "docker.io/makerspet/oomwoo:jazzy-dev",
+    "-lc",
+    "source /opt/ros/jazzy/setup.bash && source /ros_ws/install/setup.bash\nexport PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/work/src/oomwoo_sim_support:/work/src/oomwoo_coverage:/contrib/src:${PYTHONPATH:-}\nexport ROS_LOG_DIR=/tmp/roslogs ROS_HOME=/tmp/roshome ROS_DOMAIN_ID=95 ROS_LOCALHOST_ONLY=1\nexport FASTDDS_BUILTIN_TRANSPORTS=UDPv4 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1\npython3 -m unittest discover -s /contrib/tests -p test_sequenced_motion_ingress_20261029.py -k test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal -v\n"
+  ],
+  "source_sha256": {
+    "/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/src/oomwoo_cleaning_jobs/ros_dock_velocity_relay.py": "e3ed3189908cfcaf5c1d6032c014f24f1325d46eb6fc50a7b5a6aa6ee2bdd28d",
+    "/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/tests/test_sequenced_motion_ingress_20261029.py": "1f23c4670ab0021dafe9e36b583675e6376d1dc852ef48d6f497140744e1c9ae"
+  },
+  "inputs_unchanged": true,
+  "scope": "Actual relay methods plus real GoalJournal/NavLeaseWitness/ThreeWayVelocityMux; synthetic health/graph/clocks, no ROS graph/Gazebo/hardware. Causal startup escape before any Nav2 UUID.",
+  "resource_authorization": "Explicit .25CPU/512MiB/noGPU compatible tests."
+}

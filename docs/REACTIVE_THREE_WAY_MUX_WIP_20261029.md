@@ -552,3 +552,27 @@ For native DDS, use the exact disposable-container command in
 Machine ownership was checked; the owner's explicit compatible-resource
 exception was used with CPU/memory limits and no GPU access. Full masked-room
 acceptance remains pending. [Delivery and limits](evidence/pose_clock_skew_delivery_20261030.json).
+
+
+### Bumper escape before the first Nav2 goal (2026-10-30)
+
+A native single-goal case started in contact with the table and transitioned
+SWEEP to ESCAPE before any Nav2 UUID or feedback existed. The relay stopped:
+its general health accepted ESCAPE, but its empty-journal managed-idle proof
+excluded that phase. The same method fails a focused causal check.
+
+The existing initial non-navigation phases now also include ESCAPE. A fresh
+exclusive navigation backend, fresh dispatcher phase, no active UUID and
+no unresolved journal goal remain required. ESCAPE remains active sweep
+motion; it does not authorize a navigation/dock takeover. Every other byte
+of the relay source is unchanged.
+
+All 55 cases in the existing sequenced-ingress file pass, including actual
+relay health/mux/journal/witness methods with a reverse/turn sweep command,
+nine negative proof subcases and the three previously allowed initial
+phases. The first after-run exposed an invalid pending-journal fixture
+token; the final run uses the real journal token contract. These are
+synthetic graph/TF/clock inputs, not a native Gazebo result. Repeat the
+same native case with only this source change before claiming that initial
+escape works there. Original Nav2 abort105 and full-room90/80 acceptance
+remain pending. [Evidence and limits](evidence/initial_escape_delivery_20261030.json).

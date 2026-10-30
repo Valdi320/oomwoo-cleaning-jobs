@@ -1,0 +1,43 @@
+{
+  "completed_utc": "2026-10-30T15:20:30.543297+00:00",
+  "base_commit": "fa8b7af945ad557675dce1180cfac25cb1384a5b",
+  "native_trigger": "ROS bank668 nav_progress_approach_20261030: before any Nav2 status/feedback, initial bumper caused SWEEP->ESCAPE->FAULT because managed-idle denied empty-journal ESCAPE.",
+  "change": "Add ESCAPE to existing initial no-Nav2-goal phases. All other source bytes identical to fa8b7af relay.",
+  "source_sha256": "9a2e5a5bedb7ded15320cb8b2ab880c7ce030ed7b5a66d226eff6c992a5a75cb",
+  "test_source_sha256": "62b4ef3955f090fd0728b453ffa65438ffbdd5dfa41b8a475d3168eca54273ae",
+  "verification": {
+    "causal_before_rc": 1,
+    "causal_before_symptom": "nav2_idle false in real managed-idle method with fresh exclusive backend and empty real journal",
+    "focused_file_cases": 55,
+    "final_rc": 0,
+    "final_seconds": 13.811,
+    "negative_subcases": [
+      "backend_inactive",
+      "backend_stale",
+      "dispatcher",
+      "phase_stale",
+      "active_uuid",
+      "pending_journal",
+      "TRANSIT",
+      "TRANSIT_CANCEL",
+      "FAULT"
+    ],
+    "existing_initial_phase_controls": [
+      "IDLE",
+      "SWEEP",
+      "PREPARE_NAV"
+    ],
+    "first_after_limit": "After-run passed initial escape but pending-journal fixture used invalid token; corrected against actual32hex-counter contract before final55PASS."
+  },
+  "utility_demonstrated": "Actual relay health and mux preserve an existing SWEEP lease and reverse/turn command during initial ESCAPE with no Nav2 goal; missing or contradictory navigation proofs still stop.",
+  "remaining_to_useful_milestone": "Repeat the same Gazebo case with this isolated source change; original Nav2 abort105 and full masked90/80 acceptance remain unresolved.",
+  "next_increment": "Native same spawn/selected goal through existing FIFO; seven other source fingerprints unchanged.",
+  "decision": "Consolidate minimal phase consistency correction and validate in native case. Do not extend recovery modes or loosen safety/freshness policies.",
+  "evidence_that_changes_decision": "Native escape still revokes for another source, or any negative proof case accepts movement.",
+  "limits": [
+    "Actual relay/mux/journal/witness methods with synthetic graph/TF/clocks, no ROS graph in these55tests.",
+    "No new nodes/services/clients/timers/tools; no hardware movement or charging claim.",
+    "Gazebo bank668 shutdown segfault139 is separately recorded and not fixed here."
+  ],
+  "resource_policy": ".25CPU/512MiB/noGPU focused tests with explicit authorization."
+}

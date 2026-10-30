@@ -191,6 +191,7 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                    and n.name=="ExperimentalDockVelocityRelay")
         names={"_on_motion_cmd","_reset","_motion_graph","_motion_now",
                "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion",
+               "_managed_idle",
                "_motion_health", "_keepout_dds_stamp", "_on_motion_keepout_mask",
                "_on_motion_keepout_info", "_on_motion_costmap", "_keepout_ready",
                "_keepout_output", "_motion_transform", "_motion_zero", "_on_nav_status"}
@@ -343,6 +344,67 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                 if case=="extra_client":nodes.append(("rviz2","/"))
                 relay._poll_nav_backend()
                 self.assertEqual(relay._nav_single_dispatcher,case=="isolated")
+
+    def initial_escape(self, directory):
+        relay,mono,_,_,_,_=self.managed()
+        relay._goal_witness=NavLeaseWitness(GoalJournal(Path(directory)/"goal.json"))
+        relay._nav_single_dispatcher=True
+        relay._sweep_state="ESCAPE";relay._sweep_last=mono[0]
+        relay._nav_status=relay._last_status=relay._nav_feedback=None
+        relay._nav_idle=relay._managed_idle
+        relay.tf_buffer=SimpleNamespace(lookup_transform=lambda *args:SimpleNamespace(
+            header=SimpleNamespace(stamp=SimpleNamespace(sec=1,nanosec=900_000_000)),
+            transform=SimpleNamespace(translation=SimpleNamespace(x=0.,y=0.))))
+        relay._map_hash="known";relay._map_fault=False
+        relay._map_raster=SimpleNamespace(cell_at=lambda x,y:0,data=[0])
+        relay._battery_fraction=.92;relay._battery_last=mono[0]
+        relay._clock_fault=False;relay._clock_advanced=mono[0]
+        relay._unstable=False;relay._unstable_last=mono[0]
+        relay._dock_state="IDLE";relay._dock_last=mono[0]
+        return relay,mono
+
+    def test_initial_bumper_escape_preserves_sweep_lease_without_any_nav_goal(self):
+        with TemporaryDirectory() as directory:
+            relay,mono=self.initial_escape(directory)
+            proof=relay._motion_health()
+            self.assertTrue(proof.nav2_idle)
+            self.assertTrue(proof.safety_loop_ok)
+            self.assertFalse(proof.sweep_inactive)
+            relay.mux.observe_health(now=mono[0],proof=proof)
+            command=Velocity(-.08,-.6)
+            relay.mux.accept_twist(source=relay.mux.SWEEP,token=relay._motion_token,
+                                   now=mono[0],velocity=command)
+            self.assertEqual(relay.mux.output(now=mono[0]),command)
+            self.assertEqual(relay.mux.owner,relay.mux.SWEEP)
+
+    def test_initial_escape_still_stops_for_contradictory_or_missing_nav_proofs(self):
+        cases=("backend_inactive","backend_stale","dispatcher","phase_stale",
+               "active_uuid","pending_journal","TRANSIT","TRANSIT_CANCEL","FAULT")
+        for case in cases:
+            with self.subTest(case=case), TemporaryDirectory() as directory:
+                relay,mono=self.initial_escape(directory)
+                if case=="backend_inactive":relay._nav_backend_active=False
+                elif case=="backend_stale":relay._nav_backend_last=mono[0]-2.6
+                elif case=="dispatcher":relay._nav_single_dispatcher=False
+                elif case=="phase_stale":relay._sweep_last=mono[0]-1.01
+                elif case=="active_uuid":relay._nav_status=(("a"*32,2),)
+                elif case=="pending_journal":
+                    relay._goal_witness.journal.begin(uuid_hex="a"*32,token="c"*32+"-1",
+                        job_id="sweep",map_digest="b"*64,target_cell=0)
+                else:relay._sweep_state=case
+                proof=relay._motion_health()
+                self.assertFalse(proof.nav2_idle)
+                with self.assertRaises(ReactiveMuxError):
+                    relay.mux.observe_health(now=mono[0],proof=proof)
+                self.assertEqual(relay.mux.owner,relay.mux.STOP)
+                self.assertEqual(relay.mux.output(now=mono[0]),Velocity())
+
+    def test_other_initial_non_nav_phases_keep_their_existing_idle_proof(self):
+        for phase in ("IDLE","SWEEP","PREPARE_NAV"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                relay,_=self.initial_escape(directory)
+                relay._sweep_state=phase
+                self.assertTrue(relay._managed_idle())
 
     def test_managed_claim_uses_same_simulated_clock_as_odometry(self):
         relay,mono,_,_,_,_=self.managed()

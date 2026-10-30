@@ -1027,7 +1027,7 @@ class ExperimentalDockVelocityRelay(Node):
         if self._nav_status is not None and not nav_status_idle(self._nav_status):
             return False
         if record is None:
-            return self._sweep_state in ("IDLE","SWEEP","PREPARE_NAV")
+            return self._sweep_state in ("IDLE","SWEEP","ESCAPE","PREPARE_NAV")
         if record["state"]=="terminal":
             return self._goal_witness.can_release_for_dock()
         if record["state"]=="submitting" and self._sweep_state=="PREPARE_NAV":
