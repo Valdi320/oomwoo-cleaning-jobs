@@ -1,0 +1,21 @@
+{
+  "date_utc": "2026-10-30T09:37:27.758344+00:00",
+  "args": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_goal_journal_inode_20261028.py",
+    "-v"
+  ],
+  "lock": "LIBRE: carga 4.09, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: CEDIBLE AHORA; gpt-oss-20b ocupa la GPU, pero el arbitro puede apartarlo sin parar el servicio. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+  "rc": 0,
+  "seconds": 0.166,
+  "stdout": "",
+  "stderr": "test_dangling_symlink_is_not_treated_as_missing_journal (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_dangling_symlink_is_not_treated_as_missing_journal) ... ok\ntest_hardlinked_terminal_journal_cannot_authorize_new_goal (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_hardlinked_terminal_journal_cannot_authorize_new_goal) ... ok\ntest_legitimate_atomic_replace_reopens_current_private_record_once (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_legitimate_atomic_replace_reopens_current_private_record_once) ... ok\ntest_missing_journal_is_valid_initial_state (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_missing_journal_is_valid_initial_state) ... ok\ntest_missing_reopened_path_is_not_a_valid_cold_start (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_missing_reopened_path_is_not_a_valid_cold_start) ... ok\ntest_oversized_valid_json_is_refused_before_goal_issue (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_oversized_valid_json_is_refused_before_goal_issue) ... ok\ntest_reopened_path_must_keep_all_original_security_checks (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_reopened_path_must_keep_all_original_security_checks) ... ok\ntest_repeated_replacement_still_refuses_without_unbounded_retry (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_repeated_replacement_still_refuses_without_unbounded_retry) ... ok\ntest_symlink_to_valid_terminal_record_is_not_trusted (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_symlink_to_valid_terminal_record_is_not_trusted) ... ok\ntest_unmodified_private_regular_journal_survives_restart (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_unmodified_private_regular_journal_survives_restart) ... ok\ntest_world_readable_journal_is_refused_before_action (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_world_readable_journal_is_refused_before_action) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 0.009s\n\nOK\n",
+  "source_sha256": "237519e9a86b750115198d7f289ecedc4d5e9804ba10e2c3f70dfff04b2f059c",
+  "scope": "One existing POSIX inode/atomic-reopen test file; real temporary files and deterministic open timing. No ROS, production data or project suite."
+}

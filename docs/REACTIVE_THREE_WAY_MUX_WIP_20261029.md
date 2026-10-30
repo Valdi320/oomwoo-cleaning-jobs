@@ -498,3 +498,20 @@ not a tested fix or a successful native Keepout acceptance. The race is proven
 independently; its identity with the native generic journal error is still
 unproven. The next work is the listed focal modules, individually after LIBRE,
 then a discriminating integration. No simulation or new scheduler was started.
+
+
+## Authorized journal follow-up — 30 October 2026
+
+The original bounded-reopen proposal at1ee0a44 now has focused validation in an
+independent copy. A missing path on the second open is an error, preserving the
+initial-missing cold-start behavior. No writer, lock or record-schema change is
+made. Existing witness faults retain a bounded original exception instead of
+only reporting missing/corrupted. The existing DDS probe wrapper also forwards
+the relay's proof keyword; its earlier TypeError is retained as a probe failure.
+
+Eleven inode/reopen cases and25 exact-UUID witness cases pass. The actual DDS
+probe passes all17 checks with synthetic inputs and required Keepout evidence.
+This does not establish the cause of the old native journal failure, complete
+masked coverage, Gazebo shutdown repair or physical control. Next is one full
+masked native case using unchanged90%/80% criteria, not more journal variants.
+See [before/after sources, retained failures and limits](evidence/journal_reopen_delivery_20261030.json).

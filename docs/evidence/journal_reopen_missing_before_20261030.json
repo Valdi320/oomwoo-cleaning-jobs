@@ -1,0 +1,22 @@
+{
+  "date_utc": "2026-10-30T09:37:12.760720+00:00",
+  "args": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_goal_journal_inode_20261028.py",
+    "-k",
+    "missing_reopened",
+    "-v"
+  ],
+  "lock": "LIBRE: carga 4.88, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: CEDIBLE AHORA; gpt-oss-20b ocupa la GPU, pero el arbitro puede apartarlo sin parar el servicio. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+  "rc": 1,
+  "seconds": 0.16,
+  "stdout": "",
+  "stderr": "test_missing_reopened_path_is_not_a_valid_cold_start (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_missing_reopened_path_is_not_a_valid_cold_start) ... FAIL\n\n======================================================================\nFAIL: test_missing_reopened_path_is_not_a_valid_cold_start (test_goal_journal_inode_20261028.JournalInodeGuardTests.test_missing_reopened_path_is_not_a_valid_cold_start)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/tests/test_goal_journal_inode_20261028.py\", line 120, in test_missing_reopened_path_is_not_a_valid_cold_start\n    with self.assertRaises(GoalJournalError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: GoalJournalError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n",
+  "source_sha256": "bdb78b5d76ed6c565f2ce9e4fe845d0bccd5ff5cf8867e48125857f5f60dca31"
+}

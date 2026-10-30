@@ -446,7 +446,7 @@ def main_three_way(*,keepout=False):
         assert output(.18),(calls,relay._motion_health(),relay.mux.stop_reason,metadata,reset_trace)
     if keepout:
         original_reset=relay._reset
-        def traced_reset(reason):
+        def traced_reset(reason, *, proof=None):
             if len(reset_trace)<100:
                 health=getattr(relay.mux,"_health",None)
                 reset_trace.append({"wall":time.monotonic(),"reason":reason,
@@ -457,7 +457,7 @@ def main_three_way(*,keepout=False):
                     "costmap_age_ns":relay.get_clock().now().nanoseconds-relay._keepout_costmap_stamp,
                     "costmap_dds_age_ns":time.time_ns()-relay._keepout_costmap_dds,
                     "costmap_sequence":relay._keepout_costmap_sequence})
-            original_reset(reason)
+            original_reset(reason,proof=proof)
         relay._reset=traced_reset
     started=time.monotonic()
     try:

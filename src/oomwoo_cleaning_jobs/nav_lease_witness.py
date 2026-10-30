@@ -115,8 +115,8 @@ class NavLeaseWitness:
             return
         try:
             record=self.journal.read()
-        except GoalJournalError:
-            self.fault="Nav2 goal journal missing/corrupted"
+        except GoalJournalError as exc:
+            self.fault="Nav2 goal journal missing/corrupted: "+str(exc)[:160]
             return
         if active:
             current=active[0]
@@ -193,8 +193,8 @@ class NavLeaseWitness:
             return False
         try:
             record=self.journal.read()
-        except GoalJournalError:
-            self.fault="Nav2 goal journal missing/corrupted while active"
+        except GoalJournalError as exc:
+            self.fault="Nav2 goal journal missing/corrupted while active: "+str(exc)[:160]
             return False
         if record is None or record["uuid"]!=self.uuid:
             self.fault="Nav2 goal journal changed while active"

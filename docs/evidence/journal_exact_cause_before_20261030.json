@@ -1,0 +1,21 @@
+{
+  "date_utc": "2026-10-30T09:39:48.986650+00:00",
+  "args": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_nav_lease_witness.py",
+    "-k",
+    "read_failure_keeps_exact",
+    "-v"
+  ],
+  "lock": "LIBRE: carga 5.43, sin motores ajenos, cerrojo suelto.\nDISPONIBILIDAD_GPU: CEDIBLE AHORA; gpt-oss-20b ocupa la GPU, pero el arbitro puede apartarlo sin parar el servicio. USA: python3 ~/.local/bin/vanster-turno-de-gpu.py con --para \"MOTIVO CONCRETO\" --gb 8 -- COMANDO Y ARGUMENTOS\n",
+  "rc": 1,
+  "seconds": 0.495,
+  "stdout": "",
+  "stderr": "test_read_failure_keeps_exact_cause_without_authorizing_release (test_nav_lease_witness.DockNavUUIDWitnessTests.test_read_failure_keeps_exact_cause_without_authorizing_release) ... \n  test_read_failure_keeps_exact_cause_without_authorizing_release (test_nav_lease_witness.DockNavUUIDWitnessTests.test_read_failure_keeps_exact_cause_without_authorizing_release) (operation='observe') ... FAIL\n  test_read_failure_keeps_exact_cause_without_authorizing_release (test_nav_lease_witness.DockNavUUIDWitnessTests.test_read_failure_keeps_exact_cause_without_authorizing_release) (operation='current_active_matches') ... FAIL\n\n======================================================================\nFAIL: test_read_failure_keeps_exact_cause_without_authorizing_release (test_nav_lease_witness.DockNavUUIDWitnessTests.test_read_failure_keeps_exact_cause_without_authorizing_release) (operation='observe')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/tests/test_nav_lease_witness.py\", line 45, in test_read_failure_keeps_exact_cause_without_authorizing_release\n    self.assertIn(reason,witness.fault)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'goal journal inode/permissions unsafe' not found in 'Nav2 goal journal missing/corrupted'\n\n======================================================================\nFAIL: test_read_failure_keeps_exact_cause_without_authorizing_release (test_nav_lease_witness.DockNavUUIDWitnessTests.test_read_failure_keeps_exact_cause_without_authorizing_release) (operation='current_active_matches')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/tests/test_nav_lease_witness.py\", line 45, in test_read_failure_keeps_exact_cause_without_authorizing_release\n    self.assertIn(reason,witness.fault)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'goal journal inode/permissions unsafe' not found in 'Nav2 goal journal missing/corrupted while active'\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=2)\n"
+}

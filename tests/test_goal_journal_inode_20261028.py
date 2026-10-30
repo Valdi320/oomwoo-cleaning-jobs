@@ -93,7 +93,9 @@ class JournalInodeGuardTests(unittest.TestCase):
                     finally:
                         in_transition=False
                     self.assertEqual(os.fstat(fd).st_nlink,0)
-                    if unsafe=="mode":
+                    if unsafe=="missing":
+                        self.path.unlink()
+                    elif unsafe=="mode":
                         self.path.chmod(0o644)
                     elif unsafe=="hardlink":
                         os.link(self.path,self.path.with_name("other-link.json"))
@@ -113,6 +115,10 @@ class JournalInodeGuardTests(unittest.TestCase):
         self.assertEqual(record["state"],"accepted")
         self.assertEqual(record["uuid"],UUID)
         self.assertEqual(record["revision"],2)
+
+    def test_missing_reopened_path_is_not_a_valid_cold_start(self):
+        with self.assertRaises(GoalJournalError):
+            self._read_during_atomic_replace(unsafe="missing")
 
     def test_repeated_replacement_still_refuses_without_unbounded_retry(self):
         with self.assertRaises(GoalJournalError):

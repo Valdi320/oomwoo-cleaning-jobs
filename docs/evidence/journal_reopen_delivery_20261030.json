@@ -1,0 +1,67 @@
+{
+  "fecha_utc": "2026-10-30T09:47:54.644829+00:00",
+  "uso": "Aceptar sustitución atómica legítima del diario sin convertir desaparición posterior en arranque vacío, y conservar la causa de futuros rechazos.",
+  "base_autorizada": "1ee0a4480934900b5351dcc380443454157048bb del compañero; permisoexpreso delpropietario30/10 01:11:02UTC para propuesta de guardado.",
+  "utilidad_demostrada": "Caso causal sin corrección devuelveNone al desaparecer ruta tras primeropen. Corregido rechaza conGoalJournalError; arranque realmente vacío conservaNone. Reemplazo legítimo, churn/links/permisos/tamaño ytestigosUUID siguen los contratos existentes.",
+  "cambios": [
+    "Solo lectura FileNotFoundError de segundo intento; escritor/formato/lock intactos.",
+    "Dos fault strings existentes añaden causa acotada a160caracteres; rechazos ypermisos no cambian.",
+    "El traced_reset delbanco existente acepta yreenvía keywordproof ya usado por producción; evita ocultar la revocación bajoTypeError."
+  ],
+  "validacion": {
+    "inode_cases": 11,
+    "uuid_witness_cases": 25,
+    "DDS_checks": [
+      "missing_tf_denies_sweep",
+      "sweep_nonzero_through_real_dds",
+      "virtual_mask_blocks_direct_command_with_other_witnesses_healthy",
+      "stale_original_postfilter_costmap_revokes_sweep",
+      "fresh_but_unenforced_mask_revokes_sweep",
+      "foreign_nav_command_revokes_sweep",
+      "percent_battery_revokes_and_denies_sweep",
+      "sweep_to_exact_uuid_nav_handoff",
+      "missing_nav_status_revokes_active_navigation",
+      "exact_uuid_nav_to_dock_handoff",
+      "software_dock_phase_release_not_physical_contact",
+      "tf_dropout_revokes_sweep",
+      "command_lease_expiry_is_stop",
+      "overspeed_rejected_without_raising_limits",
+      "second_writer_revokes_ownership",
+      "paused_ros_clock_does_not_suspend_output_watchdog",
+      "changed_map_latches_reconciliation_required"
+    ],
+    "DDS_native_middleware": true,
+    "DDS_synthetic_inputs": true,
+    "all_pass": true,
+    "full_suite_run": false
+  },
+  "coste_observado": {
+    "inode_process_s": 0.166,
+    "uuid_process_s": 0.478,
+    "DDS_process_s": 46.304,
+    "retained_probe_signature_failure_s": 37.927,
+    "preparacion_revision_retrabajo_IA": "No desglosado; no atribuir el tiempo de pruebas al coste total."
+  },
+  "source_sha256": {
+    "src/oomwoo_cleaning_jobs/goal_journal.py": "237519e9a86b750115198d7f289ecedc4d5e9804ba10e2c3f70dfff04b2f059c",
+    "src/oomwoo_cleaning_jobs/nav_lease_witness.py": "b235fd60587318a4db427bcdc9fd8d6e786fd65825567940060b2187cd9bc721",
+    "integration/ros_dock_velocity_relay_probe.py": "65472952f232a93196f36212b162dc7957b7230375dfac2143410129183bddb1"
+  },
+  "evidencia": [
+    "journal_reopen_missing_before_20261030.json",
+    "journal_reopen_missing_after_20261030.json",
+    "journal_exact_cause_before_20261030.json",
+    "journal_exact_cause_after_20261030.json",
+    "journal_keepout_dds_after_20261030.json",
+    "journal_keepout_dds_verified_20261030.json"
+  ],
+  "limites": [
+    "La carrera atómica es reproducida; no se prueba que explique por sí sola el antiguo fallo nativo que perdió su excepción.",
+    "DDS con entradas sintéticas no acredita Nav2/Gazebo ni protección física.",
+    "La caída de Gazebo al cerrar no se repara.",
+    "Árbol del compañero sin cambios; commits locales yningún push/PR/merge."
+  ],
+  "distancia_al_hito": "Componente de diario/testigo ytransporte comprobados. Falta aceptación completa con Nav2/barrido/Keepout reales y acoplamiento conjunto.",
+  "siguiente_incremento": "Una aceptación completa con fuentes inmutables: ROS63c516b, driver/wrapper58ceea4 yesta rama; máscara/criterios90%80% conservados. Capturar primera causa original ante fallo.",
+  "decision": "Consolidar y avanzar a uso integrado; más variantes de fstat tienen menos retorno que integración. Goal activo y punto dulce general pendiente."
+}

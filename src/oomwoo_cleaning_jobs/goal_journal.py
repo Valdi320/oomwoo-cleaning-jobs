@@ -59,8 +59,11 @@ class GoalJournal:
         for attempt in range(2):
             try:
                 fd=os.open(self.path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
-            except FileNotFoundError:
-                return None
+            except FileNotFoundError as exc:
+                if attempt == 0:
+                    return None
+                raise GoalJournalError(
+                    "goal journal vanished during retry: do NOT rearm Nav2") from exc
             except OSError as exc:
                 raise GoalJournalError("goal journal inaccessible/linked: do NOT rearm Nav2") from exc
             try:

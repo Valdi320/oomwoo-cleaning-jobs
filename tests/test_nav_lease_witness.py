@@ -2,8 +2,9 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest import mock
 
-from oomwoo_cleaning_jobs.goal_journal import GoalJournal
+from oomwoo_cleaning_jobs.goal_journal import GoalJournal, GoalJournalError
 from oomwoo_cleaning_jobs.nav_lease_witness import (NavLeaseWitness,nav_status_idle,
                                                valid_nav_status_snapshot)
 
@@ -28,6 +29,21 @@ class DockNavUUIDWitnessTests(unittest.TestCase):
 
     def end(self,outcome="canceled"):
         self.j.terminal(token=TOKEN,uuid_hex=UUID,outcome=outcome)
+
+    def test_read_failure_keeps_exact_cause_without_authorizing_release(self):
+        self.start()
+        for operation in ("observe", "current_active_matches"):
+            with self.subTest(operation=operation):
+                witness=NavLeaseWitness(self.j)
+                witness.observe(((UUID,2),))
+                reason="goal journal inode/permissions unsafe"
+                with mock.patch.object(self.j,"read",side_effect=GoalJournalError(reason)):
+                    if operation=="observe":
+                        witness.observe(((UUID,2),))
+                    else:
+                        self.assertFalse(witness.current_active_matches())
+                    self.assertIn(reason,witness.fault)
+                    self.assertFalse(witness.can_release_for_dock())
 
     def test_unknown_stale_success_before_our_action_cannot_release(self):
         self.w.observe(((OTHER,4),))
