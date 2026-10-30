@@ -13,6 +13,7 @@ observations and checks unique graph endpoints plus native DDS sequence/time.
 Sources are experimental simulation observations, not physical attestations.
 """
 from __future__ import annotations
+from copy import deepcopy
 import json
 import hashlib
 import math
@@ -129,6 +130,9 @@ class ExperimentalDockVelocityRelay(Node):
             self._keepout_sources=None
             self._keepout_proof=None
             self._keepout_fault=False
+            self._motion_pose_cache=None
+            self._motion_pose_pending=None
+            self._motion_pose_observed=None
             self.tf_buffer=Buffer()
             if self._managed_nav2:
                 self._motion_nav_uuid=None
@@ -534,6 +538,9 @@ class ExperimentalDockVelocityRelay(Node):
             self._prior_terminal=None
             if getattr(self,"_managed_nav2",False):
                 self._motion_nav_uuid=None
+            self._motion_pose_cache=None
+            self._motion_pose_pending=None
+            self._motion_pose_observed=None
         else:
             self.mux.reset(reason)
         self._released_nav=False
@@ -661,12 +668,45 @@ class ExperimentalDockVelocityRelay(Node):
                 return False
         return True
 
+    def _motion_transform(self,max_age_ns):
+        # TF and /clock can arrive in either order. A future observation must
+        # not replace an already admitted source, renew it or widen its age.
+        self._motion_pose_observed=None
+        transform=self.tf_buffer.lookup_transform("map","base_link",rclpy.time.Time())
+        now=self.get_clock().now().nanoseconds
+        stamp=transform.header.stamp.sec*1_000_000_000+transform.header.stamp.nanosec
+        self._motion_pose_observed=(stamp,now-stamp)
+        if stamp>now:
+            newest=transform
+            transform=None
+            # The preceding pending sample may now be in the past even if
+            # every newest TF leads /clock. Never promote it before its stamp.
+            for candidate in (getattr(self,"_motion_pose_cache",None),
+                              getattr(self,"_motion_pose_pending",None)):
+                if candidate is None:
+                    continue
+                source=candidate.header.stamp
+                source_ns=source.sec*1_000_000_000+source.nanosec
+                if 0<source_ns<=now and (transform is None or source_ns>stamp):
+                    transform=candidate
+                    stamp=source_ns
+            self._motion_pose_pending=deepcopy(newest)
+            if transform is None:
+                raise AdmissionError("motion pose stamp missing/stale; latest is future")
+        else:
+            self._motion_pose_pending=None
+        if stamp<=0 or not 0<=now-stamp<=max_age_ns:
+            raise AdmissionError("motion pose stamp missing/stale")
+        # Keep the original message stamp, not its receipt or this lookup time.
+        self._motion_pose_cache=deepcopy(transform)
+        return transform
+
     def _keepout_output(self,velocity):
         if not self._keepout_ready():
             self._reset("keepout enforcement evidence missing/stale")
             return Velocity()
         try:
-            transform=self.tf_buffer.lookup_transform("map","base_link",rclpy.time.Time())
+            transform=self._motion_transform(200_000_000)
             stamp=transform.header.stamp.sec*1_000_000_000+transform.header.stamp.nanosec
             age=self.get_clock().now().nanoseconds-stamp
             t=transform.transform.translation;q=transform.transform.rotation
@@ -724,7 +764,7 @@ class ExperimentalDockVelocityRelay(Node):
     def _motion_health(self):
         pose=False;stamp=None;age=None
         try:
-            t=self.tf_buffer.lookup_transform("map","base_link",rclpy.time.Time())
+            t=self._motion_transform(500_000_000)
             stamp=t.header.stamp.sec*1_000_000_000+t.header.stamp.nanosec
             age=self.get_clock().now().nanoseconds-stamp
             if stamp>0 and 0<=age<=500_000_000 and self._map_hash is not None:
@@ -743,7 +783,10 @@ class ExperimentalDockVelocityRelay(Node):
         active=candidate if live and not idle else None
         # These fields are derived observations in this disposable simulation.
         # Meter health is not an electrical/MCU safety attestation.
+        observed=getattr(self,"_motion_pose_observed",None)
         self._motion_health_detail={"pose_stamp_ns":stamp,"pose_age_ns":age,
+            "pose_latest_stamp_ns":observed[0] if observed is not None else None,
+            "pose_latest_age_ns":observed[1] if observed is not None else None,
             "postfilter_stamp_ns":getattr(self,"_keepout_costmap_stamp",None),
             "postfilter_age_ns":(self.get_clock().now().nanoseconds
                 -self._keepout_costmap_stamp if getattr(self,"_keepout_required",False)

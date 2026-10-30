@@ -1,0 +1,67 @@
+{
+  "date_utc": "2026-10-30T11:07:44.420200+00:00",
+  "base_commit": "ab99ff07ecd0ff003a8287dc3fd6db070d1ec27b",
+  "utility_demonstrated": "A TF arriving5ms ahead of /clock no longer discards a still admissible past source. Repeated leads use only original samples whose time has arrived, without extending freshness.",
+  "source_sha256": "e3ed3189908cfcaf5c1d6032c014f24f1325d46eb6fc50a7b5a6aa6ee2bdd28d",
+  "probe_sha256": "e5070c3feee84f7a873f44c110b997586e24863cceac9961ebe46bbca5eafb91",
+  "causal": {
+    "original_rc": 1,
+    "original_error": "pose_fresh becomes false immediately when newest TF leads by5ms despite fresh prior observation",
+    "simple_cache_checks": 51,
+    "simple_cache_rc": 0,
+    "repeated_lead_rc_before_pending": 1,
+    "repeated_error": "simple cache never promotes the preceding TF once clock reaches it",
+    "final_checks": 52,
+    "final_rc": 0,
+    "final_seconds": 6.296
+  },
+  "native_dds": {
+    "rc": 0,
+    "seconds": 47.218,
+    "checks": 18,
+    "lead_samples": 24,
+    "latest_age_ns_range": [
+      -5000000,
+      -5000000
+    ],
+    "used_age_ns_range": [
+      44537147,
+      100090742
+    ],
+    "all_observed_outputs_mps": [
+      0.18
+    ],
+    "physical_robot": false,
+    "actual_nav2_server": false
+  },
+  "unchanged_contracts": {
+    "output_source_age_ns": 200000000,
+    "health_source_age_ns": 500000000,
+    "future_source_authorized": false,
+    "new_nodes": 0,
+    "new_subscriptions": 0,
+    "new_timers": 0,
+    "new_tools": 0,
+    "journal_or_writer_changes": false,
+    "freshness_by_receipt_invented": false
+  },
+  "implementation": "Fuse the two temporal TF selections; bound history to one admitted and one pending independent deepcopy; reset discards both; existing map, quaternion, ownership, DDS and watchdog checks remain.",
+  "verified_negatives": [
+    "future without admissible prior source",
+    "200ms+1ns output source expiry",
+    "500ms+1ns health source expiry",
+    "mutated incoming message cannot rewrite saved pose",
+    "reset discards admitted and pending samples",
+    "missing TF lookup fails closed",
+    "clock pause still revokes",
+    "map/mask change and multiple writers still revoke"
+  ],
+  "limits": [
+    "52 synthetic cases extract actual methods and core but do not createROS2 nodes.",
+    "18 DDS cases use realROS2 messages, services and TFBuffer with synthetic maps/clock/commands/health; noGazebo, physical motion or nativeNav2 planner.",
+    "Native room acceptance remains unproven; no full-room or physical improvement is inferred from these checks."
+  ],
+  "next_increment": "One native masked room run with ROS43e142a corner correction, source-phase recorder93c49e1 and this TF fix; unchanged90/80, original masks/world and clean process outcomes.",
+  "decision": "Advance; focused and DDS evidence now justify one native integration attempt.",
+  "cost_limits": "Subprocess elapsed times recorded individually. Preparation/review/maintenance and totalAI cost remain unmeasured; case counts do not measure utility."
+}

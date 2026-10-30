@@ -1,0 +1,15 @@
+{
+  "rc": 1,
+  "seconds": 0.547,
+  "stdout": "",
+  "stderr": "test_successive_future_tf_samples_are_admitted_only_after_their_time (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_successive_future_tf_samples_are_admitted_only_after_their_time) ... FAIL\n\n======================================================================\nFAIL: test_successive_future_tf_samples_are_admitted_only_after_their_time (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_successive_future_tf_samples_are_admitted_only_after_their_time)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/tests/test_sequenced_motion_ingress_20261029.py\", line 615, in test_successive_future_tf_samples_are_admitted_only_after_their_time\n    if previous_future is not None:self.assertEqual(used,previous_future)\n                                   ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 9990000000 != 10055000000\n\n----------------------------------------------------------------------\nRan 1 test in 0.105s\n\nFAILED (failures=1)\n",
+  "args": [
+    "python3",
+    "-m",
+    "unittest",
+    "test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_successive_future_tf_samples_are_admitted_only_after_their_time",
+    "-v"
+  ],
+  "source_sha256": "2b3bb652b74b3d5e1dffdb485901e08c21fb326170f80ff804e59a7b76252b8b",
+  "resource_authorization": "OCUPADA fifo649; prior explicit compatible-resource exception;CPUQuota25%,single synthetic message case,noGPU/noROSgraph."
+}

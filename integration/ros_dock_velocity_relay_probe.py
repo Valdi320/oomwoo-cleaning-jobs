@@ -363,9 +363,16 @@ def main_three_way(*,keepout=False):
     dock_state=producers[2].create_publisher(String,"/dock_drive/state",10)
     docked=producers[2].create_publisher(Bool,"/dock_drive/docked",latched)
     control=source.create_client(ControlCleaning,"/valdi/relay/control")
-    outputs=[];metadata=[];checks=[];calls=[];reset_trace=[]
-    source.create_subscription(Twist,"/valdi/lab_safe_cmd_vel_output",
-        lambda m:outputs.append((time.monotonic(),m.linear.x,m.angular.z)),10)
+    outputs=[];metadata=[];checks=[];calls=[];reset_trace=[];pose_lead=[]
+    def observe_output(message):
+        outputs.append((time.monotonic(),message.linear.x,message.angular.z))
+        if shared.get("tf_lead_ns",0) and len(pose_lead)<64:
+            detail=getattr(relay,"_motion_health_detail",{})
+            pose_lead.append({"used_stamp_ns":detail.get("pose_stamp_ns"),
+                "used_age_ns":detail.get("pose_age_ns"),
+                "latest_age_ns":detail.get("pose_latest_age_ns"),
+                "linear":message.linear.x})
+    source.create_subscription(Twist,"/valdi/lab_safe_cmd_vel_output",observe_output,10)
     def tap(msg,info):
         if not metadata:
             metadata.append({"type":type(info).__name__,"keys":sorted(info),
@@ -376,7 +383,7 @@ def main_three_way(*,keepout=False):
     shared={"nav":0.,"sweep":0.,"dock":0.,"battery":.92,"tf":False,"clock":True,
         "sweep_state":"IDLE","dock_state":"IDLE","docked":False,
         "status":(),"changed_map":False,"publish_sweep":True,"publish_status":True,
-        "tf_x":0.,"publish_costmap":True,"postfiltered":True,"costmap_last":0.}
+        "tf_x":0.,"tf_lead_ns":0,"publish_costmap":True,"postfiltered":True,"costmap_last":0.}
     grid=OccupancyGrid();grid.header.frame_id="map"
     grid.info.width=grid.info.height=20;grid.info.resolution=.25
     grid.info.origin.position.x=grid.info.origin.position.y=-2.5
@@ -388,8 +395,9 @@ def main_three_way(*,keepout=False):
         filter_info.base=0.;filter_info.multiplier=1.
         filter_info.filter_mask_topic="/oomwoo/keepout_mask"
     def emit():
+        clock_sample=source.get_clock().now()
         if shared["clock"]:
-            message=ClockMessage();message.clock=source.get_clock().now().to_msg();clock.publish(message)
+            message=ClockMessage();message.clock=clock_sample.to_msg();clock.publish(message)
         stamp=relay.get_clock().now().to_msg()
         for role,publisher in publishers.items():
             if role=="sweep" and not shared["publish_sweep"]:continue
@@ -400,6 +408,11 @@ def main_three_way(*,keepout=False):
         if shared["tf"]:
             transform=TransformStamped();transform.header.frame_id="map";transform.child_frame_id="base_link"
             transform.header.stamp=stamp;transform.transform.rotation.w=1.
+            if shared["tf_lead_ns"]:
+                ahead=clock_sample.nanoseconds+shared["tf_lead_ns"]
+                transform.header.stamp=clock_sample.to_msg()
+                transform.header.stamp.sec=ahead//1_000_000_000
+                transform.header.stamp.nanosec=ahead%1_000_000_000
             transform.transform.translation.x=shared["tf_x"]
             tf.publish(TFMessage(transforms=[transform]))
         grid.data[1]=100 if shared["changed_map"] else 0
@@ -470,6 +483,17 @@ def main_three_way(*,keepout=False):
         shared["tf"]=True;quiet();sweep()
         checks.append("sweep_nonzero_through_real_dds")
         if keepout:
+            token=relay._motion_token;first=len(outputs)
+            shared["tf_lead_ns"]=5_000_000
+            stable(1.2)
+            assert relay._motion_token==token and relay.mux.owner==relay.mux.SWEEP
+            assert len(outputs)>first+10
+            assert all(math.isclose(row[1],.18,abs_tol=.002) for row in outputs[first:])
+            assert any(row["latest_age_ns"] is not None and row["latest_age_ns"]<0
+                and row["used_age_ns"] is not None and 0<=row["used_age_ns"]<=200_000_000
+                and math.isclose(row["linear"],.18,abs_tol=.002) for row in pose_lead),pose_lead
+            shared["tf_lead_ns"]=0;stable(.15)
+            checks.append("future_tf_clock_order_uses_only_fresh_past_sources")
             shared["tf_x"]=.7
             assert until(lambda:relay.mux.owner==relay.mux.STOP,1.) and output(0.)
             assert relay.mux.stop_reason=="projected motion intersects keepout"
@@ -573,7 +597,7 @@ def main_three_way(*,keepout=False):
         assert source.count_publishers("/valdi/lab_safe_cmd_vel_output")==1
         print("ROS2_THREE_WAY_RELAY "+json.dumps({"ok":True,"checks":checks,"calls":calls,
             "keepout_required":keepout,
-            "reset_trace":reset_trace,
+            "reset_trace":reset_trace,"pose_clock_lead_observations":pose_lead,
             "output_messages":len(outputs),"metadata":metadata,"elapsed_s":round(time.monotonic()-started,2),
             "final_owner":relay.mux.owner,"limits":{"max_linear":relay.mux.max_linear,"max_angular":relay.mux.max_angular},
             "scope":"actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot",
@@ -581,6 +605,7 @@ def main_three_way(*,keepout=False):
     except Exception:
         print("ROS2_THREE_WAY_FAILURE "+json.dumps({
             "checks_completed":checks,"calls":calls,"reset_trace":reset_trace,
+            "pose_clock_lead_observations":pose_lead,
             "keepout_required":keepout,"owner":relay.mux.owner,
             "stop_reason":relay.mux.stop_reason},sort_keys=True),flush=True)
         raise

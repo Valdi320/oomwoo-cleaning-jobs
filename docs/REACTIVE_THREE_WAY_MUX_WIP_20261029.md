@@ -515,3 +515,40 @@ This does not establish the cause of the old native journal failure, complete
 masked coverage, Gazebo shutdown repair or physical control. Next is one full
 masked native case using unchanged90%/80% criteria, not more journal variants.
 See [before/after sources, retained failures and limits](evidence/journal_reopen_delivery_20261030.json).
+
+
+### Original-source TF selection across clock arrival order (2026-10-30)
+
+A native masked-room run stopped because its newest TF stamp led the received
+simulation clock by 5 ms, although a prior pose was still usable. The relay
+now retains at most one admitted and one pending TF, as independent copies.
+Health and the Keepout envelope share this temporal selector. A pending source
+can be selected only after its original stamp is no longer future. The existing
+500 ms health and 200 ms envelope budgets still apply. Reset discards both.
+
+The original method fails the causal case. A first single-copy version passes
+51 focused cases but fails a repeated-lead discriminator: it cannot promote
+the preceding observation after the clock reaches it. The final version passes
+52 cases, including successive 5 ms leads, both age boundaries plus 1 ns,
+missing history/lookup, mutation of the incoming message, and reset. Earlier
+negative and intermediate positive results remain in the evidence.
+
+The existing DDS probe uses its same emitter timer and output subscription
+to inject 1.2 seconds of 5 ms TF lead. All 18 checks pass in 47.218 seconds,
+including its prior 17 checks. During 24 observations, newest TF age was
+-5 ms while used-source age was 44.537–100.091 ms; each observed output stayed
+at 0.18 m/s under the same lease. These are real ROS2 messages, TFBuffer and
+services with synthetic inputs. There is no Nav2 action server, Gazebo scene
+or physical robot. The change adds bounded message history to the same relay
+without changing its interfaces, timers, journal or freshness thresholds.
+
+Reproduce the focused file with the existing host Python environment:
+
+    PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover \
+      -s tests -p test_sequenced_motion_ingress_20261029.py -v
+
+For native DDS, use the exact disposable-container command in
+[evidence/pose_clock_skew_dds_20261030.json](evidence/pose_clock_skew_dds_20261030.json).
+Machine ownership was checked; the owner's explicit compatible-resource
+exception was used with CPU/memory limits and no GPU access. Full masked-room
+acceptance remains pending. [Delivery and limits](evidence/pose_clock_skew_delivery_20261030.json).

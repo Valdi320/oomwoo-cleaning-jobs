@@ -1,0 +1,1190 @@
+{
+  "date_utc": "2026-10-30T11:04:11.738114+00:00",
+  "rc": 0,
+  "seconds": 47.218,
+  "stdout": "[WARN] [1793358225.362785225] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.\n[WARN] [1793358225.362796045] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.\n[WARN] [1793358229.239606723] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 50004386, \"pose_latest_age_ns\": 50004386, \"pose_latest_stamp_ns\": 1793358229132195552, \"pose_stamp_ns\": 1793358229132195552, \"postfilter_age_ns\": 399997988, \"postfilter_dds_age_ns\": 386858597, \"postfilter_stamp_ns\": 1793358228782201950}, \"reason\": \"projected motion intersects keepout\"}\n[WARN] [1793358230.870415197] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": false, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"original_ages\": {\"pose_age_ns\": 50039076, \"pose_latest_age_ns\": 50039076, \"pose_latest_stamp_ns\": 1793358230782210171, \"pose_stamp_ns\": 1793358230782210171, \"postfilter_age_ns\": 1000041551, \"postfilter_dds_age_ns\": 986478800, \"postfilter_stamp_ns\": 1793358229832207696}, \"reason\": \"health contradicts active owner\"}\n[WARN] [1793358232.520225137] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": false, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"original_ages\": {\"pose_age_ns\": 49995206, \"pose_latest_age_ns\": 49995206, \"pose_latest_stamp_ns\": 1793358232432212971, \"pose_stamp_ns\": 1793358232432212971, \"postfilter_age_ns\": 49995206, \"postfilter_dds_age_ns\": 36792224, \"postfilter_stamp_ns\": 1793358232432212971}, \"reason\": \"health contradicts active owner\"}\n[WARN] [1793358233.633835071] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 50052496, \"pose_latest_age_ns\": 50052496, \"pose_latest_stamp_ns\": 1793358233532201214, \"pose_stamp_ns\": 1793358233532201214, \"postfilter_age_ns\": 50052496, \"postfilter_dds_age_ns\": 36789915, \"postfilter_stamp_ns\": 1793358233532201214}, \"reason\": \"source or lease token does not own cmd_vel\"}\n[WARN] [1793358234.820133286] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": false, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"original_ages\": {\"pose_age_ns\": 49996276, \"pose_latest_age_ns\": 49996276, \"pose_latest_stamp_ns\": 1793358234732218939, \"pose_stamp_ns\": 1793358234732218939, \"postfilter_age_ns\": 149995318, \"postfilter_dds_age_ns\": 136729496, \"postfilter_stamp_ns\": 1793358234632219897}, \"reason\": \"health contradicts active owner\"}\n[WARN] [1793358239.370476454] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": false, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": true}, \"original_ages\": {\"pose_age_ns\": 49965776, \"pose_latest_age_ns\": 49965776, \"pose_latest_stamp_ns\": 1793358239282253688, \"pose_stamp_ns\": 1793358239282253688, \"postfilter_age_ns\": 299921606, \"postfilter_dds_age_ns\": 286215355, \"postfilter_stamp_ns\": 1793358239032297858}, \"reason\": \"health contradicts active owner\"}\n[WARN] [1793358243.370513216] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 250061730, \"pose_latest_age_ns\": 250061730, \"pose_latest_stamp_ns\": 1793358243082236666, \"pose_stamp_ns\": 1793358243082236666, \"postfilter_age_ns\": 550080616, \"postfilter_dds_age_ns\": 536681484, \"postfilter_stamp_ns\": 1793358242782217780}, \"reason\": \"motion pose stamp missing/stale\"}\n[WARN] [1793358245.020489645] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"original_ages\": {\"pose_age_ns\": 50031096, \"pose_latest_age_ns\": 50031096, \"pose_latest_stamp_ns\": 1793358244932223549, \"pose_stamp_ns\": 1793358244932223549, \"postfilter_age_ns\": 550033746, \"postfilter_dds_age_ns\": 537027243, \"postfilter_stamp_ns\": 1793358244432220899}, \"reason\": \"cmd_vel lease expired\"}\n[WARN] [1793358246.184763832] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 48904459, \"pose_latest_age_ns\": 48904459, \"pose_latest_stamp_ns\": 1793358246083356054, \"pose_stamp_ns\": 1793358246083356054, \"postfilter_age_ns\": 99556433, \"postfilter_dds_age_ns\": 85730993, \"postfilter_stamp_ns\": 1793358246032704080}, \"reason\": \"invalid wheel command\"}\n[WARN] [1793358247.383878489] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 49720086, \"pose_latest_age_ns\": 49720086, \"pose_latest_stamp_ns\": 1793358247282727481, \"pose_stamp_ns\": 1793358247282727481, \"postfilter_age_ns\": 200105803, \"postfilter_dds_age_ns\": 186564643, \"postfilter_stamp_ns\": 1793358247132341764}, \"reason\": \"velocity writer graph changed/nonexclusive\"}\n[WARN] [1793358248.634177029] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 0, \"pose_latest_age_ns\": 0, \"pose_latest_stamp_ns\": 1793358248532228022, \"pose_stamp_ns\": 1793358248532228022, \"postfilter_age_ns\": 299995846, \"postfilter_dds_age_ns\": 336695380, \"postfilter_stamp_ns\": 1793358248232232176}, \"reason\": \"ROS odometry header stale/replayed/invalid\"}\n[WARN] [1793358250.434658925] [valdi_experimental_cmdvel_relay]: MOTION_LEASE_REVOKED {\"health\": null, \"original_ages\": {\"pose_age_ns\": 50020716, \"pose_latest_age_ns\": 50020716, \"pose_latest_stamp_ns\": 1793358250332191490, \"pose_stamp_ns\": 1793358250332191490, \"postfilter_age_ns\": 550002026, \"postfilter_dds_age_ns\": 536714395, \"postfilter_stamp_ns\": 1793358249832210180}, \"reason\": \"invalid/changed motion map\"}\nROS2_THREE_WAY_RELAY {\"actual_nav2_action_server\": false, \"calls\": [{\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_motion\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"fresh exact Nav2 terminal/zero not observed\", \"ok\": false, \"op\": \"release_nav\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_nav\", \"state\": \"navigation\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_nav\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_dock\", \"state\": \"dock_drive\"}, {\"error\": \"\", \"ok\": true, \"op\": \"release_motion\", \"state\": \"stopped\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"\", \"ok\": true, \"op\": \"claim_sweep\", \"state\": \"reactive_sweep\"}, {\"error\": \"new owner lacks fresh quiet/health/idle proofs\", \"ok\": false, \"op\": \"claim_sweep\", \"state\": \"stopped\"}], \"checks\": [\"missing_tf_denies_sweep\", \"sweep_nonzero_through_real_dds\", \"future_tf_clock_order_uses_only_fresh_past_sources\", \"virtual_mask_blocks_direct_command_with_other_witnesses_healthy\", \"stale_original_postfilter_costmap_revokes_sweep\", \"fresh_but_unenforced_mask_revokes_sweep\", \"foreign_nav_command_revokes_sweep\", \"percent_battery_revokes_and_denies_sweep\", \"sweep_to_exact_uuid_nav_handoff\", \"missing_nav_status_revokes_active_navigation\", \"exact_uuid_nav_to_dock_handoff\", \"software_dock_phase_release_not_physical_contact\", \"tf_dropout_revokes_sweep\", \"command_lease_expiry_is_stop\", \"overspeed_rejected_without_raising_limits\", \"second_writer_revokes_ownership\", \"paused_ros_clock_does_not_suspend_output_watchdog\", \"changed_map_latches_reconciliation_required\"], \"elapsed_s\": 26.05, \"final_owner\": \"stopped\", \"keepout_required\": true, \"limits\": {\"max_angular\": 0.8, \"max_linear\": 0.25}, \"metadata\": [{\"keys\": [\"publication_sequence_number\", \"received_timestamp\", \"reception_sequence_number\", \"source_timestamp\"], \"publication_sequence_number\": 1, \"publisher_gid_bytes\": 0, \"source_timestamp_positive\": true, \"type\": \"dict\"}], \"ok\": true, \"output_messages\": 521, \"physical_contact_or_charging\": false, \"pose_clock_lead_observations\": [{\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 100090742, \"used_stamp_ns\": 1793358227682202147}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44904886, \"used_stamp_ns\": 1793358227787292889}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45122836, \"used_stamp_ns\": 1793358227837197775}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44876396, \"used_stamp_ns\": 1793358227887320611}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45002807, \"used_stamp_ns\": 1793358227937197007}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44997426, \"used_stamp_ns\": 1793358227987199814}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45398265, \"used_stamp_ns\": 1793358228037197240}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44603187, \"used_stamp_ns\": 1793358228087595505}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44997616, \"used_stamp_ns\": 1793358228137198692}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45004696, \"used_stamp_ns\": 1793358228187196308}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44996116, \"used_stamp_ns\": 1793358228237201004}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45469475, \"used_stamp_ns\": 1793358228287197120}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44537147, \"used_stamp_ns\": 1793358228337666595}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45009256, \"used_stamp_ns\": 1793358228387203742}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44981136, \"used_stamp_ns\": 1793358228437212998}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45049686, \"used_stamp_ns\": 1793358228487194134}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44957916, \"used_stamp_ns\": 1793358228537243820}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44999106, \"used_stamp_ns\": 1793358228587201736}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45037756, \"used_stamp_ns\": 1793358228637200842}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44966246, \"used_stamp_ns\": 1793358228687238598}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44997106, \"used_stamp_ns\": 1793358228737204844}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45000825, \"used_stamp_ns\": 1793358228787201950}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 45003887, \"used_stamp_ns\": 1793358228837202775}, {\"latest_age_ns\": -5000000, \"linear\": 0.18, \"used_age_ns\": 44991666, \"used_stamp_ns\": 1793358228887206662}], \"reset_trace\": [{\"calls\": 0, \"costmap_age_ns\": 1793358225532236737, \"costmap_dds_age_ns\": 1793358225534025322, \"costmap_sequence\": 0, \"health\": {\"dock_inactive\": false, \"isolated_sources\": true, \"map_current\": false, \"nav2_active_goal\": null, \"nav2_idle\": false, \"pose_fresh\": false, \"resources_ok\": false, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"cold start: ownership not reconciled\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375631.091751892}, {\"calls\": 2, \"costmap_age_ns\": 399997988, \"costmap_dds_age_ns\": 387438665, \"costmap_sequence\": 7, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"reactive_sweep\", \"prior_reason\": null, \"reason\": \"projected motion intersects keepout\", \"token_matches\": true, \"wall\": 375634.777743579}, {\"calls\": 2, \"costmap_age_ns\": 458466270, \"costmap_dds_age_ns\": 410504149, \"costmap_sequence\": 7, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375634.800811283}, {\"calls\": 3, \"costmap_age_ns\": 1000041551, \"costmap_dds_age_ns\": 986834578, \"costmap_sequence\": 9, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"health contradicts active owner\", \"reason\": \"health contradicts active owner\", \"token_matches\": false, \"wall\": 375636.427637768}, {\"calls\": 4, \"costmap_age_ns\": 49995206, \"costmap_dds_age_ns\": 37161473, \"costmap_sequence\": 13, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"health contradicts active owner\", \"reason\": \"health contradicts active owner\", \"token_matches\": false, \"wall\": 375638.077522919}, {\"calls\": 5, \"costmap_age_ns\": 100002842, \"costmap_dds_age_ns\": 50749524, \"costmap_sequence\": 15, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": false, \"wall\": 375639.191197482}, {\"calls\": 5, \"costmap_age_ns\": 100002842, \"costmap_dds_age_ns\": 51849431, \"costmap_sequence\": 15, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375639.192298599}, {\"calls\": 6, \"costmap_age_ns\": 149995318, \"costmap_dds_age_ns\": 137065195, \"costmap_sequence\": 17, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"health contradicts active owner\", \"reason\": \"health contradicts active owner\", \"token_matches\": false, \"wall\": 375640.377491387}, {\"calls\": 10, \"costmap_age_ns\": 299921606, \"costmap_dds_age_ns\": 286584814, \"costmap_sequence\": 25, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"health contradicts active owner\", \"reason\": \"health contradicts active owner\", \"token_matches\": false, \"wall\": 375644.927634405}, {\"calls\": 16, \"costmap_age_ns\": 550080616, \"costmap_dds_age_ns\": 537210183, \"costmap_sequence\": 32, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"reactive_sweep\", \"prior_reason\": null, \"reason\": \"motion pose stamp missing/stale\", \"token_matches\": true, \"wall\": 375648.927819277}, {\"calls\": 16, \"costmap_age_ns\": 600792990, \"costmap_dds_age_ns\": 555701230, \"costmap_sequence\": 32, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375648.946312584}, {\"calls\": 16, \"costmap_age_ns\": 100095012, \"costmap_dds_age_ns\": 54730272, \"costmap_sequence\": 33, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375648.995911471}, {\"calls\": 16, \"costmap_age_ns\": 150928845, \"costmap_dds_age_ns\": 105258696, \"costmap_sequence\": 33, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375649.046441245}, {\"calls\": 16, \"costmap_age_ns\": 200742262, \"costmap_dds_age_ns\": 154918994, \"costmap_sequence\": 33, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375649.096101173}, {\"calls\": 16, \"costmap_age_ns\": 250219710, \"costmap_dds_age_ns\": 201912458, \"costmap_sequence\": 33, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375649.143094577}, {\"calls\": 17, \"costmap_age_ns\": 550033746, \"costmap_dds_age_ns\": 537435662, \"costmap_sequence\": 35, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"cmd_vel lease expired\", \"reason\": \"cmd_vel lease expired\", \"token_matches\": false, \"wall\": 375650.577808296}, {\"calls\": 18, \"costmap_age_ns\": 149534160, \"costmap_dds_age_ns\": 100503140, \"costmap_sequence\": 38, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"invalid wheel command\", \"reason\": \"invalid wheel command\", \"token_matches\": false, \"wall\": 375651.742108843}, {\"calls\": 19, \"costmap_age_ns\": 249880160, \"costmap_dds_age_ns\": 200640032, \"costmap_sequence\": 40, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"reactive_sweep\", \"prior_reason\": null, \"reason\": \"velocity writer graph changed/nonexclusive\", \"token_matches\": true, \"wall\": 375652.94123964}, {\"calls\": 19, \"costmap_age_ns\": 249880160, \"costmap_dds_age_ns\": 201196831, \"costmap_sequence\": 40, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"velocity writer graph changed/nonexclusive\", \"reason\": \"velocity writer graph changed/nonexclusive\", \"token_matches\": true, \"wall\": 375652.941798389}, {\"calls\": 19, \"costmap_age_ns\": 249880160, \"costmap_dds_age_ns\": 201616120, \"costmap_sequence\": 40, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"velocity writer graph changed/nonexclusive\", \"reason\": \"velocity writer graph changed/nonexclusive\", \"token_matches\": true, \"wall\": 375652.942218138}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 351011769, \"costmap_sequence\": 42, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"reactive_sweep\", \"prior_reason\": null, \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.19150579}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 351871247, \"costmap_sequence\": 42, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.192363668}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 400895826, \"costmap_sequence\": 42, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.241390837}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 401253035, \"costmap_sequence\": 42, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.241747236}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 450975321, \"costmap_sequence\": 42, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.291469592}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 451331360, \"costmap_sequence\": 42, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.291825301}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 500827278, \"costmap_sequence\": 42, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.341321099}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 501176547, \"costmap_sequence\": 42, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.341670618}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 551091693, \"costmap_sequence\": 42, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.391586484}, {\"calls\": 20, \"costmap_age_ns\": 299995846, \"costmap_dds_age_ns\": 551446932, \"costmap_sequence\": 42, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.391941073}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 51156132, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.44155086}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 51510261, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.441904839}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 101277268, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.491672356}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 101700567, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.492094235}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 151059195, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.541454213}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 151420684, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.541814762}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 201043971, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.591439229}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 201428320, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.591822578}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 251091027, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.641485975}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 251441276, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.641835654}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 301104193, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.691499471}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 301522211, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.691915499}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 350976999, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.741371937}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 351338938, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.741733506}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 401108845, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.791504173}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 401485014, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.791879002}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 451484880, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.841880198}, {\"calls\": 20, \"costmap_age_ns\": 0, \"costmap_dds_age_ns\": 451901419, \"costmap_sequence\": 43, \"health\": null, \"owner_before\": \"stopped\", \"prior_reason\": \"foreign/stale nonzero cmd_vel\", \"reason\": \"source or lease token does not own cmd_vel\", \"token_matches\": true, \"wall\": 375654.842295587}, {\"calls\": 20, \"costmap_age_ns\": 800089427, \"costmap_dds_age_ns\": 501803885, \"costmap_sequence\": 43, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": false, \"sweep_inactive\": false}, \"owner_before\": \"stopped\", \"prior_reason\": \"source or lease token does not own cmd_vel\", \"reason\": \"ROS odometry header stale/replayed/invalid\", \"token_matches\": true, \"wall\": 375654.892198943}, {\"calls\": 21, \"costmap_age_ns\": 599987472, \"costmap_dds_age_ns\": 551528682, \"costmap_sequence\": 45, \"health\": {\"dock_inactive\": true, \"isolated_sources\": true, \"map_current\": true, \"nav2_active_goal\": null, \"nav2_idle\": true, \"pose_fresh\": true, \"resources_ok\": true, \"safety_loop_ok\": true, \"sweep_inactive\": false}, \"owner_before\": \"reactive_sweep\", \"prior_reason\": null, \"reason\": \"invalid/changed motion map\", \"token_matches\": true, \"wall\": 375655.992013836}], \"scope\": \"actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot\"}\n",
+  "args": [
+    "podman",
+    "run",
+    "--rm",
+    "--pull=never",
+    "--network=none",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges",
+    "--security-opt=label=disable",
+    "--read-only",
+    "--tmpfs",
+    "/tmp:rw,exec,size=512m,mode=1777",
+    "--memory=2g",
+    "--cpus=1",
+    "--pids-limit=256",
+    "--name",
+    "oomwoo-pose-clock-dds-5fcb1c7751",
+    "-e",
+    "ROS_LOG_DIR=/tmp/roslogs",
+    "-e",
+    "ROS_DOMAIN_ID=97",
+    "-e",
+    "ROS_LOCALHOST_ONLY=1",
+    "-e",
+    "FASTDDS_BUILTIN_TRANSPORTS=UDPv4",
+    "-e",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "-e",
+    "PYTHONUNBUFFERED=1",
+    "-v",
+    "/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza:/contrib:ro",
+    "--cpu-shares",
+    "2",
+    "--entrypoint",
+    "/bin/bash",
+    "docker.io/makerspet/oomwoo:jazzy-dev",
+    "-lc",
+    "source /opt/ros/jazzy/setup.bash\nsource /ros_ws/install/setup.bash\nexport PYTHONPATH=/contrib/src:${PYTHONPATH:-}\nmkdir -p /tmp/valdi_ros_ws/src\ncp -r /contrib/ros2_lab_interfaces /tmp/valdi_ros_ws/src/oomwoo_cleaning_jobs_lab_interfaces\ncd /tmp/valdi_ros_ws\ncolcon build --packages-select oomwoo_cleaning_jobs_lab_interfaces --parallel-workers 1 --event-handlers console_direct+ > /tmp/rosidl_build.log 2>&1 || { tail -n 40 /tmp/rosidl_build.log; exit 3; }\nsource /tmp/valdi_ros_ws/install/setup.bash\npython3 /contrib/integration/ros_dock_velocity_relay_probe.py --three-way --keepout\n"
+  ],
+  "container": "oomwoo-pose-clock-dds-5fcb1c7751",
+  "host_timeout": false,
+  "source_sha256": "e3ed3189908cfcaf5c1d6032c014f24f1325d46eb6fc50a7b5a6aa6ee2bdd28d",
+  "probe_sha256": "e5070c3feee84f7a873f44c110b997586e24863cceac9961ebe46bbca5eafb91",
+  "resource_authorization": "OCUPADA fifo650; explicit compatible-resource exception,12064MiB/load1.15;1CPU/2GiB/minCPUshares,noGPU/noGazebo/nohardware/networknone; outer4G+swap512MiB.",
+  "result": {
+    "actual_nav2_action_server": false,
+    "calls": [
+      {
+        "error": "new owner lacks fresh quiet/health/idle proofs",
+        "ok": false,
+        "op": "claim_sweep",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "new owner lacks fresh quiet/health/idle proofs",
+        "ok": false,
+        "op": "claim_sweep",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "release_motion",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_nav",
+        "state": "navigation"
+      },
+      {
+        "error": "fresh exact Nav2 terminal/zero not observed",
+        "ok": false,
+        "op": "release_nav",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_nav",
+        "state": "navigation"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "release_nav",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_dock",
+        "state": "dock_drive"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "release_motion",
+        "state": "stopped"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "",
+        "ok": true,
+        "op": "claim_sweep",
+        "state": "reactive_sweep"
+      },
+      {
+        "error": "new owner lacks fresh quiet/health/idle proofs",
+        "ok": false,
+        "op": "claim_sweep",
+        "state": "stopped"
+      }
+    ],
+    "checks": [
+      "missing_tf_denies_sweep",
+      "sweep_nonzero_through_real_dds",
+      "future_tf_clock_order_uses_only_fresh_past_sources",
+      "virtual_mask_blocks_direct_command_with_other_witnesses_healthy",
+      "stale_original_postfilter_costmap_revokes_sweep",
+      "fresh_but_unenforced_mask_revokes_sweep",
+      "foreign_nav_command_revokes_sweep",
+      "percent_battery_revokes_and_denies_sweep",
+      "sweep_to_exact_uuid_nav_handoff",
+      "missing_nav_status_revokes_active_navigation",
+      "exact_uuid_nav_to_dock_handoff",
+      "software_dock_phase_release_not_physical_contact",
+      "tf_dropout_revokes_sweep",
+      "command_lease_expiry_is_stop",
+      "overspeed_rejected_without_raising_limits",
+      "second_writer_revokes_ownership",
+      "paused_ros_clock_does_not_suspend_output_watchdog",
+      "changed_map_latches_reconciliation_required"
+    ],
+    "elapsed_s": 26.05,
+    "final_owner": "stopped",
+    "keepout_required": true,
+    "limits": {
+      "max_angular": 0.8,
+      "max_linear": 0.25
+    },
+    "metadata": [
+      {
+        "keys": [
+          "publication_sequence_number",
+          "received_timestamp",
+          "reception_sequence_number",
+          "source_timestamp"
+        ],
+        "publication_sequence_number": 1,
+        "publisher_gid_bytes": 0,
+        "source_timestamp_positive": true,
+        "type": "dict"
+      }
+    ],
+    "ok": true,
+    "output_messages": 521,
+    "physical_contact_or_charging": false,
+    "pose_clock_lead_observations": [
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 100090742,
+        "used_stamp_ns": 1793358227682202147
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44904886,
+        "used_stamp_ns": 1793358227787292889
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45122836,
+        "used_stamp_ns": 1793358227837197775
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44876396,
+        "used_stamp_ns": 1793358227887320611
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45002807,
+        "used_stamp_ns": 1793358227937197007
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44997426,
+        "used_stamp_ns": 1793358227987199814
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45398265,
+        "used_stamp_ns": 1793358228037197240
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44603187,
+        "used_stamp_ns": 1793358228087595505
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44997616,
+        "used_stamp_ns": 1793358228137198692
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45004696,
+        "used_stamp_ns": 1793358228187196308
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44996116,
+        "used_stamp_ns": 1793358228237201004
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45469475,
+        "used_stamp_ns": 1793358228287197120
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44537147,
+        "used_stamp_ns": 1793358228337666595
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45009256,
+        "used_stamp_ns": 1793358228387203742
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44981136,
+        "used_stamp_ns": 1793358228437212998
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45049686,
+        "used_stamp_ns": 1793358228487194134
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44957916,
+        "used_stamp_ns": 1793358228537243820
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44999106,
+        "used_stamp_ns": 1793358228587201736
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45037756,
+        "used_stamp_ns": 1793358228637200842
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44966246,
+        "used_stamp_ns": 1793358228687238598
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44997106,
+        "used_stamp_ns": 1793358228737204844
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45000825,
+        "used_stamp_ns": 1793358228787201950
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 45003887,
+        "used_stamp_ns": 1793358228837202775
+      },
+      {
+        "latest_age_ns": -5000000,
+        "linear": 0.18,
+        "used_age_ns": 44991666,
+        "used_stamp_ns": 1793358228887206662
+      }
+    ],
+    "reset_trace": [
+      {
+        "calls": 0,
+        "costmap_age_ns": 1793358225532236737,
+        "costmap_dds_age_ns": 1793358225534025322,
+        "costmap_sequence": 0,
+        "health": {
+          "dock_inactive": false,
+          "isolated_sources": true,
+          "map_current": false,
+          "nav2_active_goal": null,
+          "nav2_idle": false,
+          "pose_fresh": false,
+          "resources_ok": false,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "cold start: ownership not reconciled",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375631.091751892
+      },
+      {
+        "calls": 2,
+        "costmap_age_ns": 399997988,
+        "costmap_dds_age_ns": 387438665,
+        "costmap_sequence": 7,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "reactive_sweep",
+        "prior_reason": null,
+        "reason": "projected motion intersects keepout",
+        "token_matches": true,
+        "wall": 375634.777743579
+      },
+      {
+        "calls": 2,
+        "costmap_age_ns": 458466270,
+        "costmap_dds_age_ns": 410504149,
+        "costmap_sequence": 7,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375634.800811283
+      },
+      {
+        "calls": 3,
+        "costmap_age_ns": 1000041551,
+        "costmap_dds_age_ns": 986834578,
+        "costmap_sequence": 9,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "health contradicts active owner",
+        "reason": "health contradicts active owner",
+        "token_matches": false,
+        "wall": 375636.427637768
+      },
+      {
+        "calls": 4,
+        "costmap_age_ns": 49995206,
+        "costmap_dds_age_ns": 37161473,
+        "costmap_sequence": 13,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "health contradicts active owner",
+        "reason": "health contradicts active owner",
+        "token_matches": false,
+        "wall": 375638.077522919
+      },
+      {
+        "calls": 5,
+        "costmap_age_ns": 100002842,
+        "costmap_dds_age_ns": 50749524,
+        "costmap_sequence": 15,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": false,
+        "wall": 375639.191197482
+      },
+      {
+        "calls": 5,
+        "costmap_age_ns": 100002842,
+        "costmap_dds_age_ns": 51849431,
+        "costmap_sequence": 15,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375639.192298599
+      },
+      {
+        "calls": 6,
+        "costmap_age_ns": 149995318,
+        "costmap_dds_age_ns": 137065195,
+        "costmap_sequence": 17,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "health contradicts active owner",
+        "reason": "health contradicts active owner",
+        "token_matches": false,
+        "wall": 375640.377491387
+      },
+      {
+        "calls": 10,
+        "costmap_age_ns": 299921606,
+        "costmap_dds_age_ns": 286584814,
+        "costmap_sequence": 25,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "health contradicts active owner",
+        "reason": "health contradicts active owner",
+        "token_matches": false,
+        "wall": 375644.927634405
+      },
+      {
+        "calls": 16,
+        "costmap_age_ns": 550080616,
+        "costmap_dds_age_ns": 537210183,
+        "costmap_sequence": 32,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "reactive_sweep",
+        "prior_reason": null,
+        "reason": "motion pose stamp missing/stale",
+        "token_matches": true,
+        "wall": 375648.927819277
+      },
+      {
+        "calls": 16,
+        "costmap_age_ns": 600792990,
+        "costmap_dds_age_ns": 555701230,
+        "costmap_sequence": 32,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375648.946312584
+      },
+      {
+        "calls": 16,
+        "costmap_age_ns": 100095012,
+        "costmap_dds_age_ns": 54730272,
+        "costmap_sequence": 33,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375648.995911471
+      },
+      {
+        "calls": 16,
+        "costmap_age_ns": 150928845,
+        "costmap_dds_age_ns": 105258696,
+        "costmap_sequence": 33,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375649.046441245
+      },
+      {
+        "calls": 16,
+        "costmap_age_ns": 200742262,
+        "costmap_dds_age_ns": 154918994,
+        "costmap_sequence": 33,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375649.096101173
+      },
+      {
+        "calls": 16,
+        "costmap_age_ns": 250219710,
+        "costmap_dds_age_ns": 201912458,
+        "costmap_sequence": 33,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375649.143094577
+      },
+      {
+        "calls": 17,
+        "costmap_age_ns": 550033746,
+        "costmap_dds_age_ns": 537435662,
+        "costmap_sequence": 35,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "cmd_vel lease expired",
+        "reason": "cmd_vel lease expired",
+        "token_matches": false,
+        "wall": 375650.577808296
+      },
+      {
+        "calls": 18,
+        "costmap_age_ns": 149534160,
+        "costmap_dds_age_ns": 100503140,
+        "costmap_sequence": 38,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "invalid wheel command",
+        "reason": "invalid wheel command",
+        "token_matches": false,
+        "wall": 375651.742108843
+      },
+      {
+        "calls": 19,
+        "costmap_age_ns": 249880160,
+        "costmap_dds_age_ns": 200640032,
+        "costmap_sequence": 40,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "reactive_sweep",
+        "prior_reason": null,
+        "reason": "velocity writer graph changed/nonexclusive",
+        "token_matches": true,
+        "wall": 375652.94123964
+      },
+      {
+        "calls": 19,
+        "costmap_age_ns": 249880160,
+        "costmap_dds_age_ns": 201196831,
+        "costmap_sequence": 40,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "velocity writer graph changed/nonexclusive",
+        "reason": "velocity writer graph changed/nonexclusive",
+        "token_matches": true,
+        "wall": 375652.941798389
+      },
+      {
+        "calls": 19,
+        "costmap_age_ns": 249880160,
+        "costmap_dds_age_ns": 201616120,
+        "costmap_sequence": 40,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "velocity writer graph changed/nonexclusive",
+        "reason": "velocity writer graph changed/nonexclusive",
+        "token_matches": true,
+        "wall": 375652.942218138
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 351011769,
+        "costmap_sequence": 42,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "reactive_sweep",
+        "prior_reason": null,
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.19150579
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 351871247,
+        "costmap_sequence": 42,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.192363668
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 400895826,
+        "costmap_sequence": 42,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.241390837
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 401253035,
+        "costmap_sequence": 42,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.241747236
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 450975321,
+        "costmap_sequence": 42,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.291469592
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 451331360,
+        "costmap_sequence": 42,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.291825301
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 500827278,
+        "costmap_sequence": 42,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.341321099
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 501176547,
+        "costmap_sequence": 42,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.341670618
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 551091693,
+        "costmap_sequence": 42,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.391586484
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 299995846,
+        "costmap_dds_age_ns": 551446932,
+        "costmap_sequence": 42,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.391941073
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 51156132,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.44155086
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 51510261,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.441904839
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 101277268,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.491672356
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 101700567,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.492094235
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 151059195,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.541454213
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 151420684,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.541814762
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 201043971,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.591439229
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 201428320,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.591822578
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 251091027,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.641485975
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 251441276,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.641835654
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 301104193,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.691499471
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 301522211,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.691915499
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 350976999,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.741371937
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 351338938,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.741733506
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 401108845,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.791504173
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 401485014,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.791879002
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 451484880,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.841880198
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 0,
+        "costmap_dds_age_ns": 451901419,
+        "costmap_sequence": 43,
+        "health": null,
+        "owner_before": "stopped",
+        "prior_reason": "foreign/stale nonzero cmd_vel",
+        "reason": "source or lease token does not own cmd_vel",
+        "token_matches": true,
+        "wall": 375654.842295587
+      },
+      {
+        "calls": 20,
+        "costmap_age_ns": 800089427,
+        "costmap_dds_age_ns": 501803885,
+        "costmap_sequence": 43,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": false,
+          "sweep_inactive": false
+        },
+        "owner_before": "stopped",
+        "prior_reason": "source or lease token does not own cmd_vel",
+        "reason": "ROS odometry header stale/replayed/invalid",
+        "token_matches": true,
+        "wall": 375654.892198943
+      },
+      {
+        "calls": 21,
+        "costmap_age_ns": 599987472,
+        "costmap_dds_age_ns": 551528682,
+        "costmap_sequence": 45,
+        "health": {
+          "dock_inactive": true,
+          "isolated_sources": true,
+          "map_current": true,
+          "nav2_active_goal": null,
+          "nav2_idle": true,
+          "pose_fresh": true,
+          "resources_ok": true,
+          "safety_loop_ok": true,
+          "sweep_inactive": false
+        },
+        "owner_before": "reactive_sweep",
+        "prior_reason": null,
+        "reason": "invalid/changed motion map",
+        "token_matches": true,
+        "wall": 375655.992013836
+      }
+    ],
+    "scope": "actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot"
+  }
+}

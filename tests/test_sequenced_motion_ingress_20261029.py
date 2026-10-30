@@ -193,7 +193,7 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion",
                "_motion_health", "_keepout_dds_stamp", "_on_motion_keepout_mask",
                "_on_motion_keepout_info", "_on_motion_costmap", "_keepout_ready",
-               "_keepout_output", "_motion_zero", "_on_nav_status"}
+               "_keepout_output", "_motion_transform", "_motion_zero", "_on_nav_status"}
         methods=[copy.deepcopy(n) for n in klass.body if isinstance(n,ast.FunctionDef)
                  and n.name in names]
         self.assertEqual(len(methods),len(names))
@@ -201,6 +201,7 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
             name="Relay",bases=[],keywords=[],body=methods,decorator_list=[])],type_ignores=[]))
         mono=[1.94];wall=[10_000_000_000]
         scope={"Velocity":Velocity,"ReactiveMuxError":ReactiveMuxError,
+               "deepcopy":copy.deepcopy,
                "time":SimpleNamespace(monotonic=lambda:mono[0],time_ns=lambda:wall[0]),
                "GetState":SimpleNamespace(Request=object),"GoalJournalError":GoalJournalError,
                "MotionHealth":MotionHealth,"math":math,"json":json,
@@ -575,6 +576,109 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         relay._on_motion_costmap(grid(cells),{"source_timestamp":wall[0]-10_000_000,
                                             "publication_sequence_number":1})
         return relay,mono,wall,graph,grid,cells,pose_stamp
+
+    def pose_health(self, relay, mono):
+        relay._map_hash="known";relay._map_fault=False
+        relay._nav_idle=lambda:True
+        relay._nav_status=();relay._last_status=mono[0]
+        relay._battery_fraction=.92;relay._battery_last=mono[0]
+        relay._clock_fault=False;relay._clock_advanced=mono[0]
+        relay._unstable=False;relay._unstable_last=mono[0]
+        relay._sweep_state="SWEEP";relay._sweep_last=mono[0]
+        relay._dock_state="IDLE";relay._dock_last=mono[0]
+
+    def test_future_tf_uses_prior_original_pose_until_clock_catches_up(self):
+        relay,mono,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.pose_health(relay,mono)
+        previous=pose_stamp[0]
+        self.assertTrue(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity(.18,0.))
+        pose_stamp[0]=wall[0]+5_000_000
+        self.assertTrue(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._motion_health_detail["pose_stamp_ns"],previous)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity(.18,0.))
+        wall[0]=pose_stamp[0]
+        self.assertTrue(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._motion_health_detail["pose_stamp_ns"],pose_stamp[0])
+
+    def test_successive_future_tf_samples_are_admitted_only_after_their_time(self):
+        relay,mono,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.pose_health(relay,mono)
+        self.assertTrue(relay._motion_health().pose_fresh)
+        previous_future=None
+        for _ in range(8):
+            wall[0]+=50_000_000
+            pose_stamp[0]=wall[0]+5_000_000
+            self.assertTrue(relay._motion_health().pose_fresh)
+            used=relay._motion_health_detail["pose_stamp_ns"]
+            self.assertLessEqual(used,wall[0])
+            if previous_future is not None:self.assertEqual(used,previous_future)
+            self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity(.18,0.))
+            previous_future=pose_stamp[0]
+
+    def test_future_tf_without_accepted_history_cannot_move(self):
+        relay,mono,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.pose_health(relay,mono);pose_stamp[0]=wall[0]+5_000_000
+        self.assertFalse(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+        self.assertEqual(relay.mux.owner,relay.mux.STOP)
+
+    def test_future_tf_cannot_refresh_the_200ms_output_source_budget(self):
+        relay,mono,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.pose_health(relay,mono);previous=pose_stamp[0]
+        self.assertTrue(relay._motion_health().pose_fresh)
+        wall[0]=previous+200_000_000;pose_stamp[0]=wall[0]+5_000_000
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity(.18,0.))
+        wall[0]+=1;pose_stamp[0]=wall[0]+5_000_000
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+        self.assertEqual(relay.mux.owner,relay.mux.STOP)
+
+    def test_future_tf_cannot_refresh_the_500ms_health_source_budget(self):
+        relay,mono,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.pose_health(relay,mono);previous=pose_stamp[0]
+        self.assertTrue(relay._motion_health().pose_fresh)
+        wall[0]=previous+500_000_000;pose_stamp[0]=wall[0]+5_000_000
+        self.assertTrue(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._motion_health_detail["pose_stamp_ns"],previous)
+        wall[0]+=1;pose_stamp[0]=wall[0]+5_000_000
+        self.assertFalse(relay._motion_health().pose_fresh)
+
+    def test_mutating_a_future_tf_cannot_change_the_saved_original_pose(self):
+        relay,mono,wall,_,_,_,_=self.keepout(near=False)
+        self.pose_health(relay,mono)
+        transform=relay.tf_buffer.lookup_transform()
+        relay.tf_buffer.lookup_transform=lambda *args:transform
+        previous=transform.header.stamp.sec*1_000_000_000+transform.header.stamp.nanosec
+        self.assertTrue(relay._motion_health().pose_fresh)
+        transform.header.stamp.sec=wall[0]//1_000_000_000
+        transform.header.stamp.nanosec=5_000_000
+        transform.transform.translation.x=1.4
+        self.assertTrue(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._motion_health_detail["pose_stamp_ns"],previous)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity(.18,0.))
+        self.assertEqual(relay._motion_health_detail["pose_latest_age_ns"],-5_000_000)
+
+    def test_reset_discards_a_previously_admitted_pose(self):
+        relay,mono,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.pose_health(relay,mono)
+        self.assertTrue(relay._motion_health().pose_fresh)
+        pose_stamp[0]=wall[0]+5_000_000
+        self.assertTrue(relay._motion_health().pose_fresh)
+        relay._reset("explicit stop")
+        wall[0]+=10_000_000
+        pose_stamp[0]=wall[0]+5_000_000
+        self.assertFalse(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+
+    def test_missing_tf_lookup_does_not_reuse_cached_history(self):
+        relay,mono,_,_,_,_,_=self.keepout(near=False)
+        self.pose_health(relay,mono)
+        self.assertTrue(relay._motion_health().pose_fresh)
+        def unavailable(*args):raise LookupError("unavailable")
+        relay.tf_buffer.lookup_transform=unavailable
+        self.assertFalse(relay._motion_health().pose_fresh)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+        self.assertEqual(relay.mux.owner,relay.mux.STOP)
 
     def test_actual_final_tick_stops_virtual_crossing_with_other_proofs_healthy(self):
         for near,expected in [(False,.18),(True,0.)]:

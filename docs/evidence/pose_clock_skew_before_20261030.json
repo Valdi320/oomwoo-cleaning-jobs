@@ -1,0 +1,15 @@
+{
+  "rc": 1,
+  "seconds": 0.617,
+  "stdout": "",
+  "stderr": "test_future_tf_uses_prior_original_pose_until_clock_catches_up (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_future_tf_uses_prior_original_pose_until_clock_catches_up) ... FAIL\n\n======================================================================\nFAIL: test_future_tf_uses_prior_original_pose_until_clock_catches_up (test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_future_tf_uses_prior_original_pose_until_clock_catches_up)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/var/home/Valdi/Documents/Codex/2026-10-30/oomwoo-integracion-limpieza/tests/test_sequenced_motion_ingress_20261029.py\", line 596, in test_future_tf_uses_prior_original_pose_until_clock_catches_up\n    self.assertTrue(relay._motion_health().pose_fresh)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.108s\n\nFAILED (failures=1)\n",
+  "args": [
+    "python3",
+    "-m",
+    "unittest",
+    "test_sequenced_motion_ingress_20261029.TestRelayDDSMetadataIngress.test_future_tf_uses_prior_original_pose_until_clock_catches_up",
+    "-v"
+  ],
+  "source_sha256": "12585bd3b6f35cbaba305056500a348e5ad3872cd233607e562aaf5eeaee0837",
+  "resource_authorization": "OCUPADA fifo649; explicit compatible-resource exception,11952MiB available/load1.70; single pure Python case,CPUQuota25%,noGPU/noROSgraph."
+}
