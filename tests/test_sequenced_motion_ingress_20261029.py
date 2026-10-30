@@ -13,6 +13,10 @@ from oomwoo_cleaning_jobs.goal_journal import GoalJournal, GoalJournalError
 from oomwoo_cleaning_jobs.nav_lease_witness import ACTIVE, NavLeaseWitness, nav_status_idle
 from oomwoo_cleaning_jobs.reactive_velocity import (
     MotionHealth, ReactiveMuxError, ThreeWayVelocityMux)
+from oomwoo_cleaning_jobs.map_admission import Raster, AdmissionError
+from oomwoo_cleaning_jobs.nav_keepout_admission import VerifiedGlobalKeepout
+from oomwoo_cleaning_jobs.reactive_keepout_envelope import (
+    PoseEvidence, projected_motion_blocker)
 from oomwoo_cleaning_jobs.sequenced_motion_ingress import (
     EvidenceEnvelope, SequencedMotionMux)
 
@@ -186,7 +190,9 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                    and n.name=="ExperimentalDockVelocityRelay")
         names={"_on_motion_cmd","_reset","_motion_graph","_motion_now",
                "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion",
-               "_motion_health"}
+               "_motion_health", "_keepout_dds_stamp", "_on_motion_keepout_mask",
+               "_on_motion_keepout_info", "_on_motion_costmap", "_keepout_ready",
+               "_keepout_output", "_motion_zero"}
         methods=[copy.deepcopy(n) for n in klass.body if isinstance(n,ast.FunctionDef)
                  and n.name in names]
         self.assertEqual(len(methods),len(names))
@@ -199,7 +205,9 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                "MotionHealth":MotionHealth,"math":math,
                "_ACTIVE":ACTIVE,
                "rclpy":SimpleNamespace(time=SimpleNamespace(Time=lambda:None)),
-               "TransformException":LookupError,"AdmissionError":ValueError,
+               "TransformException":LookupError,"AdmissionError":AdmissionError,
+               "Raster":Raster,"VerifiedGlobalKeepout":VerifiedGlobalKeepout,
+               "PoseEvidence":PoseEvidence,"projected_motion_blocker":projected_motion_blocker,
                "nav_status_idle":nav_status_idle,
                "Twist":lambda:SimpleNamespace(linear=SimpleNamespace(x=0.),
                                                angular=SimpleNamespace(z=0.))}
@@ -235,6 +243,20 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         relay,_,_,_=self.relay();self.send(relay,stamp=9_899_999_999)
         self.assertEqual(relay.mux.owner,relay.mux.STOP)
         self.assertIn("predates",relay.mux.stop_reason)
+
+    def test_queued_preclaim_zero_neither_revokes_nor_proves_the_new_lease(self):
+        relay,mono,_,_=self.relay()
+        token=relay._motion_token
+        zero=SimpleNamespace(linear=SimpleNamespace(x=0.),angular=SimpleNamespace(z=0.))
+        relay._on_motion_cmd(relay.mux.SWEEP,zero,{
+            "source_timestamp":9_899_999_999,"publication_sequence_number":10})
+        self.assertEqual(relay.mux.owner,relay.mux.SWEEP)
+        self.assertEqual(relay._motion_token,token)
+        self.assertEqual(relay.mux.output(now=1.95),Velocity())
+        self.assertFalse(relay._motion_zero(relay.mux.SWEEP))
+        mono[0]=1.955
+        self.send(relay,sequence=11)
+        self.assertEqual(relay.mux.output(now=1.96),Velocity(.18,0.))
 
     def test_sequence_replay_and_reordered_timestamp_revoke(self):
         for seq,stamp in [(10,9_991_000_000),(11,9_980_000_000)]:
@@ -455,6 +477,110 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                 self.assertEqual(proof.safety_loop_ok,managed)
                 self.assertEqual(proof.sweep_inactive,managed)
                 self.assertEqual(proof.nav2_active_goal,"a"*32)
+
+    def keepout(self, *, near=True):
+        relay,mono,wall,graph=self.relay()
+        relay._keepout_required=True
+        relay._keepout_fault=False;relay._keepout_info_valid=False
+        relay._keepout_mask=None;relay._keepout_costmap=None
+        relay._keepout_mask_epoch=relay._keepout_info_epoch=0
+        relay._keepout_costmap_dds=relay._keepout_costmap_sequence=0
+        relay._keepout_costmap_stamp=0;relay._keepout_sources=None
+        relay._keepout_proof=None
+        relay._map_raster=Raster(60,60,.1,-3.,-3.,0.,(0,)*3600)
+        relay.get_clock=lambda:SimpleNamespace(now=lambda:SimpleNamespace(nanoseconds=wall[0]))
+        pose_stamp=[wall[0]-10_000_000]
+        def transform(*args):
+            return SimpleNamespace(
+                header=SimpleNamespace(stamp=SimpleNamespace(
+                    sec=pose_stamp[0]//1_000_000_000,nanosec=pose_stamp[0]%1_000_000_000)),
+                transform=SimpleNamespace(translation=SimpleNamespace(x=0.,y=0.),
+                    rotation=SimpleNamespace(x=0.,y=0.,z=0.,w=1.)))
+        relay.tf_buffer=SimpleNamespace(lookup_transform=transform)
+        for i,(topic,kind) in enumerate([
+                ("/oomwoo/keepout_mask","nav_msgs/msg/OccupancyGrid"),
+                ("/oomwoo/keepout_filter_info","nav2_msgs/msg/CostmapFilterInfo"),
+                ("/global_costmap/costmap","nav_msgs/msg/OccupancyGrid")],20):
+            graph[topic]=[SimpleNamespace(endpoint_gid=bytes([i])*24,topic_type=kind)]
+        def grid(cells,stamp=None):
+            stamp=wall[0]-10_000_000 if stamp is None else stamp
+            return SimpleNamespace(header=SimpleNamespace(frame_id="map",
+                stamp=SimpleNamespace(sec=stamp//1_000_000_000,nanosec=stamp%1_000_000_000)),
+                info=SimpleNamespace(width=60,height=60,resolution=.1,
+                    origin=SimpleNamespace(position=SimpleNamespace(x=-3.,y=-3.),
+                        orientation=SimpleNamespace(x=0.,y=0.,z=0.,w=1.))),data=cells)
+        cells=[0]*3600;cells[30*60+(33 if near else 45)]=100
+        mask=grid(cells)
+        relay._on_motion_keepout_mask(mask,{"source_timestamp":wall[0]-100_000_000})
+        relay._on_motion_keepout_info(SimpleNamespace(type=0,base=0.,multiplier=1.,
+            filter_mask_topic="/oomwoo/keepout_mask"),{"source_timestamp":wall[0]-90_000_000})
+        relay._on_motion_costmap(grid(cells),{"source_timestamp":wall[0]-10_000_000,
+                                            "publication_sequence_number":1})
+        return relay,mono,wall,graph,grid,cells,pose_stamp
+
+    def test_actual_final_tick_stops_virtual_crossing_with_other_proofs_healthy(self):
+        for near,expected in [(False,.18),(True,0.)]:
+            with self.subTest(near=near):
+                relay,_,_,_,_,_,_=self.keepout(near=near)
+                self.assertTrue(relay._keepout_ready())
+                self.send(relay)
+                relay._motion_health=lambda:good_health(sweep_inactive=False)
+                sent=[];relay.safe=SimpleNamespace(publish=sent.append)
+                relay._tick_motion()
+                self.assertEqual(len(sent),1)
+                self.assertEqual(sent[0].linear.x,expected)
+                if near:
+                    self.assertEqual(relay.mux.owner,relay.mux.STOP)
+                    self.assertIn("intersects keepout",relay.mux.stop_reason)
+
+    def test_missing_postfilter_enforcement_cannot_relay_sweep(self):
+        relay,_,wall,_,grid,_,_=self.keepout()
+        relay._on_motion_costmap(grid([0]*3600),{
+            "source_timestamp":wall[0],"publication_sequence_number":2})
+        self.assertFalse(relay._keepout_ready())
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+        self.assertEqual(relay.mux.owner,relay.mux.STOP)
+
+    def test_fresh_dds_receipt_does_not_refresh_old_costmap_ros_stamp(self):
+        relay,_,wall,_,grid,cells,_=self.keepout(near=False)
+        relay._on_motion_costmap(grid(cells,wall[0]-1_100_000_000),{
+            "source_timestamp":wall[0],"publication_sequence_number":2})
+        self.assertFalse(relay._keepout_ready())
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+
+    def test_stale_pose_blocks_even_with_fresh_matching_filtered_map(self):
+        relay,_,wall,_,_,_,pose_stamp=self.keepout(near=False)
+        self.assertTrue(relay._keepout_ready());pose_stamp[0]=wall[0]-210_000_000
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+        self.assertIn("pose stamp",relay.mux.stop_reason)
+
+    def test_static_mask_change_is_sticky_and_old_bytes_cannot_rearm(self):
+        relay,_,wall,_,grid,cells,_=self.keepout()
+        original=list(cells);cells=list(cells);cells[1]=100
+        relay._on_motion_keepout_mask(grid(cells),{"source_timestamp":wall[0]})
+        relay._on_motion_keepout_mask(grid(original),{"source_timestamp":wall[0]+1})
+        self.assertTrue(relay._keepout_fault)
+        self.assertEqual(relay._keepout_output(Velocity(.18,0.)),Velocity())
+
+    def test_shifted_mask_is_not_proven_by_a_matching_pixel_index(self):
+        relay,_,wall,_,grid,cells,_=self.keepout()
+        relay._keepout_mask=None;relay._keepout_proof=None
+        shifted=grid(cells);shifted.info.origin.position.x+=.1
+        relay._on_motion_keepout_mask(shifted,{"source_timestamp":wall[0]-100_000_000})
+        self.assertFalse(relay._keepout_ready())
+
+    def test_mask_publisher_replacement_latches_reconciliation(self):
+        relay,_,_,graph,_,_,_=self.keepout(near=False)
+        self.assertTrue(relay._keepout_ready())
+        endpoint=graph["/oomwoo/keepout_mask"][0];original=endpoint.endpoint_gid
+        endpoint.endpoint_gid=b"X"*24
+        self.assertFalse(relay._keepout_ready());endpoint.endpoint_gid=original
+        self.assertFalse(relay._keepout_ready())
+
+    def test_stale_dds_costmap_cannot_authorize_fresh_ros_header(self):
+        relay,_,wall,_,_,_,_=self.keepout(near=False)
+        relay._keepout_costmap_dds=wall[0]-1_100_000_000
+        self.assertFalse(relay._keepout_ready())
 
 
 if __name__ == "__main__":

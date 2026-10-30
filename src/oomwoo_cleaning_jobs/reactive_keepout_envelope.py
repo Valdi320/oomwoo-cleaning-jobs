@@ -35,6 +35,30 @@ class KeepoutEvidence:
     mask_sampled_at: float
 
 
+def projected_motion_blocker(velocity: Velocity, pose: PoseEvidence, grids, *,
+                             radius: float, margin: float, horizon: float) -> str | None:
+    """Reuse the bounded arc geometry after the caller validates its evidence.
+
+    ``grids`` contains (name, immutable Raster, allowed occupancy) tuples.
+    This geometry does not attest timestamps, publishers, ownership or braking.
+    The synthetic wrapper below still checks all its original evidence/maps;
+    the ROS relay can fuse the same projection with its actual map witnesses.
+    """
+    grids = tuple(grids)
+    n = max(1, math.ceil(horizon/.08),
+            math.ceil(abs(velocity.angular)*horizon/.1))
+    dt = horizon / n
+    swept_radius = radius + margin + abs(velocity.linear*velocity.angular)*dt*dt/8.
+    last = (pose.x, pose.y)
+    for k in range(1, n+1):
+        point = ReactiveKeepoutEnvelope._location(pose, velocity, horizon*k/n)
+        for name, grid, max_cost in grids:
+            if not swept_disk_clear(grid, last, point, swept_radius, max_cost):
+                return name
+        last = point
+    return None
+
+
 class ReactiveKeepoutEnvelope:
     """Allow one sweep command only if its swept circular footprint is clear.
 
@@ -122,25 +146,11 @@ class ReactiveKeepoutEnvelope:
                 pose.y - (v / w) * (math.cos(pose.yaw + w*t) - math.cos(pose.yaw)))
 
     def _clear(self, velocity: Velocity, pose: PoseEvidence, maps: KeepoutEvidence) -> str | None:
-        # Cap each arc at <= 0.08 s AND <= 0.10 rad of rotation.
-        # With max |v| 0.25 m/s and |w| 0.8 rad/s, <= 19 segments.
-        n = max(1, math.ceil(self.horizon/.08),
-                math.ceil(abs(velocity.angular)*self.horizon/.1))
-        dt = self.horizon / n
-        # The sagitta bound is valid also at zero angular velocity.
-        swept_radius = (self.radius + self.margin
-                        + abs(velocity.linear*velocity.angular)*dt*dt/8.)
-        last = (pose.x, pose.y)
-        for k in range(1, n+1):
-            point = self._location(pose, velocity, self.horizon*k/n)
-            for name, grid, max_cost in (
-                    ("static", maps.static_map, 0),
-                    ("keepout", maps.forbidden_mask, 0),
-                    ("live", maps.live_costmap, self.live_max_cost)):
-                if not swept_disk_clear(grid, last, point, swept_radius, max_cost):
-                    return name
-            last = point
-        return None
+        return projected_motion_blocker(velocity, pose, (
+            ("static", maps.static_map, 0),
+            ("keepout", maps.forbidden_mask, 0),
+            ("live", maps.live_costmap, self.live_max_cost)),
+            radius=self.radius, margin=self.margin, horizon=self.horizon)
 
     def output(self, *, now: float, pose: PoseEvidence | None,
                maps: KeepoutEvidence | None) -> Velocity:

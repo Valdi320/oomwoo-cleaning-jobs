@@ -27,6 +27,7 @@ from rclpy.qos import (
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, OccupancyGrid
 from nav2_msgs.action import NavigateToPose
+from nav2_msgs.msg import CostmapFilterInfo
 from lifecycle_msgs.srv import GetState
 from rosgraph_msgs.msg import Clock as ClockMessage
 from tf2_ros import Buffer, TransformListener, TransformException
@@ -47,6 +48,8 @@ from .ros_odom_frame_gate import OdomFrameError, require_odom_frames
 from .request_dedupe import RequestDedupe,CommandReplayError
 from .goal_journal import GoalJournal,GoalJournalError
 from .nav_lease_witness import NavLeaseWitness,ACTIVE,nav_status_idle
+from .nav_keepout_admission import VerifiedGlobalKeepout
+from .reactive_keepout_envelope import PoseEvidence,projected_motion_blocker
 
 
 _ACTIVE=frozenset((1,2,3))
@@ -64,6 +67,10 @@ class ExperimentalDockVelocityRelay(Node):
         self._three_way=self.get_parameter("three_way").value is True
         self.declare_parameter("managed_nav2",False)
         self._managed_nav2=self.get_parameter("managed_nav2").value is True
+        self.declare_parameter("require_keepout_filter",False)
+        self._keepout_required=self.get_parameter("require_keepout_filter").value is True
+        if self._keepout_required and not self._three_way:
+            raise ValueError("keepout requires the three-way lab policy")
         if self._managed_nav2 and not self._three_way:
             raise ValueError("managed_nav2 requires the three-way lab policy")
         if self.get_parameter("simulation_lab").value is not True:
@@ -111,6 +118,17 @@ class ExperimentalDockVelocityRelay(Node):
             self._unstable_last=None
             self._prior_terminal=None
             self._dock_started=False
+            self._keepout_mask=None
+            self._keepout_info_valid=False
+            self._keepout_mask_epoch=0
+            self._keepout_info_epoch=0
+            self._keepout_costmap=None
+            self._keepout_costmap_stamp=0
+            self._keepout_costmap_dds=0
+            self._keepout_costmap_sequence=0
+            self._keepout_sources=None
+            self._keepout_proof=None
+            self._keepout_fault=False
             self.tf_buffer=Buffer()
             if self._managed_nav2:
                 self._motion_nav_uuid=None
@@ -172,8 +190,19 @@ class ExperimentalDockVelocityRelay(Node):
                     inputs["/navigate_to_pose/_action/feedback"]=self.create_subscription(
                         NavigateToPose.Impl.FeedbackMessage,
                         "/navigate_to_pose/_action/feedback",self._on_motion_feedback,10)
+                if self._keepout_required:
+                    inputs["/oomwoo/keepout_mask"]=self.create_subscription(
+                        OccupancyGrid,"/oomwoo/keepout_mask",
+                        self._on_motion_keepout_mask,latched)
+                    inputs["/oomwoo/keepout_filter_info"]=self.create_subscription(
+                        CostmapFilterInfo,"/oomwoo/keepout_filter_info",
+                        self._on_motion_keepout_info,latched)
+                    inputs["/global_costmap/costmap"]=self.create_subscription(
+                        OccupancyGrid,"/global_costmap/costmap",
+                        self._on_motion_costmap,10)
                 require_lab_input_subscriptions(inputs,three_way=True,
-                                                managed_nav2=self._managed_nav2)
+                    managed_nav2=self._managed_nav2,
+                    keepout_required=self._keepout_required)
             else:
                 require_lab_input_subscriptions(inputs)
         except Exception:
@@ -517,6 +546,129 @@ class ExperimentalDockVelocityRelay(Node):
             self._clock_advanced=time.monotonic()
         self._clock_ns=stamp
 
+    @staticmethod
+    def _keepout_dds_stamp(info):
+        stamp=info.get("source_timestamp") if isinstance(info,dict) else None
+        if type(stamp) is not int or stamp<=0:
+            raise AdmissionError("keepout DDS source timestamp unavailable")
+        return stamp
+
+    def _on_motion_keepout_mask(self,msg,info):
+        try:
+            mask=Raster.from_ros(msg)
+            stamp=self._keepout_dds_stamp(info)
+            if any(v not in (0,100) for v in mask.data):
+                raise AdmissionError("keepout mask is not binary")
+            if self._keepout_mask is not None and mask!=self._keepout_mask:
+                raise AdmissionError("keepout mask changed; restart/reconcile lab")
+            if self._keepout_mask is None:
+                self._keepout_mask=mask
+                self._keepout_mask_epoch=stamp
+                self._keepout_proof=None
+        except (AdmissionError,ValueError,TypeError) as exc:
+            self._keepout_fault=True
+            self._reset(str(exc))
+
+    def _on_motion_keepout_info(self,msg,info):
+        try:
+            stamp=self._keepout_dds_stamp(info)
+            if (msg.type!=0 or msg.filter_mask_topic!="/oomwoo/keepout_mask"
+                    or msg.base!=0. or msg.multiplier!=1.):
+                raise AdmissionError("keepout FilterInfo contract differs")
+            if not self._keepout_info_valid:
+                self._keepout_info_epoch=stamp
+                self._keepout_info_valid=True
+        except (AdmissionError,ValueError,TypeError) as exc:
+            self._keepout_fault=True
+            self._reset(str(exc))
+
+    def _on_motion_costmap(self,msg,info):
+        try:
+            stamp=self._keepout_dds_stamp(info)
+            sequence=info.get("publication_sequence_number")
+            if (type(sequence) is not int or not 0<sequence<2**63
+                    or sequence<=self._keepout_costmap_sequence
+                    or stamp<=self._keepout_costmap_dds):
+                raise AdmissionError("post-filter costmap replayed/reordered")
+            raster=Raster.from_ros(msg)
+            self._keepout_costmap=raster
+            self._keepout_costmap_stamp=(msg.header.stamp.sec*1_000_000_000
+                                         +msg.header.stamp.nanosec)
+            self._keepout_costmap_dds=stamp
+            self._keepout_costmap_sequence=sequence
+            self._keepout_proof=None
+        except (AdmissionError,ValueError,TypeError) as exc:
+            self._keepout_costmap=None
+            self._reset(str(exc))
+
+    def _keepout_ready(self):
+        # The static mask is immutable, not a freshly sampled sensor. Attest
+        # its content against a recent ORIGINAL post-filter costmap and live,
+        # stable graph endpoints. Callback receipt never refreshes map stamps.
+        if (self._keepout_fault or getattr(self,"_map_fault",False)
+                or not self._keepout_info_valid):
+            return False
+        if (self._keepout_mask is None or self._keepout_costmap is None
+                or getattr(self,"_map_raster",None) is None):
+            return False
+        observed=[]
+        for topic,kind in (
+                ("/oomwoo/keepout_mask","nav_msgs/msg/OccupancyGrid"),
+                ("/oomwoo/keepout_filter_info","nav2_msgs/msg/CostmapFilterInfo"),
+                ("/global_costmap/costmap","nav_msgs/msg/OccupancyGrid")):
+            endpoints=self.get_publishers_info_by_topic(topic)
+            if len(endpoints)!=1 or endpoints[0].topic_type!=kind:
+                return False
+            gid=bytes(endpoints[0].endpoint_gid)
+            if not gid or not any(gid):return False
+            observed.append(gid)
+        if len(set(observed))!=3:return False
+        if self._keepout_sources is None:self._keepout_sources=tuple(observed)
+        elif self._keepout_sources!=tuple(observed):
+            self._keepout_fault=True
+            return False
+        age=self.get_clock().now().nanoseconds-self._keepout_costmap_stamp
+        wall_age=time.time_ns()-self._keepout_costmap_dds
+        if (self._keepout_costmap_stamp<=0 or not 0<=age<=1_000_000_000
+                or not 0<=wall_age<=1_000_000_000
+                or self._keepout_costmap_dds<max(
+                    self._keepout_mask_epoch,self._keepout_info_epoch)):
+            return False
+        if self._keepout_proof is None:
+            try:
+                self._keepout_proof=VerifiedGlobalKeepout(
+                    self._map_raster,self._keepout_mask,self._keepout_costmap)
+            except AdmissionError:
+                return False
+        return True
+
+    def _keepout_output(self,velocity):
+        if not self._keepout_ready():
+            self._reset("keepout enforcement evidence missing/stale")
+            return Velocity()
+        try:
+            transform=self.tf_buffer.lookup_transform("map","base_link",rclpy.time.Time())
+            stamp=transform.header.stamp.sec*1_000_000_000+transform.header.stamp.nanosec
+            age=self.get_clock().now().nanoseconds-stamp
+            t=transform.transform.translation;q=transform.transform.rotation
+            if stamp<=0 or not 0<=age<=200_000_000:
+                raise AdmissionError("keepout pose stamp missing/stale")
+            values=(t.x,t.y,q.x,q.y,q.z,q.w)
+            if (not all(math.isfinite(v) for v in values)
+                    or abs(sum(v*v for v in (q.x,q.y,q.z,q.w))-1.)>1e-3):
+                raise AdmissionError("keepout pose nonfinite/invalid quaternion")
+            yaw=math.atan2(2*(q.w*q.z+q.x*q.y),1-2*(q.y*q.y+q.z*q.z))
+            pose=PoseEvidence(t.x,t.y,yaw,stamp*1e-9)
+            hit=projected_motion_blocker(velocity,pose,
+                (("keepout",self._keepout_mask,0),),
+                radius=.18,margin=.06,horizon=.8)
+            if hit is not None:
+                raise AdmissionError("projected motion intersects "+hit)
+            return velocity
+        except (TransformException,AdmissionError,ValueError,ArithmeticError,TypeError) as exc:
+            self._reset(str(exc))
+            return Velocity()
+
     def _on_motion_unstable(self,msg):
         self._unstable=bool(msg.data)
         self._unstable_last=time.monotonic()
@@ -579,7 +731,8 @@ class ExperimentalDockVelocityRelay(Node):
                 and math.isfinite(self._battery_fraction)
                 and (.20 if self.mux.owner==self.mux.STOP else .15)
                     <=self._battery_fraction<=1.),
-            map_current=self._map_hash is not None and not self._map_fault,
+            map_current=(self._map_hash is not None and not self._map_fault
+                and (not getattr(self,"_keepout_required",False) or self._keepout_ready())),
             safety_loop_ok=(not self._clock_fault and self._fresh(self._clock_advanced,.35)
                 and self._unstable is False and self._fresh(self._unstable_last,2.5)
                 and (self._sweep_state in ("IDLE","TRANSIT","PREPARE_NAV","SWEEP","ESCAPE")
@@ -623,6 +776,11 @@ class ExperimentalDockVelocityRelay(Node):
             if stamp<=0 or not 0<=wall-stamp<=300_000_000:
                 raise ReactiveMuxError("stale/future DDS command timestamp")
             if self.mux.owner==source and stamp<self._claim_wall_ns:
+                # A queued STOP from the preceding quiet interval cannot
+                # move anything. Ignore it without refreshing command/zero
+                # evidence or revoking the newly granted lease. Old nonzero
+                # commands remain faults and never acquire this epoch.
+                if velocity==Velocity():return
                 raise ReactiveMuxError("DDS command predates current velocity lease")
             self._command_sequences[source]=(gid,sequence,stamp)
             self._commands[source]=(now,velocity)
@@ -842,6 +1000,8 @@ class ExperimentalDockVelocityRelay(Node):
         except (ReactiveMuxError,GoalJournalError) as exc:
             self._reset(str(exc))
             velocity=Velocity()
+        if getattr(self,"_keepout_required",False) and velocity!=Velocity():
+            velocity=self._keepout_output(velocity)
         self._latest_output=velocity
         message=Twist()
         message.linear.x=velocity.linear

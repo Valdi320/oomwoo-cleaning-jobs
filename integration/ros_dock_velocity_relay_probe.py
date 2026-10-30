@@ -322,10 +322,11 @@ def main():
 
 
 
-def main_three_way():
+def main_three_way(*,keepout=False):
     """Exercise the same relay's three-way mode with real DDS, synthetic inputs."""
     from geometry_msgs.msg import TransformStamped
     from nav_msgs.msg import OccupancyGrid
+    from nav2_msgs.msg import CostmapFilterInfo
     from rosgraph_msgs.msg import Clock as ClockMessage
     from tf2_msgs.msg import TFMessage
 
@@ -335,6 +336,7 @@ def main_three_way():
     journal=GoalJournal(journal_path)
     relay=ExperimentalDockVelocityRelay(parameter_overrides=[
         Parameter("simulation_lab",value=True),Parameter("three_way",value=True),
+        Parameter("require_keepout_filter",value=keepout),
         Parameter("use_sim_time",value=True),
         Parameter("goal_journal_path",value=str(journal_path))])
     source=Node("oomwoo_three_way_sim_observations")
@@ -351,13 +353,17 @@ def main_three_way():
     clock=source.create_publisher(ClockMessage,"/clock",10)
     tf=source.create_publisher(TFMessage,"/tf",10)
     map_pub=source.create_publisher(OccupancyGrid,"/map",latched)
+    if keepout:
+        mask_pub=source.create_publisher(OccupancyGrid,"/oomwoo/keepout_mask",latched)
+        info_pub=source.create_publisher(CostmapFilterInfo,"/oomwoo/keepout_filter_info",latched)
+        costmap_pub=source.create_publisher(OccupancyGrid,"/global_costmap/costmap",10)
     unstable=source.create_publisher(Bool,"/coverage_meter/sim_unstable",10)
     nav_status=source.create_publisher(GoalStatusArray,"/navigate_to_pose/_action/status",latched)
     sweep_state=producers[1].create_publisher(String,"/coverage_planner/motion_state",10)
     dock_state=producers[2].create_publisher(String,"/dock_drive/state",10)
     docked=producers[2].create_publisher(Bool,"/dock_drive/docked",latched)
     control=source.create_client(ControlCleaning,"/valdi/relay/control")
-    outputs=[];metadata=[];checks=[];calls=[]
+    outputs=[];metadata=[];checks=[];calls=[];reset_trace=[]
     source.create_subscription(Twist,"/valdi/lab_safe_cmd_vel_output",
         lambda m:outputs.append((time.monotonic(),m.linear.x,m.angular.z)),10)
     def tap(msg,info):
@@ -369,11 +375,18 @@ def main_three_way():
     source.create_subscription(Twist,"/valdi/sweep_cmd_vel",tap,10)
     shared={"nav":0.,"sweep":0.,"dock":0.,"battery":.92,"tf":False,"clock":True,
         "sweep_state":"IDLE","dock_state":"IDLE","docked":False,
-        "status":(),"changed_map":False,"publish_sweep":True,"publish_status":True}
+        "status":(),"changed_map":False,"publish_sweep":True,"publish_status":True,
+        "tf_x":0.,"publish_costmap":True,"postfiltered":True,"costmap_last":0.}
     grid=OccupancyGrid();grid.header.frame_id="map"
     grid.info.width=grid.info.height=20;grid.info.resolution=.25
     grid.info.origin.position.x=grid.info.origin.position.y=-2.5
     grid.info.origin.orientation.w=1.;grid.data=[0]*400
+    if keepout:
+        import copy
+        mask=copy.deepcopy(grid);mask.data[10*20+14]=100
+        filter_info=CostmapFilterInfo();filter_info.type=0
+        filter_info.base=0.;filter_info.multiplier=1.
+        filter_info.filter_mask_topic="/oomwoo/keepout_mask"
     def emit():
         if shared["clock"]:
             message=ClockMessage();message.clock=source.get_clock().now().to_msg();clock.publish(message)
@@ -387,9 +400,17 @@ def main_three_way():
         if shared["tf"]:
             transform=TransformStamped();transform.header.frame_id="map";transform.child_frame_id="base_link"
             transform.header.stamp=stamp;transform.transform.rotation.w=1.
+            transform.transform.translation.x=shared["tf_x"]
             tf.publish(TFMessage(transforms=[transform]))
         grid.data[1]=100 if shared["changed_map"] else 0
         map_pub.publish(grid)
+        if keepout:
+            mask_pub.publish(mask);info_pub.publish(filter_info)
+            # Reuse this source's existing timer; the real Nav2 config is2Hz.
+            if shared["publish_costmap"] and time.monotonic()-shared["costmap_last"]>=.5:
+                costmap=copy.deepcopy(mask if shared["postfiltered"] else grid)
+                costmap.header.stamp=stamp;costmap_pub.publish(costmap)
+                shared["costmap_last"]=time.monotonic()
         unstable.publish(Bool(data=False))
         sweep_state.publish(String(data=shared["sweep_state"]))
         dock_state.publish(String(data=shared["dock_state"]))
@@ -422,15 +443,51 @@ def main_three_way():
     def sweep():
         reply=call("claim_sweep");assert reply.ok,(calls,relay._motion_health(),relay.mux.stop_reason,metadata)
         shared.update(sweep=.18,sweep_state="SWEEP")
-        assert output(.18),(calls,relay._motion_health(),relay.mux.stop_reason,metadata)
+        assert output(.18),(calls,relay._motion_health(),relay.mux.stop_reason,metadata,reset_trace)
+    if keepout:
+        original_reset=relay._reset
+        def traced_reset(reason):
+            if len(reset_trace)<100:
+                health=getattr(relay.mux,"_health",None)
+                reset_trace.append({"wall":time.monotonic(),"reason":reason,
+                    "calls":len(calls),"owner_before":relay.mux.owner,
+                    "prior_reason":relay.mux.stop_reason,
+                    "token_matches":relay._motion_token==relay.mux.token,
+                    "health":vars(health) if health is not None else None,
+                    "costmap_age_ns":relay.get_clock().now().nanoseconds-relay._keepout_costmap_stamp,
+                    "costmap_dds_age_ns":time.time_ns()-relay._keepout_costmap_dds,
+                    "costmap_sequence":relay._keepout_costmap_sequence})
+            original_reset(reason)
+        relay._reset=traced_reset
     started=time.monotonic()
     try:
         assert until(lambda:control.service_is_ready() and outputs,4.)
         stable(1.1)
+        if keepout:
+            assert until(relay._keepout_ready,3.),"post-filter witnesses did not initialize"
         assert not call("claim_sweep").ok,"missing TF admitted motion"
         checks.append("missing_tf_denies_sweep")
         shared["tf"]=True;quiet();sweep()
         checks.append("sweep_nonzero_through_real_dds")
+        if keepout:
+            shared["tf_x"]=.7
+            assert until(lambda:relay.mux.owner==relay.mux.STOP,1.) and output(0.)
+            assert relay.mux.stop_reason=="projected motion intersects keepout"
+            proof=relay._motion_health()
+            assert proof.pose_fresh and proof.map_current and proof.isolated_sources
+            assert proof.resources_ok and proof.safety_loop_ok
+            checks.append("virtual_mask_blocks_direct_command_with_other_witnesses_healthy")
+            shared["tf_x"]=0.;quiet();sweep()
+            shared["publish_costmap"]=False
+            assert until(lambda:relay.mux.owner==relay.mux.STOP,1.6) and output(0.)
+            assert not relay._keepout_ready()
+            checks.append("stale_original_postfilter_costmap_revokes_sweep")
+            shared["publish_costmap"]=True;quiet();sweep()
+            shared["postfiltered"]=False
+            assert until(lambda:relay.mux.owner==relay.mux.STOP,1.2) and output(0.)
+            assert not relay._keepout_ready()
+            checks.append("fresh_but_unenforced_mask_revokes_sweep")
+            shared["postfiltered"]=True;quiet();sweep()
         shared["nav"]=.12
         assert until(lambda:relay.mux.owner==relay.mux.STOP,1.)
         assert output(0.)
@@ -487,7 +544,7 @@ def main_three_way():
         checks.append("software_dock_phase_release_not_physical_contact")
         quiet();sweep();shared["tf"]=False
         assert until(lambda:relay.mux.owner==relay.mux.STOP,1.3) and output(0.)
-        assert relay._motion_health().pose_fresh is False
+        assert until(lambda:relay._motion_health().pose_fresh is False,.8)
         checks.append("tf_dropout_revokes_sweep")
         shared["tf"]=True;quiet();sweep()
         shared["publish_sweep"]=False
@@ -515,10 +572,18 @@ def main_three_way():
         assert source.count_publishers("/cmd_vel")==0
         assert source.count_publishers("/valdi/lab_safe_cmd_vel_output")==1
         print("ROS2_THREE_WAY_RELAY "+json.dumps({"ok":True,"checks":checks,"calls":calls,
+            "keepout_required":keepout,
+            "reset_trace":reset_trace,
             "output_messages":len(outputs),"metadata":metadata,"elapsed_s":round(time.monotonic()-started,2),
             "final_owner":relay.mux.owner,"limits":{"max_linear":relay.mux.max_linear,"max_angular":relay.mux.max_angular},
             "scope":"actual DDS/services/TF cache; synthetic clock,map,phase,resource,Nav2 status and commands; no Gazebo/physical robot",
             "actual_nav2_action_server":False,"physical_contact_or_charging":False},sort_keys=True),flush=True)
+    except Exception:
+        print("ROS2_THREE_WAY_FAILURE "+json.dumps({
+            "checks_completed":checks,"calls":calls,"reset_trace":reset_trace,
+            "keepout_required":keepout,"owner":relay.mux.owner,
+            "stop_reason":relay.mux.stop_reason},sort_keys=True),flush=True)
+        raise
     finally:
         ex.shutdown()
         for node in [*producers,source,relay]:node.destroy_node()
@@ -528,4 +593,4 @@ def main_three_way():
 
 if __name__=="__main__":
     import sys
-    main_three_way() if "--three-way" in sys.argv else main()
+    main_three_way(keepout="--keepout" in sys.argv) if "--three-way" in sys.argv else main()

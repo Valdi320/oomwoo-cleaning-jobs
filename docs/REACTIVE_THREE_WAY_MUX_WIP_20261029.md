@@ -385,3 +385,32 @@ The earlier 98.66% result stays tied to its original hashes. A positive native
 ACK followed by a permanently hung Gazebo destructor has not been fault
 injected; this uses the existing required-server exit without a new watchdog.
 All evidence concerns software and simulation; no physical prototype exists.
+
+
+### Keepout fusion in progress: direct command and transport evidence
+
+The working tree now connects the native /oomwoo/keepout_mask to the planner
+and folds the existing arc/swept-disk projection into the relay's sole output.
+The synthetic envelope retains its original three-map checks. The live mask
+path attests immutable aligned content, stable publishers and a recent original
+post-filter global costmap; receiving static bytes does not refresh their age.
+Masked coverage requires the existing relay/journal mode because a Nav2 sweep
+can still issue a direct bumper/wedge escape. No extra output node or timer is
+introduced. Ordinary obstacle/contact clearance retains its previous behavior;
+keepout dilation now includes corners and its explicit margin.
+
+The projection22, relay42 and planner70 focused cases pass. One existing DDS
+probe run passes17 checks with required mask evidence, including direct virtual
+intersection, stale post-filter map and fresh-but-unenforced map. It uses
+synthetic clock/maps/commands, not an actual Nav2 server or Gazebo. A queued
+zero from before a new lease is ignored without acquiring command/release proof;
+old nonzero commands still fault. The first DDS rearm failure remains recorded
+without a confirmed original cause. A separate diagnostic assertion was updated
+because the output pose limit stops earlier than the common health witness.
+
+The existing scorer now observes mask and ground-truth disks/chords without
+changing the coverage gate. Its13 cases and five-file lint passed before the
+last phase-statistics/admission edits; those final checks are pending while the
+machine guard is busy. The real masked Gazebo scene has not run. This is an
+integration in progress, not a complete Keepout acceptance or hardware result.
+See [exact sources, scopes and retained failures](evidence/reactive_keepout_fusion_codex_20261030.json).

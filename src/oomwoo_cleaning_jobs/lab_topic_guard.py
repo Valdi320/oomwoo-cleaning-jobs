@@ -54,12 +54,21 @@ LAB_MANAGED_NAV_INPUT_TOPICS = LAB_THREE_WAY_INPUT_TOPICS + (
     "/navigate_to_pose/_action/feedback",
 )
 
+LAB_KEEPOUT_INPUT_TOPICS = (
+    "/oomwoo/keepout_mask", "/oomwoo/keepout_filter_info",
+    "/global_costmap/costmap",
+)
+
 
 def require_lab_input_subscriptions(subscriptions: object, *, three_way=False,
-                                    managed_nav2=False) -> None:
+                                    managed_nav2=False, keepout_required=False) -> None:
     """Deny ROS2 subscriber remaps or source collisions before timers."""
     expected = (LAB_MANAGED_NAV_INPUT_TOPICS if managed_nav2 else
                 LAB_THREE_WAY_INPUT_TOPICS if three_way else LAB_INPUT_TOPICS)
+    if keepout_required:
+        if not three_way:
+            raise LabTopicGuardError("keepout requires the three-way lab policy")
+        expected += LAB_KEEPOUT_INPUT_TOPICS
     if (type(subscriptions) is not dict
             or set(subscriptions) != set(expected)
             or len(set(map(id, subscriptions.values()))) != len(expected)):
