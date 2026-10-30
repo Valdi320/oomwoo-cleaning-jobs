@@ -576,3 +576,20 @@ synthetic graph/TF/clock inputs, not a native Gazebo result. Repeat the
 same native case with only this source change before claiming that initial
 escape works there. Original Nav2 abort105 and full-room90/80 acceptance
 remain pending. [Evidence and limits](evidence/initial_escape_delivery_20261030.json).
+
+
+The native same-spawn contrast now demonstrates that phase correction:
+ESCAPE lasts from 8.0 to 10.6 simulated seconds, traverses 0.21634 m over
+130 truth poses, and returns to SWEEP without lease revocation or FAULT.
+Seven other input fingerprints match the previous failing case. All eight
+remain unchanged during this run. Nineteen auxiliary processes close
+cleanly; the only exit1 is the expected unchanged full-room scorer for
+this deliberate one-goal fixture. This does not fix the independent
+Gazebo shutdown race observed in the earlier run.
+
+No Nav2 goal was sent: the existing contact reflex marks the sole target
+as a wedge pocket, and the fixture ends after pruning it. This validates
+initial escape continuity, not the subsequent navigation or a full90/80
+room result. Consolidate the bounded phase fix. A full-history case673
+with the original plan and bounded existing-channel observations is queued
+in the ROS branch to investigate the original abort105.
