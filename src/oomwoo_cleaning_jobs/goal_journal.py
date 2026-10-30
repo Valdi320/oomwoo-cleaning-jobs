@@ -56,27 +56,35 @@ class GoalJournal:
     def read(self) -> dict | None:
         # Linux-only fail-closed read. A symlink to an unrelated terminal
         # journal must NEVER clear the unknown in-flight Nav2 UUID.
-        try:
-            fd=os.open(self.path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
-        except FileNotFoundError:
-            return None
-        except OSError as exc:
-            raise GoalJournalError("goal journal inaccessible/linked: do NOT rearm Nav2") from exc
-        try:
-            with os.fdopen(fd,"rb") as source:
-                info=os.fstat(source.fileno())
-                if (not stat.S_ISREG(info.st_mode)
-                    or info.st_nlink!=1
-                    or stat.S_IMODE(info.st_mode)&0o077):
-                    raise GoalJournalError("goal journal inode/permissions unsafe")
-                # A single Nav2 goal record should be tiny. Bound corrupted
-                # files before JSON parsing to avoid unbounded RAM use.
-                raw=source.read(65537)
-            if len(raw)>65536:
-                raise GoalJournalError("goal journal too large: refuse rearm")
-            obj=json.loads(raw)
-        except (OSError,ValueError) as exc:
-            raise GoalJournalError("goal journal unreadable: do NOT rearm Nav2") from exc
+        for attempt in range(2):
+            try:
+                fd=os.open(self.path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
+            except FileNotFoundError:
+                return None
+            except OSError as exc:
+                raise GoalJournalError("goal journal inaccessible/linked: do NOT rearm Nav2") from exc
+            try:
+                with os.fdopen(fd,"rb") as source:
+                    info=os.fstat(source.fileno())
+                    # A cooperating atomic replace can unlink the opened old
+                    # inode before fstat. Never consume those detached bytes:
+                    # close this fd and retry the named path ONCE, preserving
+                    # every original open/inode/permission/schema check.
+                    if stat.S_ISREG(info.st_mode) and info.st_nlink==0 and attempt==0:
+                        continue
+                    if (not stat.S_ISREG(info.st_mode)
+                        or info.st_nlink!=1
+                        or stat.S_IMODE(info.st_mode)&0o077):
+                        raise GoalJournalError("goal journal inode/permissions unsafe")
+                    # A single Nav2 goal record should be tiny. Bound corrupted
+                    # files before JSON parsing to avoid unbounded RAM use.
+                    raw=source.read(65537)
+                if len(raw)>65536:
+                    raise GoalJournalError("goal journal too large: refuse rearm")
+                obj=json.loads(raw)
+            except (OSError,ValueError) as exc:
+                raise GoalJournalError("goal journal unreadable: do NOT rearm Nav2") from exc
+            break
         if not isinstance(obj,dict):
             raise GoalJournalError("goal journal must be a JSON object")
         allowed={"schema","uuid","token","job_id","map_digest","target_cell","state","outcome","revision"}
