@@ -233,6 +233,16 @@ class ExperimentalDockVelocityRelay(Node):
                 self._goal_witness.observe(self._nav_status)
                 if self._goal_witness.fault is not None:
                     self._reset(self._goal_witness.fault)
+                elif self.mux.owner==self.mux.NAV:
+                    # ACTIVE and CANCELED can both arrive between the50ms
+                    # output ticks. Preserve the real event in the mux too;
+                    # the timer must not invent an ACTIVE observation later.
+                    # Aggregate health and exact UUID checks still apply.
+                    try:
+                        proof=self._motion_health()
+                        self.mux.observe_health(now=self._motion_now(),proof=proof)
+                    except ReactiveMuxError as exc:
+                        self._reset(str(exc),proof=proof)
             return
         if (self._goal_witness is not None and
             (self.mux.owner in (self.mux.NAV, self.mux.DOCK)
@@ -417,6 +427,7 @@ class ExperimentalDockVelocityRelay(Node):
         response.status_json=json.dumps({
             "mode":"ISOLATED ROS2 SIMULATION ONLY",
             "owner":self.mux.owner,"reason":self.mux.stop_reason,
+            "last_lease_revocation":getattr(self,"_last_lease_revocation",None),
             "policy":"three_way" if self._three_way else "two_way",
             "motion_health":(self._motion_health().__dict__ if self._three_way else None),
             "motion_inputs":({role:{"zero":entry[1]==Velocity(),
@@ -508,8 +519,16 @@ class ExperimentalDockVelocityRelay(Node):
         m.angular.z=velocity.angular
         self.safe.publish(m)
 
-    def _reset(self,reason):
+    def _reset(self,reason,*,proof=None):
         if getattr(self,"_three_way",False):
+            if self._motion_token is not None:
+                # Retain one bounded first cause per lease. Later foreign
+                # commands while STOP must not erase the useful diagnosis.
+                self._last_lease_revocation={"reason":reason,
+                    "health":proof.__dict__ if proof is not None else None,
+                    "original_ages":getattr(self,"_motion_health_detail",None)}
+                self.get_logger().warn("MOTION_LEASE_REVOKED "+json.dumps(
+                    self._last_lease_revocation,sort_keys=True))
             self.mux.stop(reason)
             self._motion_token=None
             self._prior_terminal=None
@@ -703,7 +722,7 @@ class ExperimentalDockVelocityRelay(Node):
         return self.mux.owner==self.mux.STOP or observed==self._source_gids
 
     def _motion_health(self):
-        pose=False
+        pose=False;stamp=None;age=None
         try:
             t=self.tf_buffer.lookup_transform("map","base_link",rclpy.time.Time())
             stamp=t.header.stamp.sec*1_000_000_000+t.header.stamp.nanosec
@@ -724,6 +743,13 @@ class ExperimentalDockVelocityRelay(Node):
         active=candidate if live and not idle else None
         # These fields are derived observations in this disposable simulation.
         # Meter health is not an electrical/MCU safety attestation.
+        self._motion_health_detail={"pose_stamp_ns":stamp,"pose_age_ns":age,
+            "postfilter_stamp_ns":getattr(self,"_keepout_costmap_stamp",None),
+            "postfilter_age_ns":(self.get_clock().now().nanoseconds
+                -self._keepout_costmap_stamp if getattr(self,"_keepout_required",False)
+                else None),
+            "postfilter_dds_age_ns":(time.time_ns()-self._keepout_costmap_dds
+                if getattr(self,"_keepout_required",False) else None)}
         return MotionHealth(
             pose_fresh=bool(pose),
             resources_ok=(self._fresh(self._battery_last,10.)
@@ -969,6 +995,7 @@ class ExperimentalDockVelocityRelay(Node):
                 and time.monotonic()-self._nav_lease_started<2.)
 
     def _tick_motion(self):
+        proof=None
         try:
             if getattr(self,"_managed_nav2",False):
                 self._poll_nav_backend()
@@ -982,8 +1009,11 @@ class ExperimentalDockVelocityRelay(Node):
                     self._goal_witness.observe(self._nav_status)
                     if self._goal_witness.fault is not None:
                         self._reset(self._goal_witness.fault)
-            self.mux.observe_health(now=self._motion_now(),proof=self._motion_health())
+            proof=self._motion_health()
+            self.mux.observe_health(now=self._motion_now(),proof=proof)
             velocity=self.mux.output(now=self._motion_now())
+            if self.mux.owner==self.mux.STOP and self._motion_token is not None:
+                self._reset(self.mux.stop_reason,proof=proof)
             if self.mux.owner==self.mux.NAV:
                 if (getattr(self,"_managed_nav2",False)
                         and getattr(self,"_sweep_state",None)=="TRANSIT_CANCEL"):
@@ -998,7 +1028,7 @@ class ExperimentalDockVelocityRelay(Node):
                         and not self._nav_confirmed_terminal()):
                         self._reset("Nav2 UUID never became active/verified")
         except (ReactiveMuxError,GoalJournalError) as exc:
-            self._reset(str(exc))
+            self._reset(str(exc),proof=proof)
             velocity=Velocity()
         if getattr(self,"_keepout_required",False) and velocity!=Velocity():
             velocity=self._keepout_output(velocity)

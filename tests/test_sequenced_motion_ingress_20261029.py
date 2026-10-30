@@ -1,6 +1,7 @@
 """Synthetic anti-replay safety regression; no actual ROS2 or robot output."""
 import ast
 import copy
+import json
 from dataclasses import replace
 import math
 from pathlib import Path
@@ -192,7 +193,7 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                "_poll_nav_backend","_execute_motion","_fresh","_feedback_live","_tick_motion",
                "_motion_health", "_keepout_dds_stamp", "_on_motion_keepout_mask",
                "_on_motion_keepout_info", "_on_motion_costmap", "_keepout_ready",
-               "_keepout_output", "_motion_zero"}
+               "_keepout_output", "_motion_zero", "_on_nav_status"}
         methods=[copy.deepcopy(n) for n in klass.body if isinstance(n,ast.FunctionDef)
                  and n.name in names]
         self.assertEqual(len(methods),len(names))
@@ -202,7 +203,7 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         scope={"Velocity":Velocity,"ReactiveMuxError":ReactiveMuxError,
                "time":SimpleNamespace(monotonic=lambda:mono[0],time_ns=lambda:wall[0]),
                "GetState":SimpleNamespace(Request=object),"GoalJournalError":GoalJournalError,
-               "MotionHealth":MotionHealth,"math":math,
+               "MotionHealth":MotionHealth,"math":math,"json":json,
                "_ACTIVE":ACTIVE,
                "rclpy":SimpleNamespace(time=SimpleNamespace(Time=lambda:None)),
                "TransformException":LookupError,"AdmissionError":AdmissionError,
@@ -213,6 +214,8 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
                                                angular=SimpleNamespace(z=0.))}
         exec(compile(module,str(source),"exec"),scope)
         relay=scope["Relay"]();relay._three_way=True;relay.mux=ThreeWayVelocityMux()
+        relay._diagnostic_messages=[]
+        relay.get_logger=lambda:SimpleNamespace(warn=relay._diagnostic_messages.append)
         for i in range(8):relay.mux.observe_odom(now=1.+i*.12,linear_mps=0.,angular_rps=0.)
         relay.mux.observe_health(now=1.85,proof=good_health())
         relay._motion_token=relay.mux.claim_sweep(now=1.9,nav_released=True,prior_terminal_uuid=None)
@@ -238,6 +241,15 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
     def test_real_method_accepts_supported_sequence_and_epoch(self):
         relay,_,_,_=self.relay();self.send(relay)
         self.assertEqual(relay.mux.output(now=1.95),Velocity(.18,0.))
+
+    def test_first_lease_revocation_survives_later_stopped_commands(self):
+        relay,_,_,_=self.relay()
+        relay._reset("original failure",proof=good_health(map_current=False))
+        relay._reset("later stopped command")
+        self.assertEqual(relay._last_lease_revocation["reason"],"original failure")
+        self.assertFalse(relay._last_lease_revocation["health"]["map_current"])
+        self.assertEqual(len(relay._diagnostic_messages),1)
+        self.assertEqual(relay.mux.owner,relay.mux.STOP)
 
     def test_preclaim_packet_does_not_acquire_new_token(self):
         relay,_,_,_=self.relay();self.send(relay,stamp=9_899_999_999)
@@ -389,6 +401,52 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
             "source_timestamp":9_995_000_000})
         self.assertEqual(relay.mux.owner,relay.mux.STOP)
         self.assertIn("graph changed",relay.mux.stop_reason)
+
+    def test_fast_active_then_cancel_between_ticks_retains_exact_release_proof(self):
+        for common_valid in (True, False):
+            with self.subTest(common_valid=common_valid), TemporaryDirectory() as scratch:
+                relay,_,_,_,_,_=self.managed()
+                relay.mux=ThreeWayVelocityMux()
+                for i in range(8):
+                    relay.mux.observe_odom(now=1.+i*.12,linear_mps=0.,angular_rps=0.)
+                relay.mux.observe_health(now=1.85,proof=good_health())
+                relay._motion_token=relay.mux.claim_transit(now=1.9,nav_goal_uuid="a"*32)
+                relay._prior_terminal=None
+                journal=GoalJournal(Path(scratch)/"goal.json")
+                token="b"*32+"-1"
+                journal.begin(uuid_hex="a"*32,token=token,job_id="coverage_sweep",
+                              map_digest="c"*64,target_cell=0)
+                journal.accepted(token=token,uuid_hex="a"*32)
+                relay._goal_witness=NavLeaseWitness(journal)
+                relay._nav_status=()
+                relay._motion_health=lambda:good_health(
+                    pose_fresh=common_valid,
+                    nav2_idle=nav_status_idle(relay._nav_status),
+                    nav2_active_goal=next((uuid for uuid,code in relay._nav_status
+                                          if code in ACTIVE),None))
+                def event(code):
+                    return SimpleNamespace(status_list=[SimpleNamespace(
+                        goal_info=SimpleNamespace(goal_id=SimpleNamespace(
+                            uuid=bytes.fromhex("a"*32))),status=code)])
+                # Both DDS events arrive within one50ms timer period. There
+                # is no intermediate output tick or fabricated ACTIVE sample.
+                relay._on_nav_status(event(2))
+                journal.terminal(token=token,uuid_hex="a"*32,outcome="canceled")
+                relay._on_nav_status(event(5))
+                relay._commands[relay.mux.NAV]=(1.94,Velocity())
+                relay._latest_output=Velocity()
+                relay._nav_confirmed_terminal=relay._goal_witness.can_release_for_dock
+                if common_valid:
+                    self.assertTrue(relay._goal_witness.can_release_for_dock())
+                    result=relay._execute_motion({"operation":"release_nav"})
+                    self.assertTrue(result["ok"])
+                    self.assertEqual(relay._prior_terminal,"a"*32)
+                else:
+                    with self.assertRaises(ReactiveMuxError):
+                        relay._execute_motion({"operation":"release_nav"})
+                    self.assertIsNone(relay._prior_terminal)
+                self.assertEqual(relay.mux.owner,relay.mux.STOP)
+                self.assertEqual(relay.mux.output(now=1.95),Velocity())
 
     def terminal_tick(self):
         relay,mono,_,_,_,_=self.managed()
