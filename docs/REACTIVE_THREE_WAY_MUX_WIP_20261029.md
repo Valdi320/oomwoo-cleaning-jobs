@@ -2,6 +2,40 @@
 
 **Status: LOCAL WIP, not published and not production-integrated.**
 
+## Current delivery status — 30 October 2026
+
+The historical milestones below retain their original limits. The later
+[accepted native integration](evidence/joint_dds_native_20261030.json) closes
+the short NAV/SWEEP/DOCK handoff, active Keepout and clean-shutdown gap for
+one frozen snapshot: two actual Nav2 goals succeeded, reactive sweeping and
+sensor-guided docking ran, release confirmed STOP, and all 21 owned children
+exited 0. The independent disk/chord audit was valid for 2,725 poses and
+2,724 segments, with zero forbidden crossings and a 20 ms maximum gap.
+
+This is a supplied three-point route, synthetic battery fraction and private
+station map whose projection excludes the overhead dock core. It is not a
+full-room planning/cleaning grade, repeated startup reliability, electrical
+charging or physical-robot validation. The original room map is unchanged.
+The receipt retains the exact command, all 19 input hashes, 17 acceptance
+checks and source provenance; it is copied byte-for-byte from the paired
+ROS delivery's `src/oomwoo_sim_support/docs/evidence/joint_dds_native_20261030.json`.
+
+Its relay SHA256 is
+`9a2e5a5bedb7ded15320cb8b2ab880c7ce030ed7b5a66d226eff6c992a5a75cb`;
+its DockDrive SHA256 is
+`d66312a4df4c889d62e6519863df32e85b69432a3c0a270a72a7bc5ade61b577`.
+Later relay diagnostics and planner corrections have separate focal evidence;
+this receipt does not certify their combined HEAD. Reconstruction, rejected
+trials and the tested height/profile configuration remain in the paired ROS
+`joint_cycle_delivery_20261030.json` receipt. No new simulator run was needed
+to correct this stale delivery description.
+
+**Remaining:** masked full-room 90% coverage / 80% first-target efficiency,
+maintainer-approved adoption/public API and hardware validation. Consolidate
+this short integration; require demonstrated route savings before another
+full-room trial. No push, PR, merge or remote notification accompanies this
+local documentation update.
+
 ## Blocker addressed
 
 The OOMWOO maintainer clarified in upstream PR #79 that room coverage
