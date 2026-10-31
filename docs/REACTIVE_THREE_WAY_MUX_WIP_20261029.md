@@ -627,3 +627,31 @@ initial escape continuity, not the subsequent navigation or a full90/80
 room result. Consolidate the bounded phase fix. A full-history case673
 with the original plan and bounded existing-channel observations is queued
 in the ROS branch to investigate the original abort105.
+
+
+### ACTIVE before durable client acceptance (2026-10-31)
+
+The real server can announce the preallocated UUID ACTIVE before the client's
+acceptance callback records accepted. The read-only witness already observes
+that event, but its output check permanently faulted on legitimate submitting.
+A causal test reproduces this with the real temporary GoalJournal. It must
+remain non-authorizing until durable acceptance; it now recognizes the later
+acceptance without inventing another ACTIVE event. A volatile accepted-history
+bit preserves the old latched rejection if the same UUID regresses to submitting
+after accepted evidence. Reset clears the bit for a new witnessed session.
+
+Eleven focal cases pass, including the new causal and regression cases,
+missing/corrupt/replaced records, submitting with another UUID, unknown and
+simultaneous owners, terminal zero and exact terminal release. Storage code,
+schema, writes, fsync, time budgets and freshness remain unchanged. Evidence:
+[evidence/active_before_acceptance_20261031.json](evidence/active_before_acceptance_20261031.json).
+
+The latest ROS native run stopped at128.851s with valid audit,8.59% coverage,
+zero crossings/4300poses and zero output despite requested rotation. This
+confirmed reader race is consistent with that sequence; the old capture lacks
+the witness's first fault/state, so unique attribution remains open. The next
+full frozen run retains the original criteria and adds those bounded fields
+to the existing revocation receipt. Useful delivery is still90/80/zero/real
+sweep completion. Benefit expected: avoid false revocation during acceptance;
+cost: minimal volatile reader fix and one native verification. Advance with
+that evidence, without weakening authorization or expanding the journal.

@@ -98,6 +98,7 @@ class NavLeaseWitness:
     def reset(self):
         self.uuid=None
         self.saw_active=False
+        self.saw_durable_acceptance=False
         self.saw_terminal=False
         self.terminal_kind=None
         self.fault=None
@@ -128,6 +129,8 @@ class NavLeaseWitness:
                 return
             self.uuid=current
             self.saw_active=True
+            if record["state"]=="accepted":
+                self.saw_durable_acceptance=True
         if not self.saw_active:
             return
         if record is None or record["uuid"]!=self.uuid:
@@ -203,7 +206,13 @@ class NavLeaseWitness:
         # the later dock handoff (which still needs exact terminal status).
         if record["state"]=="terminal":
             return False
+        if record["state"]=="submitting" and not self.saw_durable_acceptance:
+            # Nav2 may publish ACTIVE before the client's acceptance callback.
+            # Keep output unauthorized until its existing durable confirmation;
+            # this legitimate initial wait must not latch a permanent fault.
+            return False
         if record["state"]!="accepted":
             self.fault="Nav2 goal no longer durably accepted"
             return False
+        self.saw_durable_acceptance=True
         return True

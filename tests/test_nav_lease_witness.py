@@ -242,5 +242,33 @@ class DockNavUUIDWitnessTests(unittest.TestCase):
         self.assertIsNotNone(self.w.fault)
         self.assertFalse(self.w.can_release_for_dock())
 
+    def test_active_before_durable_acceptance_stays_zero_then_recognizes_acceptance(self):
+        self.j.begin(uuid_hex=UUID,token=TOKEN,job_id="lab",
+                     map_digest=DIGEST,target_cell=1)
+        self.w.observe(((UUID,2),))
+        self.assertFalse(self.w.current_active_matches())
+        self.assertFalse(self.w.can_release_for_dock())
+        self.assertIsNone(self.w.fault)
+        self.j.accepted(token=TOKEN,uuid_hex=UUID)
+        # The actual ACTIVE event remains observed; acceptance is now durable.
+        self.assertTrue(self.w.current_active_matches())
+        self.assertFalse(self.w.can_release_for_dock())
+        self.end("canceled")
+        self.w.observe(((UUID,5),))
+        self.assertTrue(self.w.can_release_for_dock())
+
+    def test_submitting_after_observed_durable_acceptance_still_latches_fault(self):
+        self.start()
+        self.w.observe(((UUID,2),))
+        self.assertTrue(self.w.current_active_matches())
+        self.end("canceled")
+        self.j.begin(uuid_hex=UUID,token="de"*16+"-3",job_id="lab",
+                     map_digest=DIGEST,target_cell=2)
+        self.assertFalse(self.w.current_active_matches())
+        self.assertIsNotNone(self.w.fault)
+        self.j.accepted(token="de"*16+"-3",uuid_hex=UUID)
+        self.assertFalse(self.w.current_active_matches())
+        self.assertFalse(self.w.can_release_for_dock())
+
 if __name__=="__main__":
     unittest.main()
