@@ -528,6 +528,48 @@ class TestRelayDDSMetadataIngress(unittest.TestCase):
         relay.safe=SimpleNamespace(publish=lambda message:None)
         return relay,mono
 
+    def test_result_fsync_during_health_read_keeps_terminal_zero_without_false_revocation(self):
+        for outcome in ("succeeded", "canceled"):
+            with self.subTest(outcome=outcome), TemporaryDirectory() as scratch:
+                relay, mono = self.initial_escape(scratch)
+                journal = relay._goal_witness.journal
+                uuid, token = "a" * 32, "b" * 32 + "-1"
+                journal.begin(uuid_hex=uuid, token=token, job_id="coverage_sweep",
+                              map_digest="c" * 64, target_cell=0)
+                journal.accepted(token=token, uuid_hex=uuid)
+                relay._goal_witness.observe(((uuid, 2),))
+                relay._nav_status = ((uuid, 2),)
+                relay._last_status = 0.
+                relay._motion_nav_uuid = uuid
+                relay._nav_feedback = (uuid, mono[0], 1_940_000_000)
+                relay._sweep_state = "TRANSIT"
+                relay.mux = ThreeWayVelocityMux()
+                for index in range(8):
+                    relay.mux.observe_odom(now=1. + index * .12,
+                                           linear_mps=0., angular_rps=0.)
+                relay.mux.observe_health(now=1.85, proof=good_health())
+                relay._motion_token = relay.mux.claim_transit(
+                    now=1.9, nav_goal_uuid=uuid)
+                relay.mux.observe_health(now=1.92, proof=good_health(
+                    nav2_idle=False, nav2_active_goal=uuid))
+                original = relay._feedback_live
+                written = []
+                def result_between_health_observations(candidate):
+                    if not written:
+                        journal.terminal(token=token, uuid_hex=uuid, outcome=outcome)
+                        written.append(True)
+                    return original(candidate)
+                relay._feedback_live = result_between_health_observations
+                proof = relay._motion_health()
+                self.assertTrue(written)
+                self.assertTrue(proof.nav2_idle)
+                self.assertIsNone(proof.nav2_active_goal)
+                relay.mux.observe_health(now=mono[0], proof=proof)
+                self.assertEqual(relay.mux.owner, relay.mux.NAV)
+                self.assertEqual(relay.mux.output(now=mono[0]), Velocity())
+                self.assertFalse(relay._goal_witness.can_release_for_dock())
+                self.assertEqual(relay._last_status, 0.)
+
     def test_terminal_callback_before_result_fsync_keeps_zero_and_does_not_rearm_watchdog(self):
         relay,mono=self.terminal_tick()
         with TemporaryDirectory() as scratch:

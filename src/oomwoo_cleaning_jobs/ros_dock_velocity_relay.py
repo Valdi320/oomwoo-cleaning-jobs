@@ -776,13 +776,17 @@ class ExperimentalDockVelocityRelay(Node):
                 pose=self._map_raster.data[cell]==0
         except (TransformException,AdmissionError,ValueError,AttributeError) as exc:
             pose_error=(type(exc).__name__+": "+str(exc))[:256]
-        idle=self._nav_idle()
         # A cached ACTIVE UUID must not be refreshed by the relay timer.
         # Preserve the existing one-second nonzero-NAV status budget.
         candidate=(None if self._nav_status is None else
                    next((uuid for uuid,code in self._nav_status if code in _ACTIVE),None))
         live=(self._fresh(self._last_status,1.) or
               (getattr(self,"_managed_nav2",False) and self._feedback_live(candidate)))
+        # Read idle after activity: the journal can become terminal inside
+        # _feedback_live. This order cannot pair old non-idle with new inactive.
+        # Nonzero output still needs the exact active UUID; release needs its
+        # matching terminal DDS event and durable result.
+        idle=self._nav_idle()
         active=candidate if live and not idle else None
         # These fields are derived observations in this disposable simulation.
         # Meter health is not an electrical/MCU safety attestation.
