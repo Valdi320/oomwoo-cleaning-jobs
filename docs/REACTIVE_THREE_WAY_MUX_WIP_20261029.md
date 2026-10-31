@@ -2,7 +2,26 @@
 
 **Status: LOCAL WIP, not published and not production-integrated.**
 
-## Current delivery status — 30 October 2026
+## Delivered full-room milestone — 31 October 2026
+
+Paired ROSa4d0bc6 / jobs9feaf3f completes the configured masked test_room:
+95.38% coverage,80.47% efficiency at first90%,sweep_complete,exit0.
+Valid original0.18m disk/chord audit:48,996poses,48,995segments,zero crossings;
+all20owned children close cleanly. Source hashes and original metrics retained.
+[Full acceptance audit](https://github.com/Valdi320/oomwoo-ros2-tools/blob/9f1720f9c21af05e1b5b57d44f4c95ef5be39dff/src/oomwoo_sim_support/docs/evidence/native_90_80_delivery_20261031.json)
+and [reproduction](https://github.com/Valdi320/oomwoo-ros2-tools/tree/delivery/reactive-90-80-20261031).
+The final native relay includes archived bounded diagnostic observations;
+its exact bytes and canonical differences are published with the ROS receipt.
+The paired jobs code fixes terminal health read ordering and ACTIVE arriving
+before durable acceptance, without granting pre-acceptance movement.
+
+The broader RFC remains open: furnished multi-room / selected-room / spot
+endurance, coverage preserved through integrated dock-service interruptions,
+maintainer-agreed public API and adoption. Physical validation is separate.
+Historical short docking snapshots below do not certify this final full-room
+source pair or claim a complete service interruption during that sweep.
+
+## Historical delivery status — 30 October 2026
 
 The historical milestones below retain their original limits. The later
 [accepted native integration](evidence/joint_dds_native_20261030.json) closes

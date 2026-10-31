@@ -70,8 +70,12 @@ crossings, and all 21 owned processes exited cleanly. The [exact native receipt]
 records the tested source hashes and command. That snapshot predates later
 planner and relay changes; it is not a rerun of the current branch. See the
 [delivery status and limits](docs/REACTIVE_THREE_WAY_MUX_WIP_20261029.md).
-The short integration used synthetic battery and a private station map; full
-masked-room 90% coverage / 80% efficiency and physical charging remain unproved.
+The short docking integration used synthetic battery and a private station map.
+A later paired full-room run now proves **95.38% coverage / 80.47% first-90%
+efficiency**, valid zero-crossing audit, sweep_complete and clean exit0 with
+ROS a4d0bc6 / jobs 9feaf3f. [Exact source and native evidence](https://github.com/Valdi320/oomwoo-ros2-tools/blob/9f1720f9c21af05e1b5b57d44f4c95ef5be39dff/src/oomwoo_sim_support/docs/evidence/native_90_80_delivery_20261031.json).
+This does not combine full-room cleaning with an interrupted dock-service cycle;
+multi-room endurance, the public job API and physical charging remain unproved.
 
 ### Ten integrated engineering increments (new)
 
